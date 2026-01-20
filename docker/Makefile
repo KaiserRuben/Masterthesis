@@ -2,7 +2,7 @@
 # Makefile for Docker Operations
 # =============================================================================
 
-.PHONY: help build test notebook shell clean logs
+.PHONY: help build test notebook shell classify clean logs
 
 # Default target
 help:
@@ -33,9 +33,9 @@ help:
 	@echo "  make clean-all   Remove everything including cached models"
 	@echo ""
 
-# Build the Docker image
+# Build the Docker image (builds only the builder service which has the Dockerfile)
 build:
-	docker compose build
+	docker compose build builder
 
 # Setup environment file
 setup:
@@ -63,6 +63,10 @@ notebook: build
 # Interactive shell
 shell: build
 	docker compose run --rm shell
+
+# Run batch scene classification
+classify: build
+	docker compose run --rm classify $(ARGS)
 
 # List result files
 results:
