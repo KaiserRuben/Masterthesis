@@ -33,3 +33,4 @@ ipywidgets
 # Dev utilities
 tqdm
 rich
+psutil
