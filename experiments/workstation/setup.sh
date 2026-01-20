@@ -68,7 +68,15 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 python -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
 
 # -----------------------------------------------------------------------------
-# 4. Install Alpamayo dependencies
+# 4. Install flash-attn (performance optimization)
+# -----------------------------------------------------------------------------
+echo ""
+echo "Installing flash-attn (this may take several minutes)..."
+pip install ninja packaging psutil
+pip install flash-attn --no-build-isolation
+
+# -----------------------------------------------------------------------------
+# 5. Install Alpamayo dependencies
 # -----------------------------------------------------------------------------
 echo ""
 echo "Installing Alpamayo-R1 dependencies..."
@@ -80,13 +88,25 @@ PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 cd "$PROJECT_ROOT"
 
 # Install alpamayo package
-pip install -e alpamayo/
+pip install -e tools/alpamayo/
+
+# Core dependencies
+pip install \
+    transformers==4.57.1 \
+    accelerate>=1.12.0 \
+    huggingface-hub \
+    einops>=0.8.1 \
+    hydra-core>=1.3.2 \
+    hydra-colorlog>=1.2.0 \
+    physical_ai_av>=0.1.0 \
+    av>=16.0.1 \
+    pillow>=12.0.0
 
 # Additional dependencies for experiments
-pip install pandas matplotlib jupyter ipykernel ollama pydantic
+pip install pandas numpy matplotlib jupyter ipykernel ollama pydantic tqdm rich
 
 # -----------------------------------------------------------------------------
-# 5. HuggingFace login (for gated dataset)
+# 6. HuggingFace login (for gated dataset)
 # -----------------------------------------------------------------------------
 echo ""
 echo "=============================================="
@@ -104,7 +124,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 6. Verify setup
+# 7. Verify setup
 # -----------------------------------------------------------------------------
 echo ""
 echo "=============================================="
