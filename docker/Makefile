@@ -33,9 +33,9 @@ help:
 	@echo "  make clean-all   Remove everything including cached models"
 	@echo ""
 
-# Build the Docker image (builds only the builder service which has the Dockerfile)
+# Build the Docker image
 build:
-	docker compose build builder
+	docker compose build test
 
 # Setup environment file
 setup:
