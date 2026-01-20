@@ -29,33 +29,47 @@ DEFAULT_MODEL_TIERS: dict[str, str] = {
 }
 
 
-def get_model_tiers() -> dict[str, str]:
+def get_model_tiers(config: "VLMConfig | None" = None) -> dict[str, str]:
     """
-    Get model tier definitions with environment variable overrides.
+    Get model tier definitions.
 
-    Env vars:
-        MODEL_SMALL: Override small tier model (default: qwen3-vl:4b)
-        MODEL_MEDIUM: Override medium tier model (default: qwen3-vl:8b)
-        MODEL_LARGE: Override large tier model (default: qwen3-vl:30b)
+    Priority (highest to lowest):
+        1. Environment variables (MODEL_SMALL, MODEL_MEDIUM, MODEL_LARGE)
+        2. Config's model_tiers (if config provided)
+        3. DEFAULT_MODEL_TIERS
+
+    Args:
+        config: Optional VLMConfig to use as base (before env overrides)
     """
-    return {
-        "small": os.environ.get("MODEL_SMALL", DEFAULT_MODEL_TIERS["small"]),
-        "medium": os.environ.get("MODEL_MEDIUM", DEFAULT_MODEL_TIERS["medium"]),
-        "large": os.environ.get("MODEL_LARGE", DEFAULT_MODEL_TIERS["large"]),
-    }
+    # Start with defaults or config
+    if config is not None:
+        base = config.model_tiers.copy()
+    else:
+        base = DEFAULT_MODEL_TIERS.copy()
+
+    # Apply env overrides
+    if model := os.environ.get("MODEL_SMALL"):
+        base["small"] = model
+    if model := os.environ.get("MODEL_MEDIUM"):
+        base["medium"] = model
+    if model := os.environ.get("MODEL_LARGE"):
+        base["large"] = model
+
+    return base
 
 
-def resolve_tier(tier_or_model: str) -> str:
+def resolve_tier(tier_or_model: str, config: "VLMConfig | None" = None) -> str:
     """
     Resolve a tier name to a model name, or return as-is if already a model.
 
     Args:
         tier_or_model: Either "small"/"medium"/"large" or a model name like "qwen3-vl:8b"
+        config: Optional VLMConfig to use for tier resolution
 
     Returns:
         Model name
     """
-    tiers = get_model_tiers()
+    tiers = get_model_tiers(config)
     return tiers.get(tier_or_model, tier_or_model)
 
 
@@ -117,7 +131,7 @@ class EndpointConfig:
     """Configuration for a single Ollama endpoint."""
     url: str = "http://localhost:11434"
     max_concurrent: int = 1
-    timeout_seconds: int = 300
+    timeout_seconds: int = 900
     retry_attempts: int = 3
     retry_delay_seconds: float = 1.0
 
@@ -126,7 +140,7 @@ class EndpointConfig:
         return cls(
             url=data.get("url", "http://localhost:11434"),
             max_concurrent=data.get("max_concurrent", 1),
-            timeout_seconds=data.get("timeout_seconds", 300),
+            timeout_seconds=data.get("timeout_seconds", 900),
             retry_attempts=data.get("retry_attempts", 3),
             retry_delay_seconds=data.get("retry_delay_seconds", 1.0),
         )
@@ -154,11 +168,15 @@ class ModelEndpointConfig:
 @dataclass
 class KeyModelMapping:
     """
-    Maps classification keys to models.
+    Maps classification keys to models/tiers.
 
     Values can be:
-    - Tier names: "small", "medium", "large" (resolved via get_model_tiers())
+    - Tier names: "small", "medium", "large"
     - Model names: "qwen3-vl:8b" (used directly)
+
+    Note: For proper config-based tier resolution, use VLMConfig.get_model_for_key()
+    which uses the config's model_tiers. Direct use of KeyModelMapping.get() falls
+    back to environment variable based resolution.
     """
     _mappings: dict[str, str] = field(default_factory=dict)
 
@@ -201,6 +219,7 @@ class VLMConfig:
     endpoints: dict[str, EndpointConfig] = field(default_factory=dict)
     models: dict[str, ModelEndpointConfig] = field(default_factory=dict)
     key_mapping: KeyModelMapping = field(default_factory=KeyModelMapping)
+    model_tiers: dict[str, str] = field(default_factory=lambda: DEFAULT_MODEL_TIERS.copy())
 
     def __post_init__(self):
         if "default" not in self.endpoints:
@@ -219,9 +238,22 @@ class VLMConfig:
             self.models[model_name] = ModelEndpointConfig(model=model_name)
         return self.models[model_name]
 
+    def resolve_tier(self, tier_or_model: str) -> str:
+        """
+        Resolve a tier name to a model name using this config's model_tiers.
+
+        Args:
+            tier_or_model: Either "small"/"medium"/"large" or a model name like "qwen3-vl:8b"
+
+        Returns:
+            Model name
+        """
+        return self.model_tiers.get(tier_or_model, tier_or_model)
+
     def get_model_for_key(self, key: str) -> str:
         """Get the resolved model name for a classification key."""
-        return self.key_mapping.get(key)
+        tier_or_model = self.key_mapping.get_tier(key)
+        return self.resolve_tier(tier_or_model)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "VLMConfig":
@@ -238,7 +270,12 @@ class VLMConfig:
 
         key_mapping = KeyModelMapping.from_dict(data.get("key_mapping", {}))
 
-        return cls(endpoints=endpoints, models=models, key_mapping=key_mapping)
+        # Parse model_tiers with defaults
+        model_tiers = DEFAULT_MODEL_TIERS.copy()
+        if "model_tiers" in data:
+            model_tiers.update(data["model_tiers"])
+
+        return cls(endpoints=endpoints, models=models, key_mapping=key_mapping, model_tiers=model_tiers)
 
     @classmethod
     def from_yaml(cls, path: Path | str) -> "VLMConfig":
@@ -277,6 +314,14 @@ class VLMConfig:
         if url := os.environ.get("OLLAMA_URL") or os.environ.get("OLLAMA_HOST"):
             config.endpoints["default"].url = url
 
+        # Model tier overrides
+        if model := os.environ.get("MODEL_SMALL"):
+            config.model_tiers["small"] = model
+        if model := os.environ.get("MODEL_MEDIUM"):
+            config.model_tiers["medium"] = model
+        if model := os.environ.get("MODEL_LARGE"):
+            config.model_tiers["large"] = model
+
         # Per-endpoint overrides
         for key, value in os.environ.items():
             if key.startswith("VLM_ENDPOINT_") and key.endswith("_URL"):
@@ -310,10 +355,9 @@ class VLMConfig:
         lines = ["# VLM Configuration (generated)"]
 
         # Model tiers
-        tiers = get_model_tiers()
-        lines.append(f'export MODEL_SMALL="{tiers["small"]}"')
-        lines.append(f'export MODEL_MEDIUM="{tiers["medium"]}"')
-        lines.append(f'export MODEL_LARGE="{tiers["large"]}"')
+        lines.append(f'export MODEL_SMALL="{self.model_tiers["small"]}"')
+        lines.append(f'export MODEL_MEDIUM="{self.model_tiers["medium"]}"')
+        lines.append(f'export MODEL_LARGE="{self.model_tiers["large"]}"')
         lines.append("")
 
         # Endpoints
@@ -380,8 +424,8 @@ DEFAULT_CONFIG_TEMPLATE = """
 # VLM Configuration
 # Save as vlm_config.yaml in your project root
 
-# Model tiers (can also be set via MODEL_SMALL, MODEL_MEDIUM, MODEL_LARGE env vars)
-# These are resolved when keys reference tiers instead of specific models
+# Model tiers - maps tier names to actual model names
+# Can be overridden via MODEL_SMALL, MODEL_MEDIUM, MODEL_LARGE env vars
 model_tiers:
   small: qwen3-vl:4b
   medium: qwen3-vl:8b
@@ -391,7 +435,7 @@ endpoints:
   default:
     url: http://localhost:11434
     max_concurrent: 1
-    timeout_seconds: 300
+    timeout_seconds: 900
     retry_attempts: 3
 
   # Example: separate endpoint for large models
@@ -420,19 +464,42 @@ models:
 key_mapping:
   stage1: large
 
-  # Simple detection (small model sufficient)
+  # --- Scene Context (easy = small, medium = medium) ---
+  weather: small
+  time_of_day: small
+  road_type: small
+  traffic_situation: medium
+
+  # --- Object Detection ---
   pedestrians_present: small
   cyclists_present: small
   construction_activity: small
-  traffic_signals_visible: small
-
-  # Moderate complexity
-  weather: medium
-  time_of_day: medium
+  traffic_signals_visible: medium
   vehicle_count: medium
-  road_type: medium
+  notable_elements: medium
 
-  # Complex reasoning (large model needed)
-  traffic_situation: large
-  notable_elements: large
+  # --- Spatial Reasoning (medium to large) ---
+  occlusion_level: medium
+  depth_complexity: large
+  nearest_vehicle_distance: large
+  spatial_relations: large
+
+  # --- Perceptual Challenges ---
+  visual_degradation: medium
+  similar_object_confusion: large
+  edge_case_objects: large
+
+  # --- Safety Critical (always large) ---
+  safety_criticality: large
+  vulnerable_road_users: large
+  immediate_hazards: large
+  required_action: large
+
+  # --- Counting & Quantification (hard = large) ---
+  pedestrian_count: large
+  vehicle_count_by_type: large
+
+  # --- Attribute Binding (hard = large) ---
+  traffic_light_states: large
+  lane_marking_type: large
 """
