@@ -1,0 +1,93 @@
+# =============================================================================
+# Docker Compose for Alpamayo-R1 Experiments
+# =============================================================================
+# Usage:
+#   docker-compose up test        # Run basic inference test
+#   docker-compose up notebook    # Start Jupyter notebook
+#   docker-compose run shell      # Interactive shell
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Base service (shared config)
+  # ---------------------------------------------------------------------------
+  base: &base
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: alpamayo-runner:latest
+
+    # GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    # Environment
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
+
+    # Volumes
+    volumes:
+      # Cache (persist model weights between runs)
+      - hf-cache:/cache/huggingface
+      - torch-cache:/cache/torch
+
+      # Results (persist experiment outputs)
+      - ../experiments/workstation/inference_results:/results
+      - ../experiments/classification_results:/data/classification_results
+
+      # Optional: mount source for development
+      # - ../alpamayo:/app/alpamayo
+      # - ../experiments:/app/experiments
+
+    # Working directory
+    working_dir: /app
+
+  # ---------------------------------------------------------------------------
+  # Test: Run basic inference test
+  # ---------------------------------------------------------------------------
+  test:
+    <<: *base
+    command: test
+
+  # ---------------------------------------------------------------------------
+  # Notebook: Start Jupyter
+  # ---------------------------------------------------------------------------
+  notebook:
+    <<: *base
+    command: notebook
+    ports:
+      - "${JUPYTER_PORT:-8888}:8888"
+
+  # ---------------------------------------------------------------------------
+  # Shell: Interactive bash
+  # ---------------------------------------------------------------------------
+  shell:
+    <<: *base
+    stdin_open: true
+    tty: true
+    command: bash
+
+  # ---------------------------------------------------------------------------
+  # Classify: Run batch scene classification (requires external Ollama)
+  # ---------------------------------------------------------------------------
+  classify:
+    <<: *base
+    command: classify
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# -----------------------------------------------------------------------------
+# Persistent volumes
+# -----------------------------------------------------------------------------
+volumes:
+  hf-cache:
+    name: alpamayo-hf-cache
+  torch-cache:
+    name: alpamayo-torch-cache

@@ -1,0 +1,718 @@
+{
+  "config": {
+    "models": [
+      "ministral-3:3b",
+      "ministral-3:8b",
+      "ministral-3:14b",
+      "qwen3-vl:4b",
+      "qwen3-vl:8b"
+    ],
+    "n_samples": 5,
+    "n_perturbations": 5,
+    "perturbations": [
+      {
+        "brightness": -0.2,
+        "contrast": 0.8,
+        "blur": 0
+      },
+      {
+        "brightness": -0.1,
+        "contrast": 0.9,
+        "blur": 0
+      },
+      {
+        "brightness": 0,
+        "contrast": 1.0,
+        "blur": 1.0
+      },
+      {
+        "brightness": 0.1,
+        "contrast": 1.1,
+        "blur": 0
+      },
+      {
+        "brightness": 0.2,
+        "contrast": 1.2,
+        "blur": 0
+      }
+    ],
+    "timestamp": "2026-01-11T14:57:37.817204"
+  },
+  "models": {
+    "ministral-3:3b": {
+      "model": "ministral-3:3b",
+      "timestamp": "2026-01-11T14:57:37.817225",
+      "samples": {
+        "sample_idx": 4,
+        "expression": "bottom table",
+        "bbox_gt": [
+          0.0016875000670552253,
+          0.45841665267944337,
+          0.7820156307891011,
+          0.9977499961853027
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "original": {
+          "bbox": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "success": false,
+          "response_text": "In this image, there is no distinct \"bottom table\" that can be clearly defined as the entire scene appears to be taken from a slightly elevated angle, capturing multiple tables simultaneously.\n\nHowever, if we consider the table closest to the bottom edge of the image as the \"bottom table,\" here is its bounding box normalized to coordinates between 0 and 1000:\n\n```json\n{\n  \"bbox_2d\": [10, 600, 900, 750]\n}\n```",
+          "inference_time": 2.772552967071533,
+          "error": null,
+          "iou": 0.0
+        },
+        "perturbations": [
+          {
+            "bbox": [
+              0.002,
+              0.01,
+              0.6,
+              0.9
+            ],
+            "success": true,
+            "response_text": "In this image, there is no distinct \"bottom table\" that can be clearly identified as the entire scene appears to be taken from a slightly elevated angle, showing multiple tables.\n\nHowever, if we consider the table closest to the bottom edge of the image as the \"bottom table,\" here is its bounding box in the requested format:\n\n```json\n{\n  \"bbox_2d\": [10, 600, 900, 750]\n}\n```\n\nThis bounding box covers the table that is visually the lowest in the frame.",
+            "inference_time": 3.161175012588501,
+            "error": null,
+            "iou": 0.3832553791370314,
+            "perturbation": {
+              "brightness": -0.2,
+              "contrast": 0.8,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          },
+          {
+            "bbox": [
+              0.002,
+              0.01,
+              0.4,
+              0.9
+            ],
+            "success": true,
+            "response_text": "In this image, there is no distinct \"bottom table\" that can be clearly identified as the entire scene appears to be taken from a slightly elevated angle focusing on one table.\n\nHowever, if we consider the table closest to the bottom of the image as the \"bottom table,\" here is its bounding box in the requested format:\n\n```json\n{\n  \"bbox_2d\": [10, 400, 900, 600]\n}\n```\n\nThis box covers the table where the older man is seated.",
+            "inference_time": 3.4442098140716553,
+            "error": null,
+            "iou": 0.2932459720179119,
+            "perturbation": {
+              "brightness": -0.1,
+              "contrast": 0.9,
+              "blur": 0
+            },
+            "magnitude": 0.1414213562373095
+          },
+          {
+            "bbox": [
+              0.002,
+              0.01,
+              0.4,
+              0.98
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the photo.\n\nHere is the bounding box in the requested format:\n\n```json\n{\n  \"bbox_2d\": [10, 400, 980, 600]\n}\n```\n\nThis box captures the entire table area from the bottom-most visible part of the table to roughly mid-height of the image.",
+            "inference_time": 2.830064296722412,
+            "error": null,
+            "iou": 0.34637224569598835,
+            "perturbation": {
+              "brightness": 0,
+              "contrast": 1.0,
+              "blur": 1.0
+            },
+            "magnitude": 1.0
+          },
+          {
+            "bbox": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "success": false,
+            "response_text": "In this image, there is no single \"bottom table\" as the scene appears to be a group of people seated around multiple tables. However, if we consider the table closest to the bottom edge of the image, here is its bounding box normalized to the 0-1000 scale:\n\n```json\n{\n  \"bbox_2d\": [0, 600, 500, 800]\n}\n```\n\nThis box covers the table where the man on the right is seated.",
+            "inference_time": 3.157727003097534,
+            "error": null,
+            "iou": 0.0,
+            "perturbation": {
+              "brightness": 0.1,
+              "contrast": 1.1,
+              "blur": 0
+            },
+            "magnitude": 0.14142135623730956
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.045,
+              1.0
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the photograph.\n\nHere is the bounding box for that table in the requested format:\n\n```json\n{\n  \"bbox_2d\": [0, 45, 1000, 300]\n}\n```",
+            "inference_time": 2.508866786956787,
+            "error": null,
+            "iou": 0.052627959499663604,
+            "perturbation": {
+              "brightness": 0.2,
+              "contrast": 1.2,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          }
+        ]
+      },
+      "stats": {
+        "total_calls": 30,
+        "parse_failures": 4,
+        "total_time": 84.35886526107788,
+        "avg_time_per_call": 2.8119621753692625,
+        "parse_success_rate": 0.8666666666666667
+      }
+    },
+    "ministral-3:8b": {
+      "model": "ministral-3:8b",
+      "timestamp": "2026-01-11T14:59:03.767982",
+      "samples": {
+        "sample_idx": 4,
+        "expression": "bottom table",
+        "bbox_gt": [
+          0.0016875000670552253,
+          0.45841665267944337,
+          0.7820156307891011,
+          0.9977499961853027
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "original": {
+          "bbox": [
+            0.002,
+            0.1,
+            0.75,
+            0.95
+          ],
+          "success": true,
+          "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the picture. Based on the visual content, here is the bounding box for that table:\n\n```json\n{\n  \"bbox_2d\": [100, 750, 950, 850]\n}\n```\n\nThe coordinates are approximate and normalized to a scale from 0 to 1000.",
+          "inference_time": 5.12255597114563,
+          "error": null,
+          "iou": 0.5337149821245469
+        },
+        "perturbations": [
+          {
+            "bbox": [
+              0.1,
+              0.7,
+              1.0,
+              0.85
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the picture. Based on the visual content, here is the bounding box for that table:\n\n{\"bbox_2d\": [100, 700, 1000, 850]}",
+            "inference_time": 4.2559309005737305,
+            "error": null,
+            "iou": 0.22555682753250014,
+            "perturbation": {
+              "brightness": -0.2,
+              "contrast": 0.8,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          },
+          {
+            "bbox": [
+              0.1,
+              0.7,
+              1.0,
+              0.85
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the picture. Based on the visual content, here is the bounding box for that table:\n\n{\"bbox_2d\": [100, 700, 1000, 850]}",
+            "inference_time": 4.265908241271973,
+            "error": null,
+            "iou": 0.22555682753250014,
+            "perturbation": {
+              "brightness": -0.1,
+              "contrast": 0.9,
+              "blur": 0
+            },
+            "magnitude": 0.1414213562373095
+          },
+          {
+            "bbox": [
+              0.1,
+              0.7,
+              0.9,
+              1.0
+            ],
+            "success": true,
+            "response_text": "To determine the bounding box for the \"bottom table\" in the image, I will estimate the coordinates based on visual inspection. The bottom table appears to be the one closest to the bottom edge of the image.\n\nHere is the approximate bounding box:\n\n```json\n{\"bbox_2d\": [100, 700, 900, 1000]}\n```",
+            "inference_time": 4.7203450202941895,
+            "error": null,
+            "iou": 0.4435910753837703,
+            "perturbation": {
+              "brightness": 0,
+              "contrast": 1.0,
+              "blur": 1.0
+            },
+            "magnitude": 1.0
+          },
+          {
+            "bbox": [
+              0.1,
+              0.7,
+              0.95,
+              0.85
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the picture. Based on the visual information, here is the bounding box for that table:\n\n{\"bbox_2d\": [100, 700, 950, 850]}",
+            "inference_time": 4.273841857910156,
+            "error": null,
+            "iou": 0.22934935892476674,
+            "perturbation": {
+              "brightness": 0.1,
+              "contrast": 1.1,
+              "blur": 0
+            },
+            "magnitude": 0.14142135623730956
+          },
+          {
+            "bbox": [
+              0.1,
+              0.75,
+              0.95,
+              0.9
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" refers to the table closest to the bottom edge of the picture. Based on the visual content, here is the approximate bounding box for that table:\n\n{\"bbox_2d\": [100, 750, 950, 900]}",
+            "inference_time": 4.270644903182983,
+            "error": null,
+            "iou": 0.22934935892476674,
+            "perturbation": {
+              "brightness": 0.2,
+              "contrast": 1.2,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          }
+        ]
+      },
+      "stats": {
+        "total_calls": 30,
+        "parse_failures": 4,
+        "total_time": 205.97160267829895,
+        "avg_time_per_call": 6.865720089276632,
+        "parse_success_rate": 0.8666666666666667
+      }
+    },
+    "ministral-3:14b": {
+      "model": "ministral-3:14b",
+      "timestamp": "2026-01-11T15:02:31.539890",
+      "samples": {
+        "sample_idx": 4,
+        "expression": "bottom table",
+        "bbox_gt": [
+          0.0016875000670552253,
+          0.45841665267944337,
+          0.7820156307891011,
+          0.9977499961853027
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "original": {
+          "bbox": [
+            0.002,
+            0.0,
+            0.5,
+            1.0
+          ],
+          "success": true,
+          "response_text": "In this image, the term **\"bottom table\"** refers to the table closest to the bottom edge of the photo.\n\nHere is the approximate bounding box for the **bottom table** in the format you requested:\n\n```json\n{\n  \"bbox_2d\": [0, 500, 1000, 1000]\n}\n```",
+          "inference_time": 24.262635946273804,
+          "error": null,
+          "iou": 0.4130413959646358
+        },
+        "perturbations": [
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.45,
+              1.0
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" (from the viewer's perspective) is the table where the three main individuals are seated. Here is the bounding box for that table in the format you requested:\n\n```json\n{\n  \"bbox_2d\": [0, 450, 1000, 800]\n}\n```",
+            "inference_time": 24.330708026885986,
+            "error": null,
+            "iou": 0.38521621182928806,
+            "perturbation": {
+              "brightness": -0.2,
+              "contrast": 0.8,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.55,
+              1.0
+            ],
+            "success": true,
+            "response_text": "In this image, the term **\"bottom table\"** refers to the table closest to the bottom edge of the photo. Based on the visual content, here is the approximate bounding box for that table in the requested format:\n\n```json\n{\n  \"bbox_2d\": [0, 550, 1000, 1000]\n}\n```",
+            "inference_time": 21.64698886871338,
+            "error": null,
+            "iou": 0.43896280903035306,
+            "perturbation": {
+              "brightness": -0.1,
+              "contrast": 0.9,
+              "blur": 0
+            },
+            "magnitude": 0.1414213562373095
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.6,
+              1.0
+            ],
+            "success": true,
+            "response_text": "The image is quite blurry, making it difficult to precisely determine the exact location of the \"bottom table\" in terms of bounding box coordinates.\n\nHowever, based on the visible elements, the table on which the three individuals are seated appears to be the primary table in focus. If you are referring to the table at the bottom of the image (the one closest to the bottom edge), here is an approximate bounding box:\n\n```json\n{\n  \"bbox_2d\": [0, 600, 1000, 1000]\n}\n```",
+            "inference_time": 31.026108264923096,
+            "error": null,
+            "iou": 0.46316936937325714,
+            "perturbation": {
+              "brightness": 0,
+              "contrast": 1.0,
+              "blur": 1.0
+            },
+            "magnitude": 1.0
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.5,
+              1.0
+            ],
+            "success": true,
+            "response_text": "In this image, the \"bottom table\" (from the viewer's perspective) is the table where the elderly man is seated. Here is the bounding box for that table in the format you requested:\n\n```json\n{\n  \"bbox_2d\": [0, 500, 1000, 1000]\n}\n```",
+            "inference_time": 23.8021080493927,
+            "error": null,
+            "iou": 0.4130413959646358,
+            "perturbation": {
+              "brightness": 0.1,
+              "contrast": 1.1,
+              "blur": 0
+            },
+            "magnitude": 0.14142135623730956
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.5,
+              1.0
+            ],
+            "success": true,
+            "response_text": "In this image, the term **\"bottom table\"** refers to the table closest to the bottom edge of the photo. Here is the approximate bounding box for that table in the requested format:\n\n```json\n{\n  \"bbox_2d\": [0, 500, 1000, 1000]\n}\n```\n\nThis covers the entire width of the image and the lower portion where the table is visible.",
+            "inference_time": 36.67977595329285,
+            "error": null,
+            "iou": 0.4130413959646358,
+            "perturbation": {
+              "brightness": 0.2,
+              "contrast": 1.2,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          }
+        ]
+      },
+      "stats": {
+        "total_calls": 30,
+        "parse_failures": 1,
+        "total_time": 690.7298803329468,
+        "avg_time_per_call": 23.02432934443156,
+        "parse_success_rate": 0.9666666666666667
+      }
+    },
+    "qwen3-vl:4b": {
+      "model": "qwen3-vl:4b",
+      "timestamp": "2026-01-11T15:14:06.701724",
+      "samples": {
+        "sample_idx": 4,
+        "expression": "bottom table",
+        "bbox_gt": [
+          0.0016875000670552253,
+          0.45841665267944337,
+          0.7820156307891011,
+          0.9977499961853027
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "original": {
+          "bbox": [
+            0.0,
+            0.532,
+            0.751,
+            0.996
+          ],
+          "success": true,
+          "response_text": "{\"bbox_2d\": [0, 532, 751, 996]}",
+          "inference_time": 9.573308944702148,
+          "error": null,
+          "iou": 0.8245921084845641
+        },
+        "perturbations": [
+          {
+            "bbox": [
+              0.0,
+              0.509,
+              0.759,
+              0.998
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 509, 759, 998]}",
+            "inference_time": 10.486333847045898,
+            "error": null,
+            "iou": 0.877367831025992,
+            "perturbation": {
+              "brightness": -0.2,
+              "contrast": 0.8,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          },
+          {
+            "bbox": [
+              0.0,
+              0.534,
+              0.756,
+              0.996
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 534, 756, 996]}",
+            "inference_time": 7.070168972015381,
+            "error": null,
+            "iou": 0.8265230556303592,
+            "perturbation": {
+              "brightness": -0.1,
+              "contrast": 0.9,
+              "blur": 0
+            },
+            "magnitude": 0.1414213562373095
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.532,
+              0.74
+            ],
+            "success": true,
+            "response_text": "```json\n[\n\t{\"bbox_2d\": [0, 532, 740, 995], \"label\": \"bottom table\"}\n]\n```",
+            "inference_time": 7.6921226978302,
+            "error": null,
+            "iou": 0.2248194802847252,
+            "perturbation": {
+              "brightness": 0,
+              "contrast": 1.0,
+              "blur": 1.0
+            },
+            "magnitude": 1.0
+          },
+          {
+            "bbox": [
+              0.002,
+              0.0,
+              0.505,
+              0.756
+            ],
+            "success": true,
+            "response_text": "```json\n[\n\t{\"bbox_2d\": [0, 505, 756, 996], \"label\": \"bottom table\"}\n]\n```",
+            "inference_time": 18.952028036117554,
+            "error": null,
+            "iou": 0.22977449332422553,
+            "perturbation": {
+              "brightness": 0.1,
+              "contrast": 1.1,
+              "blur": 0
+            },
+            "magnitude": 0.14142135623730956
+          },
+          {
+            "bbox": [
+              0.0,
+              0.171,
+              0.746,
+              0.986
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 171, 746, 986]}",
+            "inference_time": 12.789561033248901,
+            "error": null,
+            "iou": 0.6172768150813622,
+            "perturbation": {
+              "brightness": 0.2,
+              "contrast": 1.2,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          }
+        ]
+      },
+      "stats": {
+        "total_calls": 30,
+        "parse_failures": 1,
+        "total_time": 501.5022118091583,
+        "avg_time_per_call": 16.71674039363861,
+        "parse_success_rate": 0.9666666666666667
+      }
+    },
+    "qwen3-vl:8b": {
+      "model": "qwen3-vl:8b",
+      "timestamp": "2026-01-11T15:22:29.829917",
+      "samples": {
+        "sample_idx": 4,
+        "expression": "bottom table",
+        "bbox_gt": [
+          0.0016875000670552253,
+          0.45841665267944337,
+          0.7820156307891011,
+          0.9977499961853027
+        ],
+        "image_size": [
+          640,
+          480
+        ],
+        "original": {
+          "bbox": [
+            0.0,
+            0.431,
+            0.74,
+            0.994
+          ],
+          "success": true,
+          "response_text": "{\"bbox_2d\": [0, 431, 740, 994]}",
+          "inference_time": 17.74606990814209,
+          "error": null,
+          "iou": 0.8945338433192929
+        },
+        "perturbations": [
+          {
+            "bbox": [
+              0.0,
+              0.431,
+              0.777,
+              0.994
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 431, 777, 994]}",
+            "inference_time": 11.397117137908936,
+            "error": null,
+            "iou": 0.9372120454239666,
+            "perturbation": {
+              "brightness": -0.2,
+              "contrast": 0.8,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          },
+          {
+            "bbox": [
+              0.0,
+              0.447,
+              0.74,
+              0.994
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 447, 740, 994]}",
+            "inference_time": 14.029874086380005,
+            "error": null,
+            "iou": 0.9191527570347402,
+            "perturbation": {
+              "brightness": -0.1,
+              "contrast": 0.9,
+              "blur": 0
+            },
+            "magnitude": 0.1414213562373095
+          },
+          {
+            "bbox": [
+              0.0,
+              0.4,
+              0.675,
+              0.998
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 400, 675, 998]}",
+            "inference_time": 20.56332492828369,
+            "error": null,
+            "iou": 0.7870953161118553,
+            "perturbation": {
+              "brightness": 0,
+              "contrast": 1.0,
+              "blur": 1.0
+            },
+            "magnitude": 1.0
+          },
+          {
+            "bbox": [
+              0.0,
+              0.427,
+              0.753,
+              0.994
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 427, 753, 994]}",
+            "inference_time": 15.572919130325317,
+            "error": null,
+            "iou": 0.903400627465985,
+            "perturbation": {
+              "brightness": 0.1,
+              "contrast": 1.1,
+              "blur": 0
+            },
+            "magnitude": 0.14142135623730956
+          },
+          {
+            "bbox": [
+              0.0,
+              0.431,
+              0.722,
+              0.999
+            ],
+            "success": true,
+            "response_text": "{\"bbox_2d\": [0, 431, 722, 999]}",
+            "inference_time": 13.61559510231018,
+            "error": null,
+            "iou": 0.8780108001932616,
+            "perturbation": {
+              "brightness": 0.2,
+              "contrast": 1.2,
+              "blur": 0
+            },
+            "magnitude": 0.282842712474619
+          }
+        ]
+      },
+      "stats": {
+        "total_calls": 30,
+        "parse_failures": 0,
+        "total_time": 1085.263454914093,
+        "avg_time_per_call": 36.175448497136436,
+        "parse_success_rate": 1.0
+      }
+    }
+  }
+}

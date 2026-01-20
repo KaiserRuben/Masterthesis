@@ -1,0 +1,42 @@
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# ML/Data
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.h5
+*.npy
+*.npz
+data/
+checkpoints/
+outputs/
+wandb/
+
+# Misc
+*.log
+.env
+.cache/
+.cadence/
+.jbeval/
+.claude/
+
+# Submodules
+tools/alpamayo/

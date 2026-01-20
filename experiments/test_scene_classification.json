@@ -1,0 +1,23 @@
+{
+  "clip_id": "030c760c-ae38-49aa-9ad8-f5650a545d26",
+  "t0_us": 5100000,
+  "classification": {
+    "scene_description": "The image is a 4-camera view of a daytime driving scene on a mixed residential-commercial road with active construction. The sky is partly cloudy with bright sunlight, and the road surface is dry. Road markings include yellow center lines and a \"PFD\" marking on the asphalt. Multiple vehicles are present: a silver sedan parked on the left, various moving vehicles including white sedans and trucks, and a construction excavator. The construction zone on the right side features orange safety vests on workers, traffic cones, barriers, and debris. Pedestrians include construction workers in the construction zone and a cyclist on the road. Traffic signals are visible in the distance, with the front telephoto view showing a traffic light. Surroundings include buildings, utility poles, and signs, indicating a developed area.",
+    "road_type": "parking_lot",
+    "weather": "clear",
+    "time_of_day": "day",
+    "traffic_density": "moderate",
+    "has_pedestrians": true,
+    "has_cyclists": true,
+    "has_traffic_signals": true,
+    "has_construction_activity": true,
+    "vehicle_count": 9,
+    "notable_elements": [
+      "construction zone with excavator and barriers",
+      "pedestrians (workers and cyclist) on the street",
+      "traffic signals in distance",
+      "lane markings with \"PFD\" marking",
+      "dry road surface"
+    ]
+  }
+}

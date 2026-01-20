@@ -1,0 +1,278 @@
+\documentclass[11pt, a4paper]{article}
+
+% Core packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{framed}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb, amsthm}
+
+% Diagrams
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows.meta, positioning}
+
+% Typography
+\usepackage{ebgaramond}
+\usepackage[scale=0.88]{tgheros}
+\renewcommand{\familydefault}{\rmdefault}
+
+% Geometry
+\geometry{
+    paper=a4paper,
+    top=28mm,
+    bottom=28mm,
+    left=28mm,
+    right=28mm,
+}
+
+% Typography settings
+\setstretch{1.15}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+
+% Header/footer
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\footnotesize\thepage}
+
+\fancypagestyle{firstpage}{
+    \fancyhf{}
+    \renewcommand{\headrulewidth}{0pt}
+}
+
+% Section formatting
+\titleformat{\section}{\normalfont\Large\sffamily}{\thesection.}{6mm}{}
+\titleformat{\subsection}{\normalfont\large\sffamily}{\thesubsection.}{5mm}{}
+\titlespacing*{\section}{0pt}{18pt}{8pt}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+
+% Title
+\makeatletter
+\renewcommand{\maketitle}{%
+    \thispagestyle{firstpage}
+    \noindent
+    {\color{black!40}\rule{0.5pt}{48pt}}%
+    \hspace{8mm}%
+    \begin{minipage}[b]{\dimexpr\textwidth-8.5mm\relax}
+        \raggedright
+        {\LARGE\sffamily\@title}\\[10pt]
+        {\normalsize\sffamily Ruben Kaiser}\\[2pt]
+        {\small Master Thesis — Status Report \hfill \@date}
+    \end{minipage}
+    \vspace{24pt}
+}
+\makeatother
+
+% Theorem environments
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{proposition}{Proposition}[section]
+
+% Quote environment
+\definecolor{quoteline}{gray}{0.4}
+\renewenvironment{leftbar}{%
+    \def\FrameCommand{{\color{quoteline}\vrule width 0.5pt}\hspace{8mm}}%
+    \MakeFramed{\advance\hsize-\width\FrameRestore}%
+}{\endMakeFramed}
+
+\renewenvironment{quote}{\par\vspace{8pt}\begin{leftbar}\small\itshape\noindent}{\end{leftbar}\vspace{8pt}\par}
+
+% Lists
+\setlist[itemize]{topsep=4pt, itemsep=2pt, parsep=2pt, leftmargin=18mm, label={\textbullet}}
+\setlist[enumerate]{topsep=4pt, itemsep=2pt, parsep=2pt, leftmargin=18mm}
+
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+\title{On the Tractability of Decision Boundary\\Testing for Vision-Language Models}
+\date{January 2026}
+
+\maketitle
+
+
+\section{Task Definition}
+
+The thesis investigates testing strategies for Vision-Language Models (VLMs), extending decision boundary exploration techniques from unimodal systems (e.g., StyleGAN $\to$ CNN) to multimodal architectures. The core assumption (that VLMs possess \emph{localizable decision boundaries}—input regions where small perturbations cause qualitative behavioral changes—that can be systematically discovered) seems to not be holding.
+
+
+\section{Approach and Implementation}
+
+\subsection{Deterministic Framework}
+
+Let $f: \mathcal{X} \to \mathcal{Y}$ be a VLM, $\mu: \mathcal{Y} \times \mathcal{Y} \to [0,1]$ a quality metric, and $\Pi = \{\pi_1, \ldots, \pi_m\}$ a set of perturbation types. The approach measures \emph{transition density}:
+
+\begin{definition}[Transition Density]
+Let $\mathcal{P}_\pi(x, \epsilon)$ denote a perturbation of type $\pi$ with magnitude $\epsilon$ applied to input $x$, and let $\tau > 0$ be a transition threshold. The transition density for perturbation type $\pi$ at quality level $\mu$ is:
+\[
+\rho_\pi(\mu, \epsilon) = \mathbb{E}_{x: \mu(x) \approx \mu} \left[ \mathbb{P}\left[ |\mu(x) - \mu(\mathcal{P}_\pi(x, \epsilon))| > \tau \right] \right]
+\]
+\end{definition}
+
+Hypotheses: (H1) transitions cluster at specific $\mu$ values; (H2) different perturbation types discover the same boundaries; (H3) different models exhibit boundaries at similar $\mu$ values.
+
+
+\subsection{Probabilistic Framework}
+
+To avoid threshold-dependence in the deterministic formulation, consider an alternative probabilistic characterization:
+
+\begin{definition}[Behavioral Class Function]
+A \emph{behavioral class function} $B: \mathcal{Y} \times \mathcal{Y} \to \{1, \ldots, k\}$ partitions model behavior based on output quality. For output $\hat{y} = f(x)$ and ground truth $y^*$:
+\[
+B(\hat{y}, y^*) = i \quad \Leftrightarrow \quad \mu(\hat{y}, y^*) \in [\tau_{i-1}, \tau_i)
+\]
+where $0 = \tau_0 < \tau_1 < \cdots < \tau_k = 1$ are quality thresholds.
+\end{definition}
+
+\begin{definition}[Probabilistic Boundary]
+Let $D_\epsilon$ be a perturbation distribution with magnitude $\epsilon$. The \emph{transition probability} from behavioral class $i$ to class $j$ is:
+\[
+P_{i \to j}(x, \epsilon) = \mathbb{P}_{\delta x \sim D_\epsilon}\left[ B(f(x + \delta x), y^*) = j \;\middle|\; B(f(x), y^*) = i \right]
+\]
+The \emph{boundary probability} at $x$ is $P_\partial(x, \epsilon) = 1 - P_{i \to i}(x, \epsilon)$.
+\end{definition}
+
+\begin{definition}[$(p, \epsilon)$-Boundary Region]
+A point $x$ lies in a $(p, \epsilon)$-boundary region iff:
+\[
+\mathcal{B}^{(p,\epsilon)} = \left\{ x \in \mathcal{X} \;\middle|\; P_\partial(x, \epsilon) \geq p \right\}
+\]
+\end{definition}
+
+\textbf{Observation:} This formalization quantifies rather than resolves the core problem. Empirically, $P_\partial(x, \epsilon) > 0.5$ across most of the perturbation space for all tested samples, confirming that boundaries are ubiquitous rather than localized.
+
+
+\subsection{Experimental Setup}
+
+Model: Qwen3-VL-8b. Two tasks tested with identical perturbation protocol.
+
+\textbf{Task 1: Referring Expression Grounding} (RefCOCO, $n=19$). Metric: IoU. Initial perturbations: brightness $\times$ contrast grid ($10 \times 10$). Follow-up screening: geometric (rotation $\pm10°$), occlusion (0--30\%), quality (blur 0--4px).
+
+\textbf{Task 2: Image Classification} (CIFAR-10, $n=7$). Metric: accuracy. Same perturbation categories as grounding screening.
+
+\subsection{Results}
+
+\textbf{Grounding:} Photometric perturbations showed no structure—boundaries uniformly distributed. Screening with task-relevant perturbations:
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+Category & Boundary Rate & Clustering & Gradient Align \\
+\midrule
+Geometric & 46.7\% & 0.697 & 0.316 \\
+Occlusion & 40.0\% & 0.623 & 0.656 \\
+Quality & 46.7\% & 0.596 & 0.385 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All categories show boundary rates $>40\%$—nearly every second perturbation triggers a class transition. No category meets structure criteria (clustering $>0.7$, alignment $>0.5$, rate 20--40\%).
+
+\textbf{Classification:} Radically different behavior with identical perturbations:
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+Category & Boundary Rate & Clustering & Gradient Align \\
+\midrule
+Geometric & 4.8\% & 0.000 & 0.000 \\
+Occlusion & 14.3\% & 0.529 & 0.101 \\
+Quality & 4.8\% & 0.000 & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Boundary rates 5--10$\times$ lower than grounding. Only 1--3 total transitions across all samples—insufficient data points for clustering or gradient analysis.
+
+\textbf{Conclusion:} The same VLM exhibits fundamentally different robustness profiles across tasks. Grounding: $\sim$45\% boundary rate (chaotic, unstructured). Classification: $\sim$8\% boundary rate (stable, few transitions). Boundary detection requires a "sweet spot"—enough transitions for statistical analysis, but structured rather than random. Neither task provides this.
+
+
+\section{Theoretical Analysis}
+
+The empirical findings reflect fundamental theoretical constraints:
+
+\subsection{Ubiquity of Adversarial Examples}
+
+Szegedy et al.\ (2013) established that adversarial examples are not isolated edge cases but exist densely throughout input space. Goodfellow et al.\ (2014) attributed this to the \emph{linearity} of high-dimensional models: for input $x \in \mathbb{R}^n$ and perturbation $\eta$, even small per-dimension perturbations aggregate to large output changes when $n$ is large.
+
+\begin{proposition}[Ubiquitous Instability]
+For sufficiently high-dimensional inputs, adversarial perturbations exist in \emph{every} direction from \emph{every} input point. "Boundaries" are not localized regions but a ubiquitous property of the input-output mapping.
+\end{proposition}
+
+This directly explains the empirical observation: boundaries appear uniformly distributed because instability is everywhere.
+
+\subsection{No Free Lunch for Adversarial Robustness}
+
+Dohmatob (2018) proved that for distributions satisfying the $W_2$ Talagrand transportation-cost inequality (including log-concave distributions), any classifier can be adversarially fooled once perturbations exceed the natural noise level:
+
+\begin{quote}
+"Any classifier can be adversarially fooled with high probability once the perturbations are slightly greater than the natural noise level in the problem."
+\end{quote}
+
+\textbf{Implication:} Robustness guarantees are only possible \emph{relative to a chosen perturbation distribution}. There are no universal "safe regions." The choice of perturbation space is inherently arbitrary.
+
+\subsection{Randomized Smoothing}
+
+Cohen et al.\ (2019) developed Randomized Smoothing (RS) to provide probabilistic robustness certificates under a specified noise distribution $\mathcal{D}$ (typically Gaussian). RS answers: "Is sample $x$ robust within radius $R$ under $\mathcal{D}$?"
+
+Seferis et al.\ (2025) extended RS to VLMs, demonstrating that certification is possible but computationally expensive.
+
+\textbf{Critical observation:} RS provides \emph{certification}, not \emph{boundary localization}. It answers whether a specific point is robust under a specific distribution—it does not attempt to characterize where boundaries lie, because this question is ill-posed given their ubiquity.
+
+
+\subsection{The Perturbation Space Problem}
+
+\begin{proposition}[Infinite Perturbation Space]
+The space of semantically meaningful perturbations is uncountably infinite:
+\begin{itemize}
+    \item Visual: $\{\text{blur}, \text{noise}, \text{brightness}, \text{crop}, \ldots\} \times \mathbb{R}^+$ (continuous magnitudes)
+    \item Textual: $\{\text{synonym}, \text{paraphrase}, \text{reorder}, \ldots\} \times$ countably infinite variations
+    \item Cross-modal: Cartesian product of the above
+\end{itemize}
+Any finite grid samples a measure-zero subset. Claims about "boundaries" generalize only to the sampled subspace.
+\end{proposition}
+
+This is not merely a practical limitation but a theoretical one: without constraints on the perturbation space, the problem is ill-posed.
+
+
+\section{The Core Problem}
+
+The original task assumes that "decision boundary testing" transfers from CNNs to VLMs. This assumption fails for four reasons:
+
+\textbf{(1) Boundaries are ubiquitous, not localized.} In CNNs, StyleGAN-based testing works because the generator's latent space provides a constrained, semantically meaningful manifold. Perturbations in pixel space reveal that instability is everywhere—there are no distinguished "boundary regions" to discover.
+
+\textbf{(2) Neither continuous nor discrete outputs admit boundary detection.} For continuous outputs (grounding), defining "boundaries" requires discretization via thresholds—but threshold selection is circular: optimizing requires a loss function that implicitly defines what constitutes a "good" boundary. Empirically, boundary rates vary 4$\times$ (6\%--24\%) depending on threshold choice. The obvious alternative—binary tasks (classification: correct/incorrect)—fails differently: models are too stable (8\% boundary rate), producing insufficient transitions for analysis. There is no middle ground: continuous outputs require arbitrary thresholds; discrete outputs yield too few transitions.
+
+\textbf{(3) The perturbation space is unbounded.} Without domain constraints, any perturbation selection is arbitrary. Findings do not generalize beyond the chosen subspace.
+
+\textbf{(4) Task-specificity invalidates universal claims.} The same model under identical perturbations shows 5--10$\times$ different boundary rates across tasks (grounding: 45\%, classification: 8\%). Robustness is not a model property but a model-task-perturbation triple. Any boundary detection framework requires task-specific calibration—there is no universal method.
+
+\begin{quote}
+The problem "find decision boundaries in VLMs" is not well-defined without constraints that (a) bound the perturbation space, (b) define boundaries for non-discrete outputs, and (c) specify the task, since robustness profiles are radically task-dependent.
+\end{quote}
+
+
+\section*{References}
+
+\small
+\noindent Cohen, J., Rosenfeld, E., \& Kolter, Z. (2019). Certified adversarial robustness via randomized smoothing. \textit{ICML}.
+
+\noindent Dohmatob, E. (2018). Generalized No Free Lunch Theorem for Adversarial Robustness. \textit{ICML}.
+
+\noindent Goodfellow, I., Shlens, J., \& Szegedy, C. (2014). Explaining and harnessing adversarial examples. \textit{ICLR}.
+
+\noindent Seferis, E., et al. (2025). Randomized Smoothing Meets Vision-Language Models. \textit{arXiv:2509.16088}.
+
+\noindent Szegedy, C., et al. (2013). Intriguing properties of neural networks. \textit{arXiv:1312.6199}.
+
+\end{document}
