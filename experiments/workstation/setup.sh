@@ -87,8 +87,8 @@ PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 cd "$PROJECT_ROOT"
 
-# Install alpamayo package
-pip install -e tools/alpamayo/
+# Install alpamayo package (--no-deps since we install dependencies manually)
+pip install -e tools/alpamayo/ --no-deps
 
 # Core dependencies
 pip install \
