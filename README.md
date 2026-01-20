@@ -150,3 +150,7 @@ make up
 ```
 
 See `docker/README.md` for details.
+
+## License
+
+Copyright (c) 2026 Ruben Kaiser. All rights reserved. See [LICENSE](LICENSE).
