@@ -5,7 +5,7 @@
 # Run:    docker-compose up
 # =============================================================================
 
-FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.4.0-devel-ubuntu22.04
 
 # -----------------------------------------------------------------------------
 # Build arguments
@@ -79,17 +79,29 @@ WORKDIR ${APP_DIR}
 # Install Python dependencies (as root for system packages)
 # -----------------------------------------------------------------------------
 COPY docker/requirements.txt /tmp/requirements.txt
+
+# Stage 1: Install PyTorch first (required for flash-attn compilation)
+RUN pip install --no-cache-dir \
+    --extra-index-url https://download.pytorch.org/whl/cu124 \
+    torch==2.8.0 torchvision torchaudio
+
+# Stage 2: Install flash-attn (requires torch, ninja for faster build)
+RUN pip install ninja packaging \
+    && pip install flash-attn --no-build-isolation
+
+# Stage 3: Install remaining dependencies
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # -----------------------------------------------------------------------------
 # Copy application code
 # -----------------------------------------------------------------------------
-COPY --chown=runner:runner ../tools/alpamayo/ ${APP_DIR}/alpamayo/
+COPY --chown=runner:runner alpamayo/ ${APP_DIR}/alpamayo/
 COPY --chown=runner:runner experiments/ ${APP_DIR}/experiments/
 COPY --chown=runner:runner docker/scripts/ ${APP_DIR}/scripts/
 
-# Install alpamayo package
-RUN pip install -e ${APP_DIR}/alpamayo/
+# Install alpamayo package (skip flash-attn, optional for inference)
+RUN pip install -e ${APP_DIR}/alpamayo/ --no-deps \
+    && pip install einops hydra-core hydra-colorlog physical_ai_av av pillow accelerate transformers
 
 # Make scripts executable
 RUN chmod +x ${APP_DIR}/scripts/*.sh

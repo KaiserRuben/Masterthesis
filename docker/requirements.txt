@@ -1,19 +1,14 @@
 # =============================================================================
 # Python Dependencies for Alpamayo-R1 Experiments
+# Note: PyTorch is installed separately in Dockerfile (Stage 1)
 # =============================================================================
-
-# PyTorch with CUDA (cu124)
---extra-index-url https://download.pytorch.org/whl/cu124
-torch==2.8.0
-torchvision
-torchaudio
 
 # Transformers & HuggingFace
 transformers==4.57.1
 accelerate>=1.12.0
 huggingface-hub
 
-# Alpamayo dependencies
+# Alpamayo dependencies (flash-attn excluded - optional, requires separate build)
 einops>=0.8.1
 hydra-core>=1.3.2
 hydra-colorlog>=1.2.0
