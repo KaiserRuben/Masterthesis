@@ -95,7 +95,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # -----------------------------------------------------------------------------
 # Copy application code
 # -----------------------------------------------------------------------------
-COPY --chown=runner:runner alpamayo/ ${APP_DIR}/alpamayo/
+COPY --chown=runner:runner tools/alpamayo/ ${APP_DIR}/alpamayo/
 COPY --chown=runner:runner experiments/ ${APP_DIR}/experiments/
 COPY --chown=runner:runner docker/scripts/ ${APP_DIR}/scripts/
 
