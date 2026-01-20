@@ -27,6 +27,16 @@ import torch
 import numpy as np
 import pandas as pd
 
+
+class NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that handles numpy types."""
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, (np.integer, np.floating)):
+            return obj.item()
+        return super().default(obj)
+
 from alpamayo_r1.models.alpamayo_r1 import AlpamayoR1
 from alpamayo_r1.load_physical_aiavdataset import load_physical_aiavdataset
 from alpamayo_r1 import helper
@@ -288,7 +298,7 @@ def main():
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w") as f:
-        json.dump(output, f, indent=2)
+        json.dump(output, f, indent=2, cls=NumpyEncoder)
 
     print(f"\nResults saved to: {output_file}")
 
