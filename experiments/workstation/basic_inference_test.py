@@ -43,7 +43,7 @@ MODEL_ID = "nvidia/Alpamayo-R1-10B"
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 OUTPUT_DIR = SCRIPT_DIR / "inference_results"
-CLIP_IDS_FILE = PROJECT_ROOT / "alpamayo" / "notebooks" / "clip_ids.parquet"
+CLIP_IDS_FILE = PROJECT_ROOT / "tools" / "alpamayo" / "notebooks" / "clip_ids.parquet"
 
 
 # ============================================================================
@@ -149,12 +149,36 @@ def run_inference(model, processor, clip_id: str, t0_us: int = 5_000_000) -> dic
 # MAIN
 # ============================================================================
 
+def get_clip_ids() -> list[str]:
+    """Load clip IDs from cache or fetch from HuggingFace dataset."""
+    if CLIP_IDS_FILE.exists():
+        df = pd.read_parquet(CLIP_IDS_FILE)
+        return df["clip_id"].tolist()
+
+    # Fetch from HuggingFace dataset
+    print("Fetching clip IDs from HuggingFace dataset...")
+    from datasets import load_dataset
+    ds = load_dataset("nvidia/PhysicalAI-Autonomous-Vehicles", split="train", streaming=True)
+    clip_ids = []
+    for i, sample in enumerate(ds):
+        clip_ids.append(sample["clip_id"])
+        if (i + 1) % 100 == 0:
+            print(f"  Found {i + 1} clips...")
+    print(f"Total: {len(clip_ids)} clips")
+
+    # Cache for future runs
+    CLIP_IDS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"clip_id": clip_ids}).to_parquet(CLIP_IDS_FILE)
+    print(f"Cached to {CLIP_IDS_FILE}")
+
+    return clip_ids
+
+
 def main():
     args = parse_args()
 
     # Load all clip IDs
-    clip_ids_df = pd.read_parquet(CLIP_IDS_FILE)
-    all_clip_ids = clip_ids_df["clip_id"].tolist()
+    all_clip_ids = get_clip_ids()
 
     # Handle --list-clips
     if args.list_clips:
