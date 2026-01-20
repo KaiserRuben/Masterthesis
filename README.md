@@ -20,7 +20,6 @@ This project implements a two-stage classification approach:
 │   ├── batch_scene_classification.py   # Main batch processing script
 │   ├── prompt_tuning/                  # Prompt variant experiments
 │   └── workstation/                    # Remote GPU inference setup
-├── docker/               # Containerized Ollama deployment
 ├── data/                 # Run outputs (gitignored)
 │   └── runs/             # Each run is self-contained
 └── vlm_config.yaml       # Model and endpoint configuration
@@ -139,17 +138,20 @@ model = get_response_model("weather")
 response = model.model_validate_json(llm_output)
 ```
 
-## Docker Deployment
+## Workstation Setup (GPU Inference)
 
-For GPU inference on remote servers:
+For running Alpamayo-R1 on a GPU workstation:
 
 ```bash
-cd docker
-cp .env.example .env
-make up
+cd experiments/workstation
+bash setup.sh
+
+# Activate and run
+conda activate alpamayo
+python basic_inference_test.py
 ```
 
-See `docker/README.md` for details.
+See `experiments/workstation/README.md` for details.
 
 ## License
 
