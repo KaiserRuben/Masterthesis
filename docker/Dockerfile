@@ -86,7 +86,7 @@ RUN pip install --no-cache-dir \
     torch==2.8.0 torchvision torchaudio
 
 # Stage 2: Install flash-attn (requires torch, ninja for faster build)
-RUN pip install ninja packaging \
+RUN pip install ninja packaging psutil \
     && pip install flash-attn --no-build-isolation
 
 # Stage 3: Install remaining dependencies
