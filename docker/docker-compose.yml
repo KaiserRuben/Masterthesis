@@ -2,17 +2,16 @@
 # Docker Compose for Alpamayo-R1 Experiments
 # =============================================================================
 # Usage:
-#   docker compose build          # Build image first
+#   docker compose build          # Build image
 #   docker compose run test       # Run basic inference test
 #   docker compose up notebook    # Start Jupyter notebook
 #   docker compose run shell      # Interactive shell
 # =============================================================================
 
-# Shared configuration (no build - image must be pre-built)
+# Shared configuration (runtime only, no build)
 x-common: &common
   image: alpamayo-runner:latest
 
-  # GPU access
   deploy:
     resources:
       reservations:
@@ -21,42 +20,28 @@ x-common: &common
             count: 1
             capabilities: [gpu]
 
-  # Environment
   env_file:
     - .env
   environment:
     - OLLAMA_URL=${OLLAMA_URL:-http://host.docker.internal:11434}
 
-  # Volumes
   volumes:
-    # Cache (persist model weights between runs)
     - hf-cache:/cache/huggingface
     - torch-cache:/cache/torch
-
-    # Results (persist experiment outputs)
     - ../experiments/workstation/inference_results:/results
     - ../experiments/classification_results:/data/classification_results
 
-  # Working directory
   working_dir: /app
 
 services:
   # ---------------------------------------------------------------------------
-  # Builder: Only this service builds the image
-  # ---------------------------------------------------------------------------
-  builder:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    image: alpamayo-runner:latest
-    profiles: ["build"]
-    command: echo "Build complete"
-
-  # ---------------------------------------------------------------------------
-  # Test: Run basic inference test
+  # Test: Run basic inference test (also defines the build)
   # ---------------------------------------------------------------------------
   test:
     <<: *common
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     command: test
 
   # ---------------------------------------------------------------------------
@@ -78,7 +63,7 @@ services:
     command: bash
 
   # ---------------------------------------------------------------------------
-  # Classify: Run batch scene classification (requires external Ollama)
+  # Classify: Batch scene classification (requires external Ollama)
   # ---------------------------------------------------------------------------
   classify:
     <<: *common
@@ -86,9 +71,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-# -----------------------------------------------------------------------------
-# Persistent volumes
-# -----------------------------------------------------------------------------
 volumes:
   hf-cache:
     name: alpamayo-hf-cache
