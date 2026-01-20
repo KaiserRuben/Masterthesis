@@ -25,7 +25,8 @@ env/
 *.h5
 *.npy
 *.npz
-data/
+/data/
+archive/data/
 checkpoints/
 outputs/
 wandb/

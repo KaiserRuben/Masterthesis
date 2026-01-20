@@ -35,12 +35,15 @@ from scene import STAGE1_PROMPT, KEYS, get_prompt, get_schema, get_response_mode
 NUM_SCENES = 500
 SEED = 42  # For reproducibility
 
-SCRIPT_DIR = Path(__file__).parent.resolve()
-OUTPUT_DIR = SCRIPT_DIR / "classification_results"
-OUTPUT_FILE = OUTPUT_DIR / "scene_classifications.json"
-PROGRESS_FILE = OUTPUT_DIR / "progress.json"
-IMAGES_DIR = OUTPUT_DIR / "images"
+DATA_DIR = PROJECT_ROOT / "data" / "runs"
 CLIP_IDS_FILE = PROJECT_ROOT / "tools" / "alpamayo" / "notebooks" / "clip_ids.parquet"
+
+
+def get_run_dir(run_id: str | None = None) -> Path:
+    """Get or create a run directory. If run_id is None, creates a new timestamped run."""
+    if run_id is None:
+        run_id = f"classification_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    return DATA_DIR / run_id
 
 
 # ============================================================================
@@ -146,33 +149,52 @@ def serialize_results(results: dict[str, Any]) -> dict[str, Any]:
 # PROGRESS MANAGEMENT
 # ============================================================================
 
-def load_progress() -> dict:
+def load_run_config(run_dir: Path) -> dict | None:
+    """Load run config if exists (for resuming)."""
+    config_file = run_dir / "config.json"
+    if config_file.exists():
+        with open(config_file) as f:
+            return json.load(f)
+    return None
+
+
+def save_run_config(run_dir: Path, config: dict):
+    """Save run config."""
+    config_file = run_dir / "config.json"
+    with open(config_file, "w") as f:
+        json.dump(config, f, indent=2)
+
+
+def load_progress(run_dir: Path) -> dict:
     """Load progress from file if exists."""
-    if PROGRESS_FILE.exists():
-        with open(PROGRESS_FILE) as f:
+    progress_file = run_dir / "progress.json"
+    if progress_file.exists():
+        with open(progress_file) as f:
             return json.load(f)
     return {"completed": [], "failed": [], "results": []}
 
 
-def save_progress(progress: dict):
+def save_progress(progress: dict, run_dir: Path):
     """Save progress to file."""
-    with open(PROGRESS_FILE, "w") as f:
+    progress_file = run_dir / "progress.json"
+    with open(progress_file, "w") as f:
         json.dump(progress, f, indent=2)
 
 
-def save_results(progress: dict, config_info: dict):
+def save_results(progress: dict, run_config: dict, run_dir: Path):
     """Save final results to output file."""
     output = {
         "metadata": {
-            "config": config_info,
+            "model": run_config["model"],
+            "endpoint": run_config["endpoint"],
             "num_scenes": len(progress["results"]),
             "num_failed": len(progress["failed"]),
-            "seed": SEED,
-            "timestamp": datetime.now().isoformat(),
+            "completed_at": datetime.now().isoformat(),
         },
         "classifications": progress["results"]
     }
-    with open(OUTPUT_FILE, "w") as f:
+    output_file = run_dir / "scene_classifications.json"
+    with open(output_file, "w") as f:
         json.dump(output, f, indent=2)
 
 
@@ -189,6 +211,7 @@ def main():
                         help=f"Number of scenes to classify (default: {NUM_SCENES})")
     parser.add_argument("--model", type=str, help="Override model (default: from config)")
     parser.add_argument("--config", type=Path, help="Path to vlm_config.yaml")
+    parser.add_argument("--run-id", type=str, help="Resume existing run or specify run name")
     args = parser.parse_args()
 
     print("=" * 80)
@@ -203,23 +226,43 @@ def main():
     print(f"  Model: {model}")
     print(f"  Endpoint: {config.endpoints['default'].url}")
 
-    # Setup directories
-    OUTPUT_DIR.mkdir(exist_ok=True)
-    IMAGES_DIR.mkdir(exist_ok=True)
-    random.seed(SEED)
+    # Setup run directory
+    run_dir = get_run_dir(args.run_id)
+    images_dir = run_dir / "images"
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    run_dir.mkdir(exist_ok=True)
+    images_dir.mkdir(exist_ok=True)
+    print(f"  Run dir: {run_dir}")
 
-    # Load clip IDs
-    clip_ids_df = pd.read_parquet(CLIP_IDS_FILE)
-    all_clip_ids = clip_ids_df["clip_id"].tolist()
-    print(f"\nTotal clips available: {len(all_clip_ids)}")
+    # Load or create run config
+    run_config = load_run_config(run_dir)
+    if run_config:
+        # Resume: use stored clip list
+        selected_clips = run_config["selected_clips"]
+        print(f"\nResuming run with {len(selected_clips)} clips")
+    else:
+        # New run: sample and store clips
+        random.seed(SEED)
+        clip_ids_df = pd.read_parquet(CLIP_IDS_FILE)
+        all_clip_ids = clip_ids_df["clip_id"].tolist()
+        print(f"\nTotal clips available: {len(all_clip_ids)}")
 
-    # Sample clips
-    num_scenes = args.num_scenes
-    selected_clips = random.sample(all_clip_ids, min(num_scenes, len(all_clip_ids)))
-    print(f"Selected {len(selected_clips)} clips for classification")
+        num_scenes = args.num_scenes
+        selected_clips = random.sample(all_clip_ids, min(num_scenes, len(all_clip_ids)))
+
+        run_config = {
+            "model": model,
+            "endpoint": config.endpoints["default"].url,
+            "seed": SEED,
+            "num_scenes": len(selected_clips),
+            "selected_clips": selected_clips,
+            "created_at": datetime.now().isoformat(),
+        }
+        save_run_config(run_dir, run_config)
+        print(f"Selected {len(selected_clips)} clips for classification")
 
     # Load progress
-    progress = load_progress()
+    progress = load_progress(run_dir)
     completed_clips = set(progress["completed"])
     print(f"Already completed: {len(completed_clips)}")
 
@@ -229,8 +272,7 @@ def main():
 
     if not remaining_clips:
         print("\nAll clips already classified!")
-        config_info = {"model": model, "endpoint": config.endpoints["default"].url}
-        save_results(progress, config_info)
+        save_results(progress, run_config, run_dir)
         return
 
     # Process clips with request queue
@@ -267,7 +309,7 @@ def main():
 
                 # Save composite image
                 img_b64 = create_composite_image(data["image_frames"])
-                img_path = IMAGES_DIR / f"{clip_id}.jpg"
+                img_path = images_dir / f"{clip_id}.jpg"
                 with open(img_path, "wb") as f:
                     f.write(base64.b64decode(img_b64))
 
@@ -301,7 +343,7 @@ def main():
                 progress["failed"].append({"clip_id": clip_id, "error": str(e)})
 
             # Save progress after each clip
-            save_progress(progress)
+            save_progress(progress, run_dir)
 
         # Batch summary
         elapsed = time.time() - batch_start
@@ -314,15 +356,14 @@ def main():
         print("\n" + queue.get_stats_summary())
 
     # Final save
-    config_info = {"model": model, "endpoint": config.endpoints["default"].url}
-    save_results(progress, config_info)
+    save_results(progress, run_config, run_dir)
 
     print("\n" + "=" * 80)
     print("COMPLETE")
     print("=" * 80)
     print(f"Successfully classified: {len(progress['results'])}")
     print(f"Failed: {len(progress['failed'])}")
-    print(f"\nResults saved to: {OUTPUT_FILE}")
+    print(f"\nResults saved to: {run_dir}")
 
 
 if __name__ == "__main__":
