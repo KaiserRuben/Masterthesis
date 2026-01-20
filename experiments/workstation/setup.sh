@@ -103,7 +103,7 @@ pip install \
     pillow>=12.0.0
 
 # Additional dependencies for experiments
-pip install pandas numpy matplotlib jupyter ipykernel ollama pydantic tqdm rich
+pip install pandas numpy matplotlib jupyter ipykernel ollama pydantic tqdm rich datasets
 
 # -----------------------------------------------------------------------------
 # 6. HuggingFace login (for gated dataset)
