@@ -100,7 +100,7 @@ pip install \
     "pillow>=12.0.0"
 
 # Additional dependencies for experiments
-pip install pandas numpy matplotlib jupyter ipykernel ipywidgets tqdm rich datasets mediapy
+pip install pandas numpy matplotlib jupyter ipykernel ipywidgets tqdm rich datasets mediapy filelock
 
 # -----------------------------------------------------------------------------
 # 5. HuggingFace login (for gated dataset)
