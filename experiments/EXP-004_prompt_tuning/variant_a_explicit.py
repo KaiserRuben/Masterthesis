@@ -155,7 +155,7 @@ if __name__ == "__main__":
         "classification": classification.model_dump()
     }
 
-    output_path = Path(__file__).parent / "result_a_explicit.json"
+    output_path = Path(__file__).parent.parent.parent / "data" / "EXP-004" / "result_a_explicit.json"
     with open(output_path, "w") as f:
         json.dump(result, f, indent=2)
 

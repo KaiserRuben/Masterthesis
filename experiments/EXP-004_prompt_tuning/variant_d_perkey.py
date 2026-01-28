@@ -390,7 +390,7 @@ def main():
         print("\n" + queue.get_stats_summary())
 
     # Save output
-    output_path = args.output or Path(__file__).parent / f"result_d_perkey_{args.mode}.json"
+    output_path = args.output or Path(__file__).parent.parent.parent / "data" / "EXP-004" / f"result_d_perkey_{args.mode}.json"
     with open(output_path, "w") as f:
         json.dump(result, f, indent=2, default=str)
     print(f"\nSaved: {output_path}")
