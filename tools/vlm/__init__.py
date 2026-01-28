@@ -63,6 +63,8 @@ from .queue import (
     SyncRequestQueue,
     Priority,
     EndpointStats,
+    Request,
+    WorkStealingQueue,
 )
 
 __all__ = [
@@ -95,4 +97,6 @@ __all__ = [
     "SyncRequestQueue",
     "Priority",
     "EndpointStats",
+    "Request",
+    "WorkStealingQueue",
 ]

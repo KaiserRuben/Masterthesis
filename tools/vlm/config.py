@@ -148,18 +148,34 @@ class EndpointConfig:
 
 @dataclass
 class ModelEndpointConfig:
-    """Configuration mapping a model to an endpoint."""
+    """Configuration mapping a model to endpoint(s)."""
     model: str
-    endpoint: str = "default"
+    endpoints: list[str] = field(default_factory=lambda: ["default"])
     tier: ModelTier = ModelTier.MEDIUM
-    context_window: int = 32768
+    context_window: int = 32768*2
+
+    @property
+    def endpoint(self) -> str:
+        """Primary endpoint (backward compatibility)."""
+        return self.endpoints[0] if self.endpoints else "default"
 
     @classmethod
     def from_dict(cls, name: str, data: dict[str, Any]) -> "ModelEndpointConfig":
         tier_str = data.get("tier", "medium")
+
+        # Handle both single endpoint and endpoints list
+        if "endpoints" in data:
+            endpoints = data["endpoints"]
+            if isinstance(endpoints, str):
+                endpoints = [endpoints]
+        elif "endpoint" in data:
+            endpoints = [data["endpoint"]]
+        else:
+            endpoints = ["default"]
+
         return cls(
             model=name,
-            endpoint=data.get("endpoint", "default"),
+            endpoints=endpoints,
             tier=ModelTier(tier_str),
             context_window=data.get("context_window", 32768),
         )
@@ -254,6 +270,19 @@ class VLMConfig:
         """Get the resolved model name for a classification key."""
         tier_or_model = self.key_mapping.get_tier(key)
         return self.resolve_tier(tier_or_model)
+
+    def get_endpoints_for_model(self, model: str) -> list[str]:
+        """Get all endpoints that support a model."""
+        if model in self.models:
+            return self.models[model].endpoints
+        return ["default"]
+
+    def get_supported_models(self, endpoint_name: str) -> set[str]:
+        """Get all models supported by an endpoint."""
+        return {
+            name for name, cfg in self.models.items()
+            if endpoint_name in cfg.endpoints
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "VLMConfig":
@@ -438,14 +467,17 @@ endpoints:
     timeout_seconds: 900
     retry_attempts: 3
 
-  # Example: separate endpoint for large models
+  # Example: separate endpoint for work-stealing queue
   # gpu_server:
   #   url: http://gpu-server:11434
-  #   max_concurrent: 1
+  #   max_concurrent: 2
+  # lightweight:
+  #   url: http://light:11434
+  #   max_concurrent: 4
 
 models:
   qwen3-vl:4b:
-    endpoint: default
+    endpoint: default          # Single endpoint (backward compatible)
     tier: small
     context_window: 32768
 
@@ -458,6 +490,17 @@ models:
     endpoint: default
     tier: large
     context_window: 32768
+
+  # Example: multi-endpoint configuration for work-stealing
+  # qwen3-vl:4b:
+  #   endpoints: [gpu_server, lightweight]  # Available on both
+  #   tier: small
+  # qwen3-vl:8b:
+  #   endpoints: [gpu_server, lightweight]  # Available on both
+  #   tier: medium
+  # qwen3-vl:30b:
+  #   endpoints: [gpu_server]               # Only on GPU server
+  #   tier: large
 
 # Key-to-tier mappings (use tier names, not model names)
 # Can also use model names directly if needed
