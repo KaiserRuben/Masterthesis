@@ -1,46 +1,58 @@
 # VLM Configuration
-# Ollama endpoint and model tier configuration
+# Two-endpoint setup for work-stealing queue
 
 # =============================================================================
 # ENDPOINTS
 # =============================================================================
 endpoints:
-  default:
+  localhost:
     url: http://localhost:11434
     max_concurrent: 1
     timeout_seconds: 900
     retry_attempts: 3
     retry_delay_seconds: 1.0
 
-  # Example: separate endpoint for large models on GPU server
-  # gpu_server:
-  #   url: http://gpu-server:11434
-  #   max_concurrent: 2
+  remote:
+    url: http://100.125.221.105:11434
+    max_concurrent: 1
+    timeout_seconds: 900
+    retry_attempts: 3
+    retry_delay_seconds: 1.0
 
 # =============================================================================
 # MODELS
 # =============================================================================
+# Multi-endpoint configuration:
+# - localhost: all models (small, medium, large)
+# - remote: only small and medium models
 models:
   qwen3-vl:4b:
-    endpoint: default
+    endpoints: [localhost]  # Available on both
     tier: small
     context_window: 32768
 
   qwen3-vl:8b:
-    endpoint: default
+    endpoints: [localhost]  # Available on both
     tier: medium
     context_window: 32768
 
   qwen3-vl:30b:
-    endpoint: default
+    endpoints: [localhost]          # Only on localhost
     tier: large
     context_window: 32768
+
+# =============================================================================
+# MODEL TIERS
+# =============================================================================
+model_tiers:
+  small: qwen3-vl:4b
+  medium: qwen3-vl:8b
+  large: qwen3-vl:30b
 
 # =============================================================================
 # KEY-TO-TIER MAPPINGS
 # =============================================================================
 # Maps classification keys to model tiers: small (4B), medium (8B), large (30B)
-# Can override with specific model names if needed
 
 key_mapping:
   # Stage 1: Scene reasoning (always large - needs image understanding)
@@ -60,27 +72,27 @@ key_mapping:
   vehicle_count: medium
   notable_elements: medium
 
-  # --- Spatial Reasoning ---
+  # --- Spatial Reasoning (complex 3D/relational reasoning = large) ---
   occlusion_level: medium
   depth_complexity: large
-  nearest_vehicle_distance: large
+  nearest_vehicle_distance: medium  # estimation from description
   spatial_relations: large
 
   # --- Perceptual Challenges ---
   visual_degradation: medium
-  similar_object_confusion: large
-  edge_case_objects: large
+  similar_object_confusion: large   # needs reasoning about what could be confused
+  edge_case_objects: medium         # classification with context
 
-  # --- Safety Critical ---
+  # --- Safety Critical (reasoning about risk = large) ---
   safety_criticality: large
-  vulnerable_road_users: large
+  vulnerable_road_users: large      # safety-critical, must not miss anyone
   immediate_hazards: large
-  required_action: large
+  required_action: large            # decision reasoning
 
-  # --- Counting & Quantification ---
-  pedestrian_count: large
-  vehicle_count_by_type: large
+  # --- Counting & Quantification (extraction from stage1 = medium) ---
+  pedestrian_count: medium
+  vehicle_count_by_type: medium
 
-  # --- Attribute Binding ---
-  traffic_light_states: large
-  lane_marking_type: large
+  # --- Attribute Binding (extraction/classification = medium) ---
+  traffic_light_states: medium
+  lane_marking_type: medium
