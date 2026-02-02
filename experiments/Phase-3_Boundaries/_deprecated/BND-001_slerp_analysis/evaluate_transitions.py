@@ -8,11 +8,11 @@ Since we cannot directly "decode" embeddings back to text/images, we use
 a nearest-neighbor approach: for each point on the path, find the closest
 original scene embedding and use its classification as a proxy.
 
-Input:  data/EXP-003/interpolations.npz
-        data/EXP-003/interpolation_metadata.json
-        data/EXP-003/embeddings.npz
-        data/EXP-003/progress.json
-Output: data/EXP-003/transitions.json
+Input:  data/BND-001/interpolations.npz
+        data/BND-001/interpolation_metadata.json
+        data/BND-001/embeddings.npz
+        data/BND-001/progress.json
+Output: data/BND-001/transitions.json
 """
 
 import json
@@ -22,7 +22,7 @@ import numpy as np
 from tqdm import tqdm
 
 # Configuration
-RUN_DIR = Path(__file__).parent.parent.parent / "data" / "EXP-003"
+RUN_DIR = Path(__file__).parent.parent.parent / "data" / "BND-001"
 
 
 def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:

@@ -204,7 +204,7 @@ def load_provider(model_dir: str | Path, checkpoint: str = "best_model.pt") -> F
 
 def list_available_models() -> list[dict]:
     """List all available trained models."""
-    model_dir = Path(__file__).parents[3] / "data" / "EXP-005" / "finetuned_models"
+    model_dir = Path(__file__).parents[3] / "data" / "EMB-001" / "finetuned_models"
     if not model_dir.exists():
         return []
 

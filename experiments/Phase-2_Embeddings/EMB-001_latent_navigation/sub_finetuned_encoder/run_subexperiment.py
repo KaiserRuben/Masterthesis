@@ -43,7 +43,7 @@ from analysis import (
 )
 
 
-OUTPUT_DIR = Path(__file__).parents[3] / "data" / "EXP-005"
+OUTPUT_DIR = Path(__file__).parents[3] / "data" / "EMB-001"
 
 
 def run_evaluation(

@@ -16,7 +16,7 @@ matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 
-MODEL_DIR = Path(__file__).parents[3] / "data" / "EXP-005" / "finetuned_models"
+MODEL_DIR = Path(__file__).parents[3] / "data" / "EMB-001" / "finetuned_models"
 OUTPUT_DIR = Path(__file__).parent / "figures"
 
 

@@ -1,5 +1,5 @@
 """
-EXP-005: Run Experiment Pipeline
+EMB-001: Run Experiment Pipeline
 
 Runs full experiment pipeline for one or more embedding models.
 
@@ -57,8 +57,8 @@ from data_loader import load_experiment_data
 # CONFIG
 # =============================================================================
 
-DATA_DIR = Path(__file__).parents[2] / "data" / "EXP-001"
-OUTPUT_BASE = Path(__file__).parents[2] / "data" / "EXP-005"
+DATA_DIR = Path(__file__).parents[2] / "data" / "CLS-001"
+OUTPUT_BASE = Path(__file__).parents[2] / "data" / "EMB-001"
 
 # All categorical keys with their enum values
 CATEGORICAL_KEYS_ALL = {
@@ -567,7 +567,7 @@ def run_experiment(
         text_anchor_coords=None,  # TODO: project text anchors
         keys_for_coloring=list(categorical_keys.keys())[:5],  # Top 5 keys
         output_path=output_dir / "visualization.html",
-        title=f"EXP-005: {provider_name}",
+        title=f"EMB-001: {provider_name}",
     )
 
     # Clean up temp files
@@ -589,7 +589,7 @@ def run_experiment(
 # =============================================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="Run EXP-005 experiment pipeline")
+    parser = argparse.ArgumentParser(description="Run EMB-001 experiment pipeline")
     parser.add_argument(
         "--provider",
         type=str,
@@ -631,7 +631,7 @@ def main():
         "--tag",
         type=str,
         default=None,
-        help="Tag for this run (creates subdirectory: data/EXP-005/{tag}/...)",
+        help="Tag for this run (creates subdirectory: data/EMB-001/{tag}/...)",
     )
     args = parser.parse_args()
 

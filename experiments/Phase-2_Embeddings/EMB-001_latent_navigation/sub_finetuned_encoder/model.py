@@ -1,5 +1,5 @@
 """
-Multi-Task Classification Encoder for EXP-005 Sub-experiment
+Multi-Task Classification Encoder for EMB-001 Sub-experiment
 
 Architecture:
 - Backbone: Pre-trained EfficientNet-B0 (or configurable)
@@ -55,7 +55,7 @@ TOP_BOOLEAN_KEYS = [
 ]
 
 # Value mappings for each key (for classification)
-# Based on actual values in data/EXP-001/scene_classifications.json
+# Based on actual values in data/CLS-001/scene_classifications.json
 KEY_VALUES = {
     # Categorical
     "weather": ["clear", "cloudy", "foggy", "rainy"],

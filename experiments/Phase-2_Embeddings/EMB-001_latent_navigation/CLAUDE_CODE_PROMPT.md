@@ -1,4 +1,4 @@
-# EXP-005: Latent Space Navigation & Semantic Structure Validation
+# EMB-001: Latent Space Navigation & Semantic Structure Validation
 
 ## Context
 
@@ -17,7 +17,7 @@ Master Thesis: VLM Boundary Testing für Autonomous Driving. Kernidee: Navigatio
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        EXP-005 Pipeline                          │
+│                        EMB-001 Pipeline                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
@@ -33,7 +33,7 @@ Master Thesis: VLM Boundary Testing für Autonomous Driving. Kernidee: Navigatio
 │                    └────────┬────────┘                         │
 │                             │                                   │
 │                             ▼                                   │
-│                    data/EXP-005/{model_name}/                  │
+│                    data/EMB-001/{model_name}/                  │
 │                    ├── embeddings.npz                          │
 │                    ├── analysis.json                           │
 │                    ├── navigation_graph.pkl                    │
@@ -98,7 +98,7 @@ Navigation:  ALL scenes (any real clip is on-manifold)
 
 | Source | Location | Count | Has Labels |
 |--------|----------|-------|------------|
-| Classified anchors | `data/EXP-001/` | 100 | ✅ 24 keys |
+| Classified anchors | `data/CLS-001/` | 100 | ✅ 24 keys |
 | Pre-cached clips | Same dataset as key generation experiments | N - 100 | ❌ |
 
 **IMPORTANT:** The superset scenes come from the SAME pre-cached dataset used throughout the experiments (key generation, etc.). Look in the existing codebase for how scenes are loaded — there should be a cache or data loader already in place.
@@ -150,7 +150,7 @@ SUPERSET_SIZE = 10_000  # Target: 10,000+ scenes
 
 Explore the existing codebase to find:
 1. Where scene images are cached
-2. How scenes were loaded in previous experiments (EXP-001, key generation)
+2. How scenes were loaded in previous experiments (CLS-001, key generation)
 3. The data loader or cache mechanism
 
 Likely locations to check:
@@ -165,7 +165,7 @@ Likely locations to check:
 ```
 /Users/kaiser/Projects/Masterarbeit/
 ├── data/
-│   └── EXP-001/
+│   └── CLS-001/
 │       ├── scene_classifications.json   # 100 scenes mit 24 semantic keys
 │       └── images/                       # Scene composite images (.jpg)
 ├── tools/
@@ -175,7 +175,7 @@ Likely locations to check:
 │   └── vlm/
 │       └── ...
 └── experiments/
-    └── EXP-005_latent_navigation/       # Target directory
+    └── EMB-001_latent_navigation/       # Target directory
 ```
 
 ---
@@ -395,7 +395,7 @@ Sections:
 ## Output Structure
 
 ```
-data/EXP-005/
+data/EMB-001/
 ├── eva02_e/
 │   ├── embeddings.npz         # embeddings, scene_ids, model_name
 │   ├── text_anchors.npz       # text embeddings for semantic key values

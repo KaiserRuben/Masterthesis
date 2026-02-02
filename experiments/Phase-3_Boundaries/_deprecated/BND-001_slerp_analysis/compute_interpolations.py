@@ -4,8 +4,8 @@ Phase 3: Compute SLERP Interpolation Paths Between Centroids
 For each key, generates interpolation paths between all centroid pairs.
 Uses Spherical Linear Interpolation (SLERP) on the unit sphere.
 
-Input:  data/EXP-003/centroids.json
-Output: data/EXP-003/interpolations.npz
+Input:  data/BND-001/centroids.json
+Output: data/BND-001/interpolations.npz
 """
 
 import json
@@ -15,7 +15,7 @@ from itertools import combinations
 import numpy as np
 
 # Configuration
-RUN_DIR = Path(__file__).parent.parent.parent / "data" / "EXP-003"
+RUN_DIR = Path(__file__).parent.parent.parent / "data" / "BND-001"
 N_STEPS = 21  # t in {0.0, 0.05, ..., 1.0}
 
 # Keys to interpolate (exclude high-cardinality keys like vehicle_count)

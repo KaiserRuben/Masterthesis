@@ -1,8 +1,8 @@
 """
-Data Loader for EXP-005
+Data Loader for EMB-001
 
 Handles two types of data:
-1. ANCHORS (100 scenes): Labeled scenes from data/EXP-001/
+1. ANCHORS (100 scenes): Labeled scenes from data/CLS-001/
 2. SUPERSET (N scenes): Unlabeled scenes from physical_ai_av
 
 The superset provides dense embedding space for better clustering,
@@ -29,10 +29,10 @@ from tqdm import tqdm
 # =============================================================================
 
 DATA_DIR = Path(__file__).parents[2] / "data"
-ANCHOR_DIR = DATA_DIR / "EXP-001"
-CACHE_DIR = DATA_DIR / "EXP-005" / "image_cache"
+ANCHOR_DIR = DATA_DIR / "CLS-001"
+CACHE_DIR = DATA_DIR / "EMB-001" / "image_cache"
 
-# Camera order for composite (matches EXP-001 generation)
+# Camera order for composite (matches CLS-001 generation)
 CAMERA_FEATURES = [
     "CAMERA_CROSS_LEFT_120FOV",    # Index 0 → top-left
     "CAMERA_FRONT_WIDE_120FOV",    # Index 1 → top-right

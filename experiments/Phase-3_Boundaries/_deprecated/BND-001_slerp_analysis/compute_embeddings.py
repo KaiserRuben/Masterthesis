@@ -4,8 +4,8 @@ Phase 1: Compute Embeddings for Classification Results
 Embeds classification key-value pairs using Qwen3-Embedding via Ollama.
 Each key-value is formatted as "{key}: {value}" and embedded to R^4096.
 
-Input:  data/EXP-003/progress.json
-Output: data/EXP-003/embeddings.npz
+Input:  data/BND-001/progress.json
+Output: data/BND-001/embeddings.npz
 """
 
 import json
@@ -17,7 +17,7 @@ import numpy as np
 from tqdm import tqdm
 
 # Configuration
-RUN_DIR = Path(__file__).parent.parent.parent / "data" / "EXP-003"
+RUN_DIR = Path(__file__).parent.parent.parent / "data" / "BND-001"
 OLLAMA_URL = "http://localhost:11434/api/embeddings"
 MODEL = "qwen3-embedding:latest"
 

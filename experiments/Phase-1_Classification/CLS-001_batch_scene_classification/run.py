@@ -41,7 +41,7 @@ from scene import STAGE1_PROMPT, KEYS, get_prompt, get_schema, get_response_mode
 NUM_SCENES = 50
 SEED = 42  # For reproducibility
 
-DATA_DIR = PROJECT_ROOT / "data" / "EXP-001"
+DATA_DIR = PROJECT_ROOT / "data" / "CLS-001"
 CLIP_IDS_FILE = PROJECT_ROOT / "tools" / "alpamayo" / "notebooks" / "clip_ids.parquet"
 
 

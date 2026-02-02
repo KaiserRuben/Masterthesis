@@ -3,9 +3,9 @@ Phase 2: Compute Class Centroids from Embeddings
 
 Groups scenes by key-value and computes normalized centroids in embedding space.
 
-Input:  data/EXP-003/embeddings.npz
-        data/EXP-003/embedding_texts.json
-Output: data/EXP-003/centroids.json
+Input:  data/BND-001/embeddings.npz
+        data/BND-001/embedding_texts.json
+Output: data/BND-001/centroids.json
 """
 
 import json
@@ -15,7 +15,7 @@ from collections import defaultdict
 import numpy as np
 
 # Configuration
-RUN_DIR = Path(__file__).parent.parent.parent / "data" / "EXP-003"
+RUN_DIR = Path(__file__).parent.parent.parent / "data" / "BND-001"
 
 
 def normalize(v: np.ndarray) -> np.ndarray:

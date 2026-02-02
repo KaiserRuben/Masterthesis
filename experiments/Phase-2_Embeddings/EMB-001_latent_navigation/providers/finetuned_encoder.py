@@ -113,7 +113,7 @@ class FinetunedEncoderProvider(EmbeddingProvider):
 
     def _find_best_model(self) -> Path:
         """Find the best available trained model."""
-        model_dir = Path(__file__).parents[3] / "data" / "EXP-005" / "finetuned_models"
+        model_dir = Path(__file__).parents[3] / "data" / "EMB-001" / "finetuned_models"
 
         if not model_dir.exists():
             raise FileNotFoundError(f"No finetuned models directory: {model_dir}")
@@ -253,7 +253,7 @@ class FinetunedEncoderProvider(EmbeddingProvider):
 
 def list_available_models() -> list[dict]:
     """List all available trained finetuned models."""
-    model_dir = Path(__file__).parents[3] / "data" / "EXP-005" / "finetuned_models"
+    model_dir = Path(__file__).parents[3] / "data" / "EMB-001" / "finetuned_models"
 
     if not model_dir.exists():
         return []

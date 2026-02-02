@@ -36,7 +36,7 @@ from tools.scene.enums import Weather, RoadType, TimeOfDay, TrafficSituation, Oc
 # CONFIG
 # =============================================================================
 
-DATA_DIR = Path(__file__).parents[3] / "data" / "EXP-001"
+DATA_DIR = Path(__file__).parents[3] / "data" / "CLS-001"
 OUTPUT_DIR = Path(__file__).parent / "results"
 
 # Keys to test (categorical with clean enum values)

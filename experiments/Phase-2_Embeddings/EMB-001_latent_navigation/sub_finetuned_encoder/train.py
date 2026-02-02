@@ -46,7 +46,7 @@ from sub_finetuned_encoder.model import (
 # CONFIG
 # =============================================================================
 
-OUTPUT_DIR = Path(__file__).parents[3] / "data" / "EXP-005" / "finetuned_models"
+OUTPUT_DIR = Path(__file__).parents[3] / "data" / "EMB-001" / "finetuned_models"
 
 
 # =============================================================================
