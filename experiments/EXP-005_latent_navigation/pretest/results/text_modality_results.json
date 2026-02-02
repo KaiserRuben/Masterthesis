@@ -1,0 +1,208 @@
+{
+  "model": "EVA02-E-14-plus",
+  "pretrained": "laion2b_s9b_b144k",
+  "n_scenes": 100,
+  "keys_tested": [
+    "weather",
+    "road_type",
+    "time_of_day",
+    "traffic_situation",
+    "occlusion_level"
+  ],
+  "templates": [
+    "bare",
+    "key_value",
+    "simple",
+    "sentence",
+    "photo_prompt"
+  ],
+  "results_per_template": {
+    "bare": {
+      "weather": {
+        "accuracy": 0.06,
+        "mean_rank": 2.61,
+        "mean_margin": -0.03320864588022232,
+        "n_samples": 100
+      },
+      "road_type": {
+        "accuracy": 0.15,
+        "mean_rank": 3.02,
+        "mean_margin": -0.02945546619594097,
+        "n_samples": 100
+      },
+      "time_of_day": {
+        "accuracy": 0.78,
+        "mean_rank": 1.29,
+        "mean_margin": 0.01185362134128809,
+        "n_samples": 100
+      },
+      "traffic_situation": {
+        "accuracy": 0.31,
+        "mean_rank": 2.28,
+        "mean_margin": -0.010562374256551266,
+        "n_samples": 100
+      },
+      "occlusion_level": {
+        "accuracy": 0.24,
+        "mean_rank": 2.46,
+        "mean_margin": -0.00880318135023117,
+        "n_samples": 100
+      }
+    },
+    "key_value": {
+      "weather": {
+        "accuracy": 0.12,
+        "mean_rank": 2.54,
+        "mean_margin": -0.017930947244167328,
+        "n_samples": 100
+      },
+      "road_type": {
+        "accuracy": 0.23,
+        "mean_rank": 2.41,
+        "mean_margin": -0.016854774206876755,
+        "n_samples": 100
+      },
+      "time_of_day": {
+        "accuracy": 0.42,
+        "mean_rank": 1.84,
+        "mean_margin": -5.8305860875407234e-05,
+        "n_samples": 100
+      },
+      "traffic_situation": {
+        "accuracy": 0.48,
+        "mean_rank": 2.05,
+        "mean_margin": -0.0033822832629084587,
+        "n_samples": 100
+      },
+      "occlusion_level": {
+        "accuracy": 0.33,
+        "mean_rank": 2.55,
+        "mean_margin": -0.016446754336357117,
+        "n_samples": 100
+      }
+    },
+    "simple": {
+      "weather": {
+        "accuracy": 0.68,
+        "mean_rank": 1.72,
+        "mean_margin": 0.017435025423765182,
+        "n_samples": 100
+      },
+      "road_type": {
+        "accuracy": 0.37,
+        "mean_rank": 2.17,
+        "mean_margin": -0.006684616208076477,
+        "n_samples": 100
+      },
+      "time_of_day": {
+        "accuracy": 0.82,
+        "mean_rank": 1.21,
+        "mean_margin": 0.03670775890350342,
+        "n_samples": 100
+      },
+      "traffic_situation": {
+        "accuracy": 0.51,
+        "mean_rank": 2.05,
+        "mean_margin": -0.014315537177026272,
+        "n_samples": 100
+      },
+      "occlusion_level": {
+        "accuracy": 0.16,
+        "mean_rank": 2.81,
+        "mean_margin": -0.013782471418380737,
+        "n_samples": 100
+      }
+    },
+    "sentence": {
+      "weather": {
+        "accuracy": 0.74,
+        "mean_rank": 1.35,
+        "mean_margin": 0.02124747820198536,
+        "n_samples": 100
+      },
+      "road_type": {
+        "accuracy": 0.45,
+        "mean_rank": 2.06,
+        "mean_margin": -0.001515198964625597,
+        "n_samples": 100
+      },
+      "time_of_day": {
+        "accuracy": 0.88,
+        "mean_rank": 1.13,
+        "mean_margin": 0.02149929851293564,
+        "n_samples": 100
+      },
+      "traffic_situation": {
+        "accuracy": 0.27,
+        "mean_rank": 2.8,
+        "mean_margin": -0.026588814333081245,
+        "n_samples": 100
+      },
+      "occlusion_level": {
+        "accuracy": 0.18,
+        "mean_rank": 2.73,
+        "mean_margin": -0.013527425937354565,
+        "n_samples": 100
+      }
+    },
+    "photo_prompt": {
+      "weather": {
+        "accuracy": 0.82,
+        "mean_rank": 1.23,
+        "mean_margin": 0.02117953822016716,
+        "n_samples": 100
+      },
+      "road_type": {
+        "accuracy": 0.28,
+        "mean_rank": 2.66,
+        "mean_margin": -0.014743829146027565,
+        "n_samples": 100
+      },
+      "time_of_day": {
+        "accuracy": 0.91,
+        "mean_rank": 1.11,
+        "mean_margin": 0.039702530950307846,
+        "n_samples": 100
+      },
+      "traffic_situation": {
+        "accuracy": 0.28,
+        "mean_rank": 2.39,
+        "mean_margin": -0.025588029995560646,
+        "n_samples": 100
+      },
+      "occlusion_level": {
+        "accuracy": 0.37,
+        "mean_rank": 2.28,
+        "mean_margin": -0.008556709624826908,
+        "n_samples": 100
+      }
+    }
+  },
+  "summary": {
+    "bare": {
+      "mean_accuracy": 0.308,
+      "mean_rank": 2.332,
+      "mean_margin": -0.014035209268331527
+    },
+    "key_value": {
+      "mean_accuracy": 0.316,
+      "mean_rank": 2.278,
+      "mean_margin": -0.010934612982237014
+    },
+    "simple": {
+      "mean_accuracy": 0.508,
+      "mean_rank": 1.9919999999999998,
+      "mean_margin": 0.003872031904757023
+    },
+    "sentence": {
+      "mean_accuracy": 0.504,
+      "mean_rank": 2.0140000000000002,
+      "mean_margin": 0.0002230674959719181
+    },
+    "photo_prompt": {
+      "mean_accuracy": 0.532,
+      "mean_rank": 1.934,
+      "mean_margin": 0.0023987000808119775
+    }
+  }
+}
