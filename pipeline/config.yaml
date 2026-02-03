@@ -1,0 +1,38 @@
+# Pipeline Configuration
+
+dataset:
+  default_n: 2600
+  default_seed: 42
+  t0_us: 5000000              # 5 seconds into clip
+
+embedding:
+  model: "ViT-bigG-14"
+  pretrained: "laion2b_s39b_b160k"
+  dim: 1280
+  batch_size: 4
+
+classification:
+  keys:                        # Top-6 from EMB-001 text alignment
+    - weather
+    - time_of_day
+    - depth_complexity
+    - occlusion_level
+    - road_type
+    - required_action
+
+inference:
+  model_id: "nvidia/Alpamayo-R1-10B"
+  checkpoint_interval: 10      # Save every N scenes
+
+analysis:
+  k_neighbors: 20
+  max_key_diff: 1              # Strict single-key-diff
+  min_confidence: 0.0          # Label confidence threshold
+
+paths:
+  data_dir: "data/pipeline"
+  scenes_file: "data/pipeline/scenes.parquet"
+  embeddings_file: "data/pipeline/embeddings.npz"
+  results_dir: "data/pipeline/results"
+  anchor_file: "data/CLS-001/scene_classifications.json"
+  image_cache: "data/pipeline/image_cache"

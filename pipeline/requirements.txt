@@ -1,0 +1,38 @@
+# Pipeline Requirements
+# Includes base dependencies from infrastructure/docker/requirements.txt + pipeline additions
+
+--extra-index-url https://download.pytorch.org/whl/cu124
+
+# === PyTorch ===
+torch
+torchvision
+torchaudio
+
+# === Core (from infrastructure/docker/requirements.txt) ===
+transformers==4.57.1
+accelerate>=1.12.0
+huggingface-hub
+einops>=0.8.1
+hydra-core>=1.3.2
+hydra-colorlog>=1.2.0
+physical_ai_av>=0.1.0
+av>=16.0.1
+pillow>=12.0.0
+
+# === Data processing ===
+pandas
+numpy
+tqdm
+rich
+datasets
+filelock
+
+# === Pipeline additions ===
+open_clip_torch           # Step 1: OpenCLIP bigG
+scikit-learn              # Step 2: Nearest centroid classification
+networkx                  # Step 4: k-NN graph
+matplotlib                # Step 4: Visualization
+seaborn                   # Step 4: Heatmaps
+pyarrow                   # All: Parquet I/O
+scipy                     # Step 4: Statistics
+pyyaml                    # Config loading
