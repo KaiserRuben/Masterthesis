@@ -1,0 +1,25 @@
+services:
+  alpamayo-inference:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.alpamayo
+    image: alpamayo-inference:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - inference_output:/app/data
+    command: >
+      python /app/run_inference.py
+      --clip-ids /app/missing_clips.txt
+      -o /app/data/inference_output.json
+
+volumes:
+  inference_output:

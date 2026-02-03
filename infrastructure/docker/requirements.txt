@@ -1,0 +1,29 @@
+# Alpamayo-R1 Inference Dependencies
+# Mirrors infrastructure/workstation/setup.sh exactly
+# Requires Python 3.12
+
+--extra-index-url https://download.pytorch.org/whl/cu124
+
+# PyTorch (workstation: pip install torch torchvision torchaudio --index-url .../cu124)
+torch
+torchvision
+torchaudio
+
+# Core (from workstation setup.sh lines 94-103)
+transformers==4.57.1
+accelerate>=1.12.0
+huggingface-hub
+einops>=0.8.1
+hydra-core>=1.3.2
+hydra-colorlog>=1.2.0
+physical_ai_av>=0.1.0
+av>=16.0.1
+pillow>=12.0.0
+
+# Additional (from workstation setup.sh line 106)
+pandas
+numpy
+tqdm
+rich
+datasets
+filelock

@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.eggs
+*.egg
+.venv
+venv
+env
+.env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Data (mount as volumes instead, keep BND-002/missing_clips.txt)
+data/EMB-001
+data/CLS-001
+data/alpamayo_outputs
+!data/BND-002/missing_clips.txt
+
+# Large files
+*.parquet
+*.npz
+*.pkl
+*.h5
+*.pt
+*.pth
+*.safetensors
+
+# Experiments (not needed for inference)
+experiments/
+notebooks/
+archive/
+
+# Documentation
+*.md
+!infrastructure/docker/README.md
+
+# Other
+.DS_Store
+*.log
