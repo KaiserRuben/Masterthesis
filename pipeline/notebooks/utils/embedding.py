@@ -1,8 +1,13 @@
 """
 3D embedding space exploration and density visualization.
 
-The 3D projection is critical for understanding point density and cluster structure
-that gets lost in 2D projections.
+WHY 3D + COLOR:
+- 3D projection preserves density structure that 2D projections collapse
+- But on a 2D screen, depth is ambiguous - points at different Z look identical
+- Color provides the semantic dimension: which class, which ADE level
+- Without color, it's just a point cloud. With color, patterns emerge.
+
+The chrome (axes, grid, background) stays monochrome so data color pops.
 """
 
 import numpy as np
@@ -63,15 +68,17 @@ def create_3d_explorer(
         hover_parts.append("<br>".join(parts))
     df["hover"] = hover_parts
 
-    fig = go.FigureWidget()
+    # Use FigureWidget in Jupyter for interactivity, fall back to Figure otherwise
+    try:
+        fig = go.FigureWidget()
+    except ImportError:
+        fig = go.Figure()
 
     # Determine coloring
     if color_by == "ade_class":
         _add_ade_class_traces(fig, df, sizes, opacity)
     elif color_by == "is_anchor":
-        _add_binary_traces(fig, df, "is_anchor", sizes, opacity,
-                          {True: THEME["accent"], False: THEME["text_muted"]},
-                          {True: "Anchors (VLM)", False: "Propagated"})
+        _add_binary_traces(fig, df, "is_anchor", sizes, opacity)
     elif color_by == "label_confidence":
         _add_continuous_trace(fig, df, "label_confidence", sizes, opacity, "Confidence")
     elif color_by in CLASSIFICATION_KEYS:
@@ -153,11 +160,13 @@ def _add_binary_traces(
     column: str,
     sizes: np.ndarray | float,
     opacity: float,
-    color_map: dict,
-    name_map: dict,
 ) -> None:
-    """Add traces for binary column."""
-    for value, color in color_map.items():
+    """Add traces for binary column (e.g., is_anchor)."""
+    colors = THEME["binary"]
+    names = {True: "Anchors (VLM)", False: "Propagated"}
+
+    # Show False first (background), True on top
+    for value in [False, True]:
         mask = df[column] == value
         if mask.sum() == 0:
             continue
@@ -168,10 +177,10 @@ def _add_binary_traces(
         fig.add_trace(go.Scatter3d(
             x=subset["umap_x"], y=subset["umap_y"], z=subset["umap_z"],
             mode="markers",
-            marker=dict(size=subset_sizes, color=color, opacity=opacity),
+            marker=dict(size=subset_sizes, color=colors[value], opacity=opacity),
             text=subset["hover"],
             hoverinfo="text",
-            name=name_map.get(value, str(value)),
+            name=names[value],
         ))
 
 

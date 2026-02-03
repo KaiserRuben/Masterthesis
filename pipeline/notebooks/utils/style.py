@@ -7,9 +7,9 @@ Color is reserved exclusively for data encoding.
 from typing import Any
 
 
-# Monochromatic theme
+# Design system: monochrome chrome, purposeful data color
 THEME = {
-    # Base palette (grayscale only)
+    # Chrome palette (grayscale) - for UI, not data
     "bg": "#fafafa",
     "surface": "#ffffff",
     "text": "#1a1a1a",
@@ -17,38 +17,56 @@ THEME = {
     "text_muted": "#999999",
     "border": "#e0e0e0",
     "grid": "#eeeeee",
+    "point_inactive": "#d0d0d0",  # Background points when not the focus
 
-    # Data encoding colors (use sparingly)
+    # ==========================================================================
+    # DATA ENCODING COLORS
+    # In 3D visualizations, color is essential for perception - not decorative.
+    # Without color, depth ambiguity makes clusters indistinguishable.
+    # ==========================================================================
+
+    # ADE classes: semantic traffic-light progression
+    # Green = safe, Red = failure. Universally understood.
     "ade": {
-        "low": "#2d9a4d",       # Green - good
-        "medium": "#d4a017",    # Amber - caution
-        "high": "#d35400",      # Orange - warning
-        "critical": "#c0392b", # Red - failure
-        "missing": "#cccccc",   # Gray - no data
+        "low": "#3a9e5c",       # Forest green - good prediction
+        "medium": "#e6a132",    # Amber - acceptable
+        "high": "#d66b2b",      # Burnt orange - poor
+        "critical": "#bf3636",  # Crimson - failure
+        "missing": "#c8c8c8",   # Neutral gray - no data
     },
 
-    # Sequential scale for continuous ADE
+    # Sequential scale for continuous ADE (interpolated)
     "ade_scale": [
-        [0.0, "#2d9a4d"],
-        [0.3, "#d4a017"],
-        [0.6, "#d35400"],
-        [1.0, "#c0392b"],
+        [0.0, "#3a9e5c"],
+        [0.33, "#e6a132"],
+        [0.66, "#d66b2b"],
+        [1.0, "#bf3636"],
     ],
 
-    # Categorical scale for semantic keys (muted, distinguishable)
+    # Categorical palette for semantic classes
+    # Desaturated, high-contrast, colorblind-accessible
+    # Each color must be distinguishable in 3D point clouds
     "categorical": [
-        "#5b7fa3",  # Steel blue
-        "#7a8b6e",  # Sage
-        "#a07a5c",  # Taupe
-        "#8b7a9e",  # Dusty purple
-        "#6a9a96",  # Teal
-        "#9e8a7a",  # Warm gray
+        "#4878a8",  # Steel blue
+        "#6a9a58",  # Moss green
+        "#c87040",  # Terracotta
+        "#7868a8",  # Muted purple
+        "#48989c",  # Teal
+        "#b87878",  # Dusty rose
+        "#8a8a5a",  # Olive
+        "#a86088",  # Mauve
     ],
 
-    # Emphasis colors
+    # Binary encoding (anchor vs propagated)
+    "binary": {
+        True: "#2c5aa0",   # Anchor: distinct blue
+        False: "#b8b8b8",  # Propagated: recedes
+    },
+
+    # Emphasis and alerts
     "accent": "#1a1a1a",
-    "highlight": "#e74c3c",
-    "danger_glow": "rgba(199, 57, 43, 0.25)",
+    "highlight": "#c94444",
+    "danger_glow": "rgba(191, 54, 54, 0.3)",
 
     # Typography
     "font_family": "Inter, -apple-system, system-ui, sans-serif",
@@ -119,12 +137,24 @@ def axis_style(title: str = "", show_grid: bool = True) -> dict[str, Any]:
 
 
 def scene_style() -> dict[str, Any]:
-    """Generate 3D scene styling."""
+    """
+    Generate 3D scene styling.
+
+    Chrome is monochrome (grid, axes, background) so colored data points
+    stand out clearly against neutral background.
+    """
+    axis_common = {
+        "backgroundcolor": THEME["bg"],
+        "gridcolor": THEME["grid"],
+        "linecolor": THEME["border"],
+        "tickfont": {"size": 9, "color": THEME["text_muted"]},
+        "title": {"font": {"size": 11, "color": THEME["text_secondary"]}},
+    }
     return {
         "bgcolor": THEME["bg"],
-        "xaxis": {**axis_style("UMAP 1"), "backgroundcolor": THEME["bg"]},
-        "yaxis": {**axis_style("UMAP 2"), "backgroundcolor": THEME["bg"]},
-        "zaxis": {**axis_style("UMAP 3"), "backgroundcolor": THEME["bg"]},
+        "xaxis": {**axis_common, "title": {"text": "UMAP 1", **axis_common["title"]}},
+        "yaxis": {**axis_common, "title": {"text": "UMAP 2", **axis_common["title"]}},
+        "zaxis": {**axis_common, "title": {"text": "UMAP 3", **axis_common["title"]}},
     }
 
 

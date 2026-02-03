@@ -48,12 +48,18 @@ def create_transition_sankey(
     labels = sorted(set(trans["source"]) | set(trans["target"]))
     label_to_idx = {l: i for i, l in enumerate(labels)}
 
-    # Edge colors: grayscale based on ΔADE
+    # Edge colors: ADE scale (green=low impact, red=high impact)
+    # High ΔADE transitions should visually pop
     max_ade = trans["mean_ade"].max() if trans["mean_ade"].max() > 0 else 1
     edge_colors = []
     for ade in trans["mean_ade"]:
-        intensity = int(200 - 150 * (ade / max_ade))
-        edge_colors.append(f"rgba({intensity},{intensity},{intensity},0.6)")
+        ratio = ade / max_ade
+        if ratio < 0.33:
+            edge_colors.append("rgba(58, 158, 92, 0.5)")   # Green, low impact
+        elif ratio < 0.66:
+            edge_colors.append("rgba(230, 161, 50, 0.6)")  # Amber, medium
+        else:
+            edge_colors.append("rgba(214, 107, 43, 0.75)") # Orange, high impact
 
     fig = go.Figure(go.Sankey(
         node=dict(
@@ -248,15 +254,23 @@ def create_danger_zone_plot(danger_df: pd.DataFrame) -> go.Figure:
     """
     fig = go.Figure()
 
-    # All points, colored by danger score (grayscale gradient)
+    # All points, colored by danger score
+    # Danger should FEEL dangerous: neutral -> amber -> red
+    danger_scale = [
+        [0.0, THEME["point_inactive"]],   # Safe: neutral gray
+        [0.3, THEME["ade"]["medium"]],    # Caution: amber
+        [0.6, THEME["ade"]["high"]],      # Warning: orange
+        [1.0, THEME["ade"]["critical"]],  # Danger: red
+    ]
+
     fig.add_trace(go.Scatter(
         x=danger_df["umap_x"], y=danger_df["umap_y"],
         mode="markers",
         marker=dict(
             size=5,
             color=danger_df["danger_score"],
-            colorscale="Greys",
-            colorbar=dict(title="Danger Score"),
+            colorscale=danger_scale,
+            colorbar=dict(title="Danger"),
             cmin=0,
             cmax=danger_df["danger_score"].quantile(0.95),
         ),

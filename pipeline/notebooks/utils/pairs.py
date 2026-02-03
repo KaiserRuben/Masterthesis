@@ -155,8 +155,10 @@ def _create_3d_connections(
         showlegend=False,
     ))
 
-    # Connection lines
+    # Connection lines - color by ΔADE severity
+    # High ΔADE = red (dangerous transition), low = muted
     max_delta = df["rel_delta_ade"].max()
+    ade_colors = THEME["ade"]
     lines_x, lines_y, lines_z = [], [], []
     line_colors = []
 
@@ -169,10 +171,14 @@ def _create_3d_connections(
             lines_y.extend([ya, yb, None])
             lines_z.extend([za, zb, None])
 
-            # Intensity based on ΔADE
-            intensity = row["rel_delta_ade"] / max_delta
-            gray = int(180 - 130 * intensity)
-            line_colors.append(f"rgb({gray},{gray},{gray})")
+            # Color by ΔADE severity
+            ratio = row["rel_delta_ade"] / max_delta
+            if ratio < 0.33:
+                line_colors.append(THEME["text_muted"])
+            elif ratio < 0.66:
+                line_colors.append(ade_colors["medium"])
+            else:
+                line_colors.append(ade_colors["high"])
 
     # Draw lines as single trace with color array
     for i in range(0, len(lines_x) - 2, 3):
@@ -229,21 +235,27 @@ def _create_2d_connections(
         showlegend=False,
     ))
 
-    # Connection lines
+    # Connection lines - color by ΔADE severity
     max_delta = df["rel_delta_ade"].max()
+    ade_colors = THEME["ade"]
 
     for _, row in df.iterrows():
         if row["clip_a"] in clip_to_umap and row["clip_b"] in clip_to_umap:
             xa, ya, _ = clip_to_umap[row["clip_a"]]
             xb, yb, _ = clip_to_umap[row["clip_b"]]
 
-            intensity = row["rel_delta_ade"] / max_delta
-            gray = int(180 - 130 * intensity)
+            ratio = row["rel_delta_ade"] / max_delta
+            if ratio < 0.33:
+                color = THEME["text_muted"]
+            elif ratio < 0.66:
+                color = ade_colors["medium"]
+            else:
+                color = ade_colors["high"]
 
             fig.add_trace(go.Scatter(
                 x=[xa, xb], y=[ya, yb],
                 mode="lines",
-                line=dict(color=f"rgb({gray},{gray},{gray})", width=1 + intensity),
+                line=dict(color=color, width=1 + ratio * 2),
                 hoverinfo="text",
                 text=f"{row['value_a']} → {row['value_b']}<br>ΔADE: {row['rel_delta_ade']:.3f}",
                 showlegend=False,
