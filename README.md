@@ -1,6 +1,6 @@
 # VLM Scene Classification
 
-Vision-language model pipeline for autonomous vehicle scene classification using the PhysicalAI-AV dataset.
+Vision-language model pipeline for autonomous vehicle scene classification using the PhysicalAI-AV dataset. This is a Master's thesis project investigating how semantic attributes affect trajectory prediction in autonomous vehicles.
 
 ## Overview
 
@@ -9,19 +9,34 @@ This project implements a two-stage classification approach:
 1. **Stage 1 (Vision)**: VLM generates detailed scene reasoning from a 4-camera composite image
 2. **Stage 2 (Text)**: Per-key classification from the reasoning text using structured JSON outputs
 
+The classified scenes are then used for boundary analysis to understand which semantic transitions cause the largest changes in trajectory prediction error.
+
 ## Project Structure
 
 ```
+├── pipeline/             # Unified 5-step analysis pipeline
+│   ├── step_0_sample.py  # Sample scenes from dataset
+│   ├── step_1_embed.py   # Compute OpenCLIP embeddings
+│   ├── step_2_classify.py # Label propagation from anchors
+│   ├── step_3_infer.py   # Run Alpamayo trajectory inference
+│   ├── step_4_analyze.py # Boundary sensitivity analysis
+│   ├── notebooks/        # Interactive analysis & hypothesis testing
+│   └── config.yaml       # Pipeline configuration
 ├── tools/
 │   ├── vlm/              # VLM provider abstraction (Ollama)
 │   ├── scene/            # Scene classification keys, prompts, response models
-│   └── alpamayo/         # PhysicalAI-AV dataset loader (submodule)
-├── experiments/
-│   ├── batch_scene_classification.py   # Main batch processing script
-│   ├── prompt_tuning/                  # Prompt variant experiments
-│   └── workstation/                    # Remote GPU inference setup
+│   └── alpamayo/         # Alpamayo-R1 model wrapper (submodule)
+├── infrastructure/
+│   ├── docker/           # Docker setup for cloud GPU inference
+│   ├── workstation/      # NVIDIA GPU workstation setup
+│   └── local/            # Apple Silicon (MPS) setup
+├── experiments/          # Research experiments by phase
+│   ├── Phase-0_Infrastructure/
+│   ├── Phase-1_Classification/
+│   ├── Phase-2_Embeddings/
+│   ├── Phase-3_Boundaries/
+│   └── Phase-4_Validation/
 ├── data/                 # Run outputs (gitignored)
-│   └── runs/             # Each run is self-contained
 └── vlm_config.yaml       # Model and endpoint configuration
 ```
 
@@ -138,20 +153,107 @@ model = get_response_model("weather")
 response = model.model_validate_json(llm_output)
 ```
 
-## Workstation Setup (GPU Inference)
+## Unified Analysis Pipeline
 
-For running Alpamayo-R1 on a GPU workstation:
+The `pipeline/` directory contains a reproducible 5-step workflow for boundary sensitivity analysis:
 
 ```bash
-cd experiments/workstation
-bash setup.sh
+cd pipeline
 
-# Activate and run
-conda activate alpamayo
-python basic_inference_test.py
+# Step 0: Sample 2600 scenes (includes all anchors)
+python step_0_sample.py --n 2600
+
+# Step 1: Compute OpenCLIP embeddings (ViT-bigG-14)
+python step_1_embed.py
+
+# Step 2: Propagate labels from anchors via k-NN
+python step_2_classify.py
+
+# Step 3: Run Alpamayo trajectory inference
+python step_3_infer.py
+
+# Step 4: Build k-NN graph and analyze boundaries
+python step_4_analyze.py
 ```
 
-See `experiments/workstation/README.md` for details.
+See [`pipeline/README.md`](pipeline/README.md) for detailed documentation.
+
+### Interactive Analysis
+
+The `pipeline/notebooks/` directory contains Jupyter notebooks for hypothesis testing:
+
+- **`boundary_explorer.ipynb`** - 3D embedding space exploration with semantic coloring
+- **`unified_analysis.ipynb`** - Hypothesis evaluation (H1-H3) with publication-ready figures
+
+Key hypotheses tested:
+- **H1**: Boundary-error correlation (scenes near class boundaries have higher ADE)
+- **H2**: Anisotropy (sensitivity varies by semantic dimension)
+- **H3**: Transition asymmetry (A→B vs B→A have different error profiles)
+
+## Research Experiments
+
+Experiments are organized by research phase:
+
+| Phase | ID | Description | Status |
+|-------|-----|-------------|--------|
+| 0 | INF-001/002 | Infrastructure & prompt tuning | Completed |
+| 1 | CLS-001 | Batch scene classification (100 anchors) | Completed |
+| 2 | EMB-001 | Latent navigation & text alignment | Completed |
+| 3 | BND-002 | Data-first boundary detection | Completed |
+| 4 | VAL-* | Validation experiments | In Progress |
+
+### Key Findings (BND-002)
+
+From analyzing 224 scene pairs with single-key semantic differences:
+
+| Rank | Semantic Key | Relative ΔADE |
+|------|--------------|---------------|
+| 1 | weather | 96% |
+| 2 | required_action | 95% |
+| 3 | depth_complexity | 89% |
+| 4 | road_type | 70% |
+| 5 | occlusion_level | 64% |
+
+**Note**: Rankings are sensitive to sample size. Embedding similarity does NOT predict trajectory error (r = 0.058).
+
+## Infrastructure
+
+### GPU Workstation (Recommended)
+
+For running Alpamayo-R1 locally with NVIDIA GPU:
+
+```bash
+cd infrastructure/workstation
+bash setup.sh
+conda activate alpamayo
+```
+
+See [`infrastructure/workstation/README.md`](infrastructure/workstation/README.md) for details.
+
+### Docker (Cloud Providers)
+
+For running on cloud GPU providers (RunPod, Vast.ai, Lambda, Modal):
+
+```bash
+# Build image
+docker build -f infrastructure/docker/Dockerfile.alpamayo -t alpamayo-inference .
+
+# Run with GPU
+docker run --gpus all -e HF_TOKEN=$HF_TOKEN alpamayo-inference
+```
+
+See [`infrastructure/docker/README.md`](infrastructure/docker/README.md) for cloud deployment instructions.
+
+### Apple Silicon (Development)
+
+For local development on Mac with MPS acceleration:
+
+```bash
+cd infrastructure/local
+bash setup.sh
+```
+
+See [`infrastructure/local/README.md`](infrastructure/local/README.md) for details.
 
 ## License
 
