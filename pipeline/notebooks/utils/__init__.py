@@ -30,10 +30,13 @@ from .pairs import (
 )
 from .hypothesis import (
     # H1: Boundary-Error Correlation
+    BoundaryMarginResult,
     compute_centroids,
     compute_boundary_margin,
     compute_boundary_proximity,
     create_h1_correlation_plot,
+    create_h1_perkey_correlation_plot,
+    compute_margin_sensitivity_alignment,
     # H2: Anisotropy
     compute_anisotropy_vector,
     create_h2_anisotropy_plot,
@@ -80,10 +83,13 @@ __all__ = [
     "create_pair_scatter",
     "create_pair_connections",
     # Hypothesis (H1-H4)
+    "BoundaryMarginResult",
     "compute_centroids",
     "compute_boundary_margin",
     "compute_boundary_proximity",
     "create_h1_correlation_plot",
+    "create_h1_perkey_correlation_plot",
+    "compute_margin_sensitivity_alignment",
     "compute_anisotropy_vector",
     "create_h2_anisotropy_plot",
     "compute_transition_asymmetry",

@@ -75,11 +75,38 @@ def compute_centroids(
     return centroids
 
 
+from dataclasses import dataclass
+
+
+@dataclass
+class BoundaryMarginResult:
+    """
+    Result of boundary margin computation.
+
+    Attributes:
+        per_key: Dict mapping key -> array of margins (shape: n_scenes)
+        mean: Averaged margin across keys (shape: n_scenes)
+        matrix: Stacked matrix (shape: n_keys × n_scenes) for vectorized ops
+    """
+    per_key: dict[str, np.ndarray]
+    mean: np.ndarray
+    matrix: np.ndarray
+
+    def as_dataframe(self, scenes: pd.DataFrame) -> pd.DataFrame:
+        """Convert to DataFrame with scene identifiers."""
+        df = pd.DataFrame(self.per_key)
+        df["mean"] = self.mean
+        if "clip_id" in scenes.columns:
+            df["clip_id"] = scenes["clip_id"].values
+        return df
+
+
 def compute_boundary_margin(
     scenes: pd.DataFrame,
     embeddings: np.ndarray,
     centroids: dict[str, dict[str, np.ndarray]] | None = None,
-) -> np.ndarray:
+    return_full: bool = False,
+) -> np.ndarray | BoundaryMarginResult:
     """
     Compute d_B(z) - class-aware boundary margin per §4.3.
 
@@ -93,13 +120,21 @@ def compute_boundary_margin(
 
     This matches the BND-001 methodology that found r = -0.51.
 
+    The per-key margin vector d_B(z) ∈ ℝ^6 is:
+        d_B(z) = (d_B^weather, d_B^time, d_B^depth, d_B^occ, d_B^road, d_B^action)
+
+    This vector form enables direct comparison with the anisotropy vector a.
+
     Args:
         scenes: DataFrame with classification columns
         embeddings: Full embedding matrix
         centroids: Precomputed centroids (computed if None)
+        return_full: If True, return BoundaryMarginResult with per-key breakdown.
+                     If False (default), return only mean margin for backward compat.
 
     Returns:
-        Array of margin values per scene (averaged across keys)
+        If return_full=False: Array of mean margin values per scene
+        If return_full=True: BoundaryMarginResult with per_key, mean, and matrix
     """
     if centroids is None:
         centroids = compute_centroids(scenes, embeddings)
@@ -145,9 +180,18 @@ def compute_boundary_margin(
             margin = dist_to_nearest_other - dist_to_own
             margins_per_key[key][i] = margin
 
+    # Stack into matrix (n_keys × n_scenes)
+    margin_matrix = np.array([margins_per_key[k] for k in CLASSIFICATION_KEYS])
+
     # Average margin across keys (ignoring NaN)
-    all_margins = np.array([margins_per_key[k] for k in CLASSIFICATION_KEYS])
-    mean_margin = np.nanmean(all_margins, axis=0)
+    mean_margin = np.nanmean(margin_matrix, axis=0)
+
+    if return_full:
+        return BoundaryMarginResult(
+            per_key=margins_per_key,
+            mean=mean_margin,
+            matrix=margin_matrix,
+        )
 
     return mean_margin
 
@@ -318,6 +362,177 @@ def create_h1_correlation_plot(
     )
 
     return fig
+
+
+def create_h1_perkey_correlation_plot(
+    scenes: pd.DataFrame,
+    embeddings: np.ndarray,
+) -> go.Figure:
+    """
+    Per-key boundary-error correlation analysis.
+
+    Shows Cor(d_B^k, ADE) for each semantic key k, revealing whether
+    the H1 correlation varies by boundary type.
+
+    This addresses the insight that d_B is naturally a vector:
+        d_B(z) = (d_B^weather, d_B^time, d_B^depth, d_B^occ, d_B^road, d_B^action)
+
+    And allows comparison with the sensitivity vector a from H2.
+    """
+    mask = scenes["ade"].notna()
+    scenes_with_ade = scenes[mask].copy().reset_index(drop=True)
+
+    if len(scenes_with_ade) < 10:
+        fig = go.Figure()
+        fig.add_annotation(text="Insufficient data", showarrow=False)
+        return fig
+
+    # Compute full margin result
+    margin_result = compute_boundary_margin(scenes_with_ade, embeddings, return_full=True)
+    ade = scenes_with_ade["ade"].values
+
+    # Compute correlation per key
+    correlations = {}
+    for key in CLASSIFICATION_KEYS:
+        d_B_k = margin_result.per_key[key]
+        valid = ~np.isnan(d_B_k)
+        if valid.sum() >= 10:
+            r, p = stats.pearsonr(d_B_k[valid], ade[valid])
+            correlations[key] = {"r": r, "p": p, "n": valid.sum()}
+        else:
+            correlations[key] = {"r": np.nan, "p": np.nan, "n": valid.sum()}
+
+    # Also compute mean margin correlation
+    valid_mean = ~np.isnan(margin_result.mean)
+    if valid_mean.sum() >= 10:
+        r_mean, p_mean = stats.pearsonr(margin_result.mean[valid_mean], ade[valid_mean])
+    else:
+        r_mean, p_mean = np.nan, np.nan
+
+    # Sort by correlation strength
+    sorted_keys = sorted(
+        [k for k in CLASSIFICATION_KEYS if not np.isnan(correlations[k]["r"])],
+        key=lambda k: correlations[k]["r"]
+    )
+
+    fig = go.Figure()
+
+    # Bars for per-key correlations
+    r_values = [correlations[k]["r"] for k in sorted_keys]
+    p_values = [correlations[k]["p"] for k in sorted_keys]
+    n_values = [correlations[k]["n"] for k in sorted_keys]
+
+    # Color by significance
+    colors = [
+        THEME["ade"]["critical"] if p < 0.01 else
+        THEME["ade"]["high"] if p < 0.05 else
+        THEME["point_inactive"]
+        for p in p_values
+    ]
+
+    fig.add_trace(go.Bar(
+        y=sorted_keys,
+        x=r_values,
+        orientation="h",
+        marker=dict(color=colors),
+        hovertemplate="<b>%{y}</b><br>r = %{x:.3f}<br>n = %{customdata}<extra></extra>",
+        customdata=n_values,
+    ))
+
+    # Reference line at 0
+    fig.add_vline(x=0, line=dict(color=THEME["border"], width=1.5))
+
+    # Mean margin correlation line
+    if not np.isnan(r_mean):
+        fig.add_vline(
+            x=r_mean,
+            line=dict(color=THEME["text_secondary"], width=2, dash="dash"),
+            annotation_text=f"mean: {r_mean:.3f}",
+            annotation_position="top",
+            annotation_font_size=9,
+        )
+
+    # Annotation for significance legend
+    fig.add_annotation(
+        x=0.98, y=0.02,
+        xref="paper", yref="paper",
+        text="■ p<0.01  ■ p<0.05  ■ n.s.",
+        showarrow=False,
+        font=dict(size=9, family=THEME["font_mono"], color=THEME["text_muted"]),
+        xanchor="right", yanchor="bottom",
+    )
+
+    fig.update_layout(
+        **plotly_layout("", height=320, show_legend=False, margin=dict(l=120, r=40, t=20, b=50)),
+        xaxis={
+            **axis_style(""),
+            "title": dict(text="Cor(d<sub>B</sub><sup>k</sup>, ADE)", font=dict(size=11)),
+            "zeroline": True,
+            "zerolinecolor": THEME["border"],
+        },
+        yaxis=dict(
+            tickfont=dict(size=11, color=THEME["text"]),
+            showgrid=False,
+        ),
+        bargap=0.4,
+    )
+
+    return fig
+
+
+def compute_margin_sensitivity_alignment(
+    scenes: pd.DataFrame,
+    pairs: pd.DataFrame,
+    embeddings: np.ndarray,
+) -> pd.DataFrame:
+    """
+    Compute alignment between boundary margin vector and sensitivity vector.
+
+    For each key k, computes:
+    - mean d_B^k: average boundary margin for that key
+    - S_k: sensitivity (mean ΔADE) for that key
+    - rank correlation between d_B and S vectors
+
+    This tests whether keys with tighter boundaries (low d_B) also
+    have higher sensitivity (high S).
+    """
+    # Compute mean margin per key
+    mask = scenes["ade"].notna()
+    scenes_ade = scenes[mask].copy().reset_index(drop=True)
+    margin_result = compute_boundary_margin(scenes_ade, embeddings, return_full=True)
+
+    mean_margins = {
+        key: np.nanmean(margin_result.per_key[key])
+        for key in CLASSIFICATION_KEYS
+    }
+
+    # Compute sensitivity per key
+    means, _, _ = compute_anisotropy_vector(pairs)
+
+    # Build comparison DataFrame
+    df = pd.DataFrame([
+        {
+            "key": key,
+            "mean_margin": mean_margins.get(key, np.nan),
+            "sensitivity": means.get(key, 0),
+        }
+        for key in CLASSIFICATION_KEYS
+    ])
+
+    # Compute rank correlation
+    valid = df["mean_margin"].notna() & (df["sensitivity"] > 0)
+    if valid.sum() >= 3:
+        rho, p = stats.spearmanr(
+            df.loc[valid, "mean_margin"],
+            df.loc[valid, "sensitivity"]
+        )
+        df.attrs["spearman_rho"] = rho
+        df.attrs["spearman_p"] = p
+    else:
+        df.attrs["spearman_rho"] = np.nan
+        df.attrs["spearman_p"] = np.nan
+
+    return df
 
 
 # =============================================================================
