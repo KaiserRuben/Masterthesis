@@ -199,8 +199,8 @@ def _add_continuous_trace(
         marker=dict(
             size=sizes if isinstance(sizes, (int, float)) else sizes.tolist(),
             color=df[column].fillna(0),
-            colorscale="Greys",
-            colorbar=dict(title=colorbar_title),
+            colorscale=THEME["grayscale"],
+            colorbar=dict(title=colorbar_title, thickness=12, len=0.5),
             opacity=opacity,
         ),
         text=df["hover"],

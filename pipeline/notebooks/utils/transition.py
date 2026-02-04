@@ -48,18 +48,15 @@ def create_transition_sankey(
     labels = sorted(set(trans["source"]) | set(trans["target"]))
     label_to_idx = {l: i for i, l in enumerate(labels)}
 
-    # Edge colors: ADE scale (green=low impact, red=high impact)
-    # High ΔADE transitions should visually pop
+    # Edge colors: monochrome with opacity encoding severity
+    # Higher ΔADE = darker/more opaque
     max_ade = trans["mean_ade"].max() if trans["mean_ade"].max() > 0 else 1
     edge_colors = []
     for ade in trans["mean_ade"]:
         ratio = ade / max_ade
-        if ratio < 0.33:
-            edge_colors.append("rgba(58, 158, 92, 0.5)")   # Green, low impact
-        elif ratio < 0.66:
-            edge_colors.append("rgba(230, 161, 50, 0.6)")  # Amber, medium
-        else:
-            edge_colors.append("rgba(214, 107, 43, 0.75)") # Orange, high impact
+        # Monochrome: vary opacity only
+        opacity = 0.2 + ratio * 0.6
+        edge_colors.append(f"rgba(60, 60, 60, {opacity:.2f})")
 
     fig = go.Figure(go.Sankey(
         node=dict(

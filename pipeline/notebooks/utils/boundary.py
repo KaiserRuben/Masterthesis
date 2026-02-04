@@ -114,15 +114,16 @@ def create_boundary_geography(
         x_centers = (x_edges[:-1] + x_edges[1:]) / 2
         y_centers = (y_edges[:-1] + y_edges[1:]) / 2
 
-        # Use grayscale for single key, subtle categorical for overlay
+        # Monochrome density - darker = higher density
         if key:
-            colorscale = [[0, "rgba(255,255,255,0)"], [1, THEME["accent"]]]
-            opacity = 0.7
+            colorscale = [[0, "rgba(255,255,255,0)"], [1, THEME["text_secondary"]]]
+            opacity = 0.6
             show_scale = True
         else:
-            base_color = THEME["categorical"][i % len(THEME["categorical"])]
-            colorscale = [[0, "rgba(255,255,255,0)"], [1, base_color]]
-            opacity = 0.4
+            # Multiple keys: use grays with varying base intensity
+            gray_val = 40 + i * 25  # Stagger grays
+            colorscale = [[0, "rgba(255,255,255,0)"], [1, f"rgb({gray_val},{gray_val},{gray_val})"]]
+            opacity = 0.35
             show_scale = False
 
         fig.add_trace(go.Contour(

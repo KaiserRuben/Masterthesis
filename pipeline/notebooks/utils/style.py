@@ -71,6 +71,22 @@ THEME = {
     # Typography
     "font_family": "Inter, -apple-system, system-ui, sans-serif",
     "font_mono": "JetBrains Mono, Menlo, monospace",
+
+    # Diverging colorscale (for asymmetry, difference plots)
+    "diverging": {
+        "negative": "#4a7c59",  # Muted sage green
+        "neutral": "#fafafa",   # Background
+        "positive": "#8b4a4a",  # Muted burgundy
+    },
+
+    # Grayscale sequence (for multi-line plots, ordered data)
+    "grays": ["#1a1a1a", "#4a4a4a", "#6a6a6a", "#8a8a8a", "#aaaaaa"],
+
+    # Grayscale colorscale (for continuous heatmaps)
+    "grayscale": [
+        [0.0, "#f0f0f0"],
+        [1.0, "#1a1a1a"],
+    ],
 }
 
 
