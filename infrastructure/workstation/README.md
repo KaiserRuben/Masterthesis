@@ -23,7 +23,7 @@ Or use git, rsync, USB, etc.
 ### 2. Run setup script
 
 ```bash
-cd /path/to/Masterarbeit/experiments/workstation
+cd /path/to/Masterarbeit/infrastructure/workstation
 chmod +x setup.sh
 ./setup.sh
 ```
@@ -46,12 +46,12 @@ conda activate alpamayo
 
 **Basic inference test (5 scenes):**
 ```bash
-python experiments/workstation/basic_inference_test.py
+python infrastructure/workstation/basic_inference_test.py
 ```
 
 **Interactive notebook:**
 ```bash
-jupyter notebook experiments/workstation/interactive_inference.ipynb
+jupyter notebook infrastructure/workstation/interactive_inference.ipynb
 ```
 
 ## Files
@@ -89,8 +89,8 @@ First run downloads ~20GB model weights. This is normal.
 
 Results are saved to:
 ```
-experiments/workstation/inference_results/
-└── basic_inference_results.json
+data/alpamayo_inference/
+└── inference_workstation_YYYYMMDD_HHMMSS.json
 ```
 
 Contains:

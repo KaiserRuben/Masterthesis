@@ -24,7 +24,7 @@ Setup for running Alpamayo-R1 experiments on Apple Silicon Macs using MPS backen
 ### 1. Run setup script
 
 ```bash
-cd /path/to/Masterarbeit/experiments/local
+cd /path/to/Masterarbeit/infrastructure/local
 chmod +x setup.sh
 ./setup.sh
 ```
@@ -47,12 +47,12 @@ conda activate alpamayo-local
 
 **Basic inference test (5 scenes):**
 ```bash
-python experiments/local/basic_inference_test.py
+python infrastructure/local/basic_inference_test.py
 ```
 
 **Interactive notebook:**
 ```bash
-jupyter notebook experiments/local/interactive_inference.ipynb
+jupyter notebook infrastructure/local/interactive_inference.ipynb
 ```
 
 ## Files
