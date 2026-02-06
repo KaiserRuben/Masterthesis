@@ -173,8 +173,8 @@ Examples:
     config = load_config(config_path)
 
     # Resolve parameters
-    n = args.n or config["dataset"]["default_n"]
-    seed = args.seed or config["dataset"]["default_seed"]
+    n = args.n or config.dataset.default_n
+    seed = args.seed or config.dataset.default_seed
 
     # Resolve paths
     repo_root = get_repo_root()
@@ -182,13 +182,13 @@ Examples:
     if args.data_dir:
         data_dir = repo_root / args.data_dir
     else:
-        data_dir = repo_root / config["paths"]["data_dir"]
+        data_dir = repo_root / config.paths.data_dir
 
     scenes_file = data_dir / "scenes.parquet"
     embeddings_file = data_dir / "embeddings.npz"
     results_dir = data_dir / "results"
     image_cache = data_dir / "image_cache"
-    anchor_file = repo_root / config["paths"]["anchor_file"]
+    anchor_file = repo_root / config.paths.anchor_file
 
     print("=" * 60)
     print("STEP 0: SAMPLE SCENES")

@@ -154,13 +154,13 @@ def main():
     # Resolve parameters
     min_confidence = args.min_confidence
     if min_confidence is None:
-        min_confidence = config["analysis"]["min_confidence"]
+        min_confidence = config.analysis.min_confidence
 
     # Resolve paths
     repo_root = get_repo_root()
-    scenes_file = repo_root / config["paths"]["scenes_file"]
-    embeddings_file = repo_root / config["paths"]["embeddings_file"]
-    anchor_file = repo_root / config["paths"]["anchor_file"]
+    scenes_file = repo_root / config.paths.scenes_file
+    embeddings_file = repo_root / config.paths.embeddings_file
+    anchor_file = repo_root / config.paths.anchor_file
 
     print("=" * 60)
     print("STEP 2: CLASSIFY SCENES")

@@ -498,19 +498,19 @@ def main():
     config = load_config(config_path)
 
     # Resolve parameters
-    k = args.k or config["analysis"]["k_neighbors"]
+    k = args.k or config.analysis.k_neighbors
     max_key_diff = args.max_key_diff
     if max_key_diff is None:
-        max_key_diff = config["analysis"]["max_key_diff"]
+        max_key_diff = config.analysis.max_key_diff
     min_confidence = args.min_confidence
     if min_confidence is None:
-        min_confidence = config["analysis"]["min_confidence"]
+        min_confidence = config.analysis.min_confidence
 
     # Resolve paths
     repo_root = get_repo_root()
-    scenes_file = repo_root / config["paths"]["scenes_file"]
-    embeddings_file = repo_root / config["paths"]["embeddings_file"]
-    results_dir = repo_root / config["paths"]["results_dir"]
+    scenes_file = repo_root / config.paths.scenes_file
+    embeddings_file = repo_root / config.paths.embeddings_file
+    results_dir = repo_root / config.paths.results_dir
 
     print("=" * 60)
     print("STEP 4: ANALYZE")

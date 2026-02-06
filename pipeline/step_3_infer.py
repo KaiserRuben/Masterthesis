@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from lib.schema import load_scenes, save_scenes
 from lib.trajectory import classify_trajectory
 from lib.io import load_config, get_repo_root
+from lib.models import InferenceResult
 
 
 # Monkey-patch for scipy compatibility
@@ -92,7 +93,7 @@ def setup_huggingface():
         print("WARNING: HF_TOKEN not set. Model download may fail.")
 
 
-def run_inference(model, processor, clip_id: str, t0_us: int = 5_000_000) -> dict:
+def run_inference(model, processor, clip_id: str, t0_us: int = 5_000_000) -> InferenceResult:
     """Run inference on a single scene."""
     from alpamayo_r1.load_physical_aiavdataset import load_physical_aiavdataset
     from alpamayo_r1 import helper
@@ -143,7 +144,7 @@ def run_inference(model, processor, clip_id: str, t0_us: int = 5_000_000) -> dic
     best_idx = diff.argmin()
     best_pred_xy = pred_xy[best_idx]
 
-    # Classify trajectory
+    # Classify trajectory (returns TrajectoryClassification model)
     traj_class = classify_trajectory(best_pred_xy, gt_xy)
 
     # Extract CoC reasoning (may be nested list like [['text']])
@@ -156,18 +157,18 @@ def run_inference(model, processor, clip_id: str, t0_us: int = 5_000_000) -> dic
     else:
         coc_text = ""
 
-    return {
-        "clip_id": clip_id,
-        "t0_us": t0_us,
-        "ade": min_ade,
-        "coc_reasoning": str(coc_text),  # Ensure string
-        "traj_direction": traj_class["direction"],
-        "traj_speed": traj_class["speed"],
-        "traj_lateral": traj_class["lateral"],
-        "load_time_s": round(load_time, 2),
-        "inference_time_s": round(infer_time, 2),
-        "inference_timestamp": datetime.now().isoformat(),
-    }
+    return InferenceResult(
+        clip_id=clip_id,
+        t0_us=t0_us,
+        ade=min_ade,
+        coc_reasoning=str(coc_text),
+        traj_direction=traj_class.direction,
+        traj_speed=traj_class.speed,
+        traj_lateral=traj_class.lateral,
+        load_time_s=round(load_time, 2),
+        inference_time_s=round(infer_time, 2),
+        inference_timestamp=datetime.now().isoformat(),
+    )
 
 
 def main():
@@ -194,13 +195,13 @@ def main():
     config = load_config(config_path)
 
     # Resolve parameters
-    t0_us = config["dataset"]["t0_us"]
-    checkpoint_interval = config["inference"]["checkpoint_interval"]
-    model_id = config["inference"]["model_id"]
+    t0_us = config.dataset.t0_us
+    checkpoint_interval = config.inference.checkpoint_interval
+    model_id = config.inference.model_id
 
     # Resolve paths
     repo_root = get_repo_root()
-    scenes_file = repo_root / config["paths"]["scenes_file"]
+    scenes_file = repo_root / config.paths.scenes_file
 
     print("=" * 60)
     print("STEP 3: INFERENCE")
@@ -278,17 +279,17 @@ def main():
         try:
             result = run_inference(model, processor, clip_id, t0_us)
             results.append(result)
-            print(f"  ADE: {result['ade']:.3f}m | {result['traj_direction']}/{result['traj_speed']}/{result['traj_lateral']} | {result['inference_time_s']:.1f}s")
+            print(f"  ADE: {result.ade:.3f}m | {result.traj_direction}/{result.traj_speed}/{result.traj_lateral} | {result.inference_time_s:.1f}s")
 
             # Update DataFrame
             idx = df[df["clip_id"] == clip_id].index[0]
-            df.loc[idx, "ade"] = result["ade"]
-            df.loc[idx, "coc_reasoning"] = result["coc_reasoning"]
+            df.loc[idx, "ade"] = result.ade
+            df.loc[idx, "coc_reasoning"] = result.coc_reasoning
             df.loc[idx, "has_ade"] = True
-            df.loc[idx, "inference_timestamp"] = result["inference_timestamp"]
-            df.loc[idx, "traj_direction"] = result["traj_direction"]
-            df.loc[idx, "traj_speed"] = result["traj_speed"]
-            df.loc[idx, "traj_lateral"] = result["traj_lateral"]
+            df.loc[idx, "inference_timestamp"] = result.inference_timestamp
+            df.loc[idx, "traj_direction"] = result.traj_direction
+            df.loc[idx, "traj_speed"] = result.traj_speed
+            df.loc[idx, "traj_lateral"] = result.traj_lateral
 
             # Checkpoint
             if (i + 1) % checkpoint_interval == 0:
@@ -313,14 +314,13 @@ def main():
     print(f"Successful: {successful}/{len(clip_ids)}")
 
     if results:
-        ades = [r["ade"] for r in results]
+        ades = [r.ade for r in results]
         print(f"ADE: mean={np.mean(ades):.3f}m, min={np.min(ades):.3f}m, max={np.max(ades):.3f}m")
 
         # Trajectory class distribution
         print("\nTrajectory classes:")
         for dim in ["direction", "speed", "lateral"]:
-            key = f"traj_{dim}"
-            values = [r[key] for r in results]
+            values = [getattr(r, f"traj_{dim}") for r in results]
             unique, counts = np.unique(values, return_counts=True)
             print(f"  {dim}: {dict(zip(unique, counts))}")
 
