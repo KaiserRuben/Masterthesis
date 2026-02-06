@@ -9,7 +9,11 @@ Based on definitions from:
 - Trajectory Output Classes - Definition.md
 """
 
+from __future__ import annotations
+
 import numpy as np
+
+from .models import TrajectoryClassification
 
 
 # Direction thresholds (degrees)
@@ -175,7 +179,7 @@ def classify_trajectory(
     pred_xy: np.ndarray,
     gt_xy: np.ndarray | None = None,
     dt: float = 0.1,
-) -> dict:
+) -> TrajectoryClassification:
     """
     Classify trajectory into direction, speed, and lateral classes.
 
@@ -185,7 +189,7 @@ def classify_trajectory(
         dt: Time step between consecutive points (seconds)
 
     Returns:
-        Dict with keys:
+        TrajectoryClassification with fields:
         - direction: turn_left, turn_right, straight, slight_curve
         - speed: accelerate, decelerate, constant
         - lateral: lane_change_left, lane_change_right, lane_keep
@@ -218,20 +222,20 @@ def classify_trajectory(
     # Combined class
     combined = f"{direction}_{speed}_{lateral}"
 
-    return {
-        "direction": direction,
-        "speed": speed,
-        "lateral": lateral,
-        "combined": combined,
-        "delta_theta": float(delta_theta),
-        "delta_v": float(delta_v),
-        "delta_y": float(delta_y),
-    }
+    return TrajectoryClassification(
+        direction=direction,
+        speed=speed,
+        lateral=lateral,
+        combined=combined,
+        delta_theta=float(delta_theta),
+        delta_v=float(delta_v),
+        delta_y=float(delta_y),
+    )
 
 
 def trajectory_class_changed(
-    traj1: dict,
-    traj2: dict,
+    traj1: TrajectoryClassification | dict,
+    traj2: TrajectoryClassification | dict,
     check_direction: bool = True,
     check_speed: bool = True,
     check_lateral: bool = True,
@@ -240,7 +244,7 @@ def trajectory_class_changed(
     Check if trajectory class changed between two classifications.
 
     Args:
-        traj1, traj2: Results from classify_trajectory()
+        traj1, traj2: Results from classify_trajectory() (model or dict)
         check_direction: Include direction in comparison
         check_speed: Include speed in comparison
         check_lateral: Include lateral in comparison
@@ -248,10 +252,16 @@ def trajectory_class_changed(
     Returns:
         True if any checked dimension changed
     """
-    if check_direction and traj1["direction"] != traj2["direction"]:
+    # Support both model and dict access
+    def get(obj, key):
+        if isinstance(obj, dict):
+            return obj[key]
+        return getattr(obj, key)
+
+    if check_direction and get(traj1, "direction") != get(traj2, "direction"):
         return True
-    if check_speed and traj1["speed"] != traj2["speed"]:
+    if check_speed and get(traj1, "speed") != get(traj2, "speed"):
         return True
-    if check_lateral and traj1["lateral"] != traj2["lateral"]:
+    if check_lateral and get(traj1, "lateral") != get(traj2, "lateral"):
         return True
     return False

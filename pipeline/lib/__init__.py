@@ -15,6 +15,17 @@ from .io import (
     append_embeddings,
     merge_inference_results,
 )
+from .models import (
+    TrajectoryClassification,
+    InferenceResult,
+    PipelineConfig,
+    DatasetConfig,
+    EmbeddingConfig,
+    ClassificationConfig,
+    InferenceConfig,
+    AnalysisConfig,
+    PathsConfig,
+)
 
 __all__ = [
     # schema
@@ -33,4 +44,14 @@ __all__ = [
     "load_embeddings",
     "append_embeddings",
     "merge_inference_results",
+    # models
+    "TrajectoryClassification",
+    "InferenceResult",
+    "PipelineConfig",
+    "DatasetConfig",
+    "EmbeddingConfig",
+    "ClassificationConfig",
+    "InferenceConfig",
+    "AnalysisConfig",
+    "PathsConfig",
 ]
