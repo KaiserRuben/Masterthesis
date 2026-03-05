@@ -113,7 +113,7 @@ def main():
     parser.add_argument("--clip-id", type=str, help="Single clip ID to process")
     parser.add_argument("--clip-ids", type=str, help="File with clip IDs (one per line)")
     parser.add_argument("--t0", type=int, default=5_000_000, help="Timestamp in microseconds")
-    parser.add_argument("-o", "--output", type=str, required=True, help="Output JSON file")
+    parser.add_argument("-o", "--output", type=str, default='/tmp', help="Output JSON file")
     args = parser.parse_args()
 
     print("=" * 80)

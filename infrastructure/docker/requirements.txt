@@ -19,6 +19,8 @@ hydra-colorlog>=1.2.0
 physical_ai_av>=0.1.0
 av>=16.0.1
 pillow>=12.0.0
+pydantic
+protobuf
 
 # Additional (from workstation setup.sh line 106)
 pandas
@@ -27,3 +29,9 @@ tqdm
 rich
 datasets
 filelock
+
+# BND-006: Boundary search
+pymoo
+pyarrow
+scipy
+lpips
