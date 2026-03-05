@@ -1,203 +1,103 @@
-# Semantic Boundary Testing for VLMs in Autonomous Driving
+# VLM Boundary Testing
 
-> Where do VLM decision boundaries lie, and do they predict trajectory model failures?
+> Systematic boundary testing for Vision-Language Models under black-box and white-box constraints.
 
 ## Overview
 
-This project investigates how semantic attributes affect trajectory prediction in vision-language models (VLMs) for autonomous driving. Rather than pixel-level perturbations, we discretize the input manifold into semantic classes and test how transitions between them affect prediction error.
+This project develops a search-based testing framework for finding decision boundaries in VLMs — minimal input perturbations (text and image) that cause behavioral change in model outputs.
 
 **Approach:**
-- Discretize input space into semantic classes (weather, road type, etc.)
-- Test how semantic transitions affect trajectory prediction error
-- Map decision landscape anisotropy and asymmetry
+- Multimodal manipulators for text (POS-aware synonym replacement) and image (VQGAN with discrete codebook)
+- Multi-objective optimization (AGE-MOEA-2) over a combined text+image genotype
+- Two boundary detection strategies: white-box (Liang et al. 2025, log-likelihood gap) and black-box (frontier pair detection via PDQ)
 
-**Key Finding:** Embedding-level boundaries and behavioral boundaries are structurally different. Testing strategies cannot use embedding distance as a proxy for behavioral risk.
+**SUT:** Open VLMs — Qwen3-VL (8B), Ministral-3 (14B), Gemma3, Alpamayo-R1 (based on Qwen3-VL).
 
-## Research Questions
-
-| RQ | Question | Status |
-|----|----------|--------|
-| **RQ1** | Can decision boundaries be systematically mapped through semantic perturbation? | ✅ Yes — 13,043 matched pairs across 6 keys |
-| **RQ2** | Is the decision landscape anisotropic (some axes more brittle)? | ✅ Moderate support (α = 1.41) |
-| **RQ3** | Do boundary characteristics predict real-world failure modes? | ⚠️ Key-level: yes. Scene-level: no |
-
-## Pipeline
-
-5-step reproducible workflow for boundary sensitivity analysis:
+## Pipeline Architecture
 
 ```
-╔═══════════════════════════════════════════════════════════════════════════╗
-║   Step 0: Sample     →  scenes.parquet (PhysicalAI-AV dataset)            ║
-║   Step 1: Embed      →  embeddings.npz (OpenCLIP ViT-bigG-14, 1280-dim)   ║
-║   Step 2: Classify   →  6 keys via k-NN propagation from anchors          ║
-║   Step 3: Infer      →  ADE + trajectory classes (Alpamayo-R1-10B)        ║
-║   Step 4: Analyze    →  stability map, boundary metrics                   ║
-╚═══════════════════════════════════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────────────┐
+│                        Optimizer                            │
+│                      (AGE-MOEA-2)                           │
+│                                                             │
+│  Genotype: [synonym_idx₁..synonym_idxₙ | code₁..codeₘ]    │
+│            ├── Text: |W| dims, each ∈{0..Kᵢ}              │
+│            └── Image: |P| dims, each ∈{0..N-1}            │
+│                                                             │
+│  Objectives:                                                │
+│    ω₁: minimize text perturbation distance                  │
+│    ω₂: minimize image perturbation distance                 │
+│    ω₃: maximize boundary closeness (Liang) / detect flip   │
+├──────────────┬──────────────────────────┬───────────────────┤
+│  Text Manip. │     Image Manipulator    │       SUT         │
+│              │                          │                   │
+│  POS-aware   │  VQGAN (pretrained       │  VLM (Qwen3-VL,  │
+│  synonym     │  codebook, e.g.          │  Gemma3, etc.)    │
+│  replacement │  imagenet_f16_16384)     │                   │
+│  via spaCy + │                          │  Tasks:           │
+│  fastText    │  Patch selection via     │  - Classification │
+│              │  spatial frequency       │  - BBox           │
+│  Seed expan- │                          │  - VQA            │
+│  sion via    │  Codebook reduction via  │                   │
+│  Pegasus     │  embedding distance      │                   │
+└──────────────┴──────────────────────────┴───────────────────┘
 ```
 
-**6 Canonical Classification Keys:**
-- `weather` — clear, cloudy, rainy, foggy
-- `time_of_day` — day, dawn/dusk, night
-- `depth_complexity` — flat, layered, complex
-- `occlusion_level` — none, minimal, moderate, severe
-- `road_type` — highway, urban, residential, intersection, rural
-- `required_action` — none, slow, stop, evade
+## Boundary Detection Strategies
 
-See [`pipeline/README.md`](pipeline/README.md) for detailed documentation.
+| Strategy | Access | Signal | Reference |
+|----------|--------|--------|-----------|
+| **Liang et al. 2025** | White-box (logits) | Log-likelihood gap between top-2 output sequences → 0 = boundary | [arXiv:2510.03271](https://arxiv.org/abs/2510.03271) |
+| **PDQ (Dobslaw et al.)** | Black-box | Frontier pair detection — y(X) ≠ y(X') with minimal distance | Dobslaw & Feldt 2023 |
 
-## Quick Start
+## VLM Task Taxonomy
 
-### Prerequisites
+| Task | Output Type | Boundary Definition |
+|------|------------|---------------------|
+| Classification | Discrete | Output label flip (clean, no threshold) |
+| BBox / Segmentation | Continuous | Threshold-dependent (IoU, validity) |
+| VQA | Free-form | Embedding-based semantic distance |
 
-- Python 3.12+
-- GPU: NVIDIA (CUDA) or Apple Silicon (MPS)
-- HuggingFace account with access to `nvidia/PhysicalAI-Autonomous-Vehicles`
-
-### Installation
-
-```bash
-# Clone with submodules
-git clone --recurse-submodules <repo-url>
-cd Masterarbeit
-
-# Install dependencies
-pip install -r pipeline/requirements.txt
-
-# Install Alpamayo package (requires HuggingFace access)
-pip install -e tools/alpamayo
-
-# Login to HuggingFace
-huggingface-cli login
-```
-
-### Run Pipeline
-
-```bash
-cd pipeline
-
-# Step 0: Sample scenes from dataset
-python step_0_sample.py --n 2600 --seed 42
-
-# Step 1: Compute OpenCLIP embeddings
-python step_1_embed.py --batch-size 4
-
-# Step 2: Propagate labels from anchors
-python step_2_classify.py
-
-# Step 3: Run trajectory inference (requires 24GB+ VRAM)
-python step_3_infer.py --resume
-
-# Step 4: Analyze boundaries
-python step_4_analyze.py
-```
+Initial focus: **Classification** (cleanest boundary definition), then generalization to other tasks.
 
 ## Project Structure
 
 ```
-├── pipeline/                 # 5-step analysis pipeline
-│   ├── step_0_sample.py      # Sample scenes from dataset
-│   ├── step_1_embed.py       # Compute OpenCLIP embeddings
-│   ├── step_2_classify.py    # Label propagation from anchors
-│   ├── step_3_infer.py       # Alpamayo trajectory inference
-│   ├── step_4_analyze.py     # Boundary sensitivity analysis
-│   ├── lib/                  # Pipeline library modules
-│   ├── notebooks/            # Interactive analysis
-│   └── config.yaml           # Pipeline configuration
+├── experiments/
+│   ├── imagenet_vlm_probing/    # VLM classification accuracy on ImageNet (forced decoding)
+│   ├── question_rewrite/        # Text manipulation prototypes (Pegasus, DIPPER, Parrot)
+│   └── Archive/                 # Previous experiments (Phases 0–4, trajectory-based)
 ├── tools/
-│   ├── vlm/                  # VLM inference queue (Ollama)
-│   ├── scene/                # Classification schemas & prompts
-│   └── alpamayo/             # Trajectory model interface (submodule)
+│   ├── VLTest/                  # VLTest framework (reference implementation)
+│   ├── smoo/                    # SMOO framework (modular SUT/Manipulator/Optimizer)
+│   ├── vlm/                     # VLM inference queue (Ollama-based)
+│   ├── scene/                   # Classification schemas & prompts
+│   └── alpamayo/                # NVIDIA Alpamayo-R1 trajectory model (submodule)
+├── pipeline/                    # [ARCHIVED] Trajectory-based boundary analysis pipeline
 ├── infrastructure/
-│   ├── docker/               # Cloud GPU deployment
-│   ├── workstation/          # NVIDIA GPU workstation setup
-│   └── local/                # Apple Silicon (MPS) setup
-├── experiments/              # Research experiments by phase
-│   ├── Phase-0_Infrastructure/
-│   ├── Phase-1_Classification/
-│   ├── Phase-2_Embeddings/
-│   ├── Phase-3_Boundaries/
-│   └── Phase-4_Validation/
-├── data/                     # Run outputs (gitignored)
-└── vlm_config.yaml           # VLM endpoint configuration
+│   ├── docker/                  # Cloud GPU deployment
+│   ├── workstation/             # NVIDIA GPU setup
+│   └── local/                   # Apple Silicon (MPS) setup
+├── data/                        # Run outputs (gitignored)
+└── vlm_config.yaml              # VLM endpoint configuration (Ollama)
 ```
-
-## Dataset
-
-**PhysicalAI-AV** (NVIDIA) — requires HuggingFace registration.
-
-- ~10k driving scenes from autonomous vehicle data
-- 4-camera composite images (front, left, right, rear)
-- 5s history + 5s prediction horizon
-- Ground truth trajectories for ADE computation
-
-Request access: https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles
-
-## Hardware
-
-### GPU Workstation (Recommended)
-
-For running Alpamayo-R1 with NVIDIA GPU (24GB+ VRAM):
-
-```bash
-cd infrastructure/workstation
-./setup.sh
-conda activate alpamayo
-```
-
-See [`infrastructure/workstation/README.md`](infrastructure/workstation/README.md).
-
-### Apple Silicon (Development)
-
-For local development on Mac with MPS:
-
-```bash
-cd infrastructure/local
-./setup.sh
-conda activate alpamayo-local
-```
-
-See [`infrastructure/local/README.md`](infrastructure/local/README.md).
-
-### Docker (Cloud Providers)
-
-For cloud GPU providers (RunPod, Vast.ai, Lambda, Modal):
-
-```bash
-docker build -f infrastructure/docker/Dockerfile.alpamayo -t alpamayo-inference .
-docker run --gpus all -e HF_TOKEN=$HF_TOKEN alpamayo-inference
-```
-
-See [`infrastructure/docker/README.md`](infrastructure/docker/README.md).
-
-## Experiments
-
-Research experiments organized by phase:
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-| **Phase-0** | Infrastructure & prompt tuning | Completed |
-| **Phase-1** | Batch scene classification (100 anchors) | Completed |
-| **Phase-2** | Latent navigation & embeddings | Completed |
-| **Phase-3** | Data-first boundary detection | Completed |
-| **Phase-4** | Validation experiments | In Progress |
-
-**Key Results (v0.1.1):**
-- 66.7% of semantic boundary crossings cause trajectory class changes
-- Moderate anisotropy (α = 1.41), ranking stable across experiments
-- Directional asymmetry confirmed (cloudy→foggy ≠ foggy→cloudy)
-- 402 danger zones identified, spatially coherent in UMAP
-
-See [`experiments/`](experiments/) for detailed experiment documentation.
 
 ## Tools
 
+### VLTest (Reference)
+
+Black-box VLM testing framework using VQGAN codebook mutation and POS-aware text perturbation. Primary reference for the image manipulation methodology.
+
+### SMOO (Reference)
+
+Modular search-based testing framework (SUT → Manipulator → Optimizer → Objectives). Architectural reference — the thesis pipeline follows this structure.
+
 ### vlm/
 
-VLM inference abstraction supporting Ollama. Provides work-stealing queue for distributed classification.
+VLM inference abstraction over Ollama with work-stealing queue for distributed inference.
 
 ```python
 from vlm import load_config, SyncRequestQueue, Message
-
 config = load_config("vlm_config.yaml")
 with SyncRequestQueue(config) as queue:
     result = queue.submit(model="qwen3-vl:8b", messages=[...])
@@ -205,18 +105,40 @@ with SyncRequestQueue(config) as queue:
 
 ### scene/
 
-Classification schema definitions with prompts and Pydantic response models for each of the 24 semantic keys.
+Classification schema definitions with prompts and Pydantic response models for 24 semantic keys.
 
-```python
-from scene import get_prompt, get_schema, get_response_model, KEYS
+## Active Experiments
 
-prompt = get_prompt("weather")
-model = get_response_model("weather")
-```
+### imagenet_vlm_probing
 
-### alpamayo/
+Evaluates VLM forced-decoding classification accuracy on ImageNet. Measures per-class P(correct_label | image, prompt), approximate rank of correct label among 1000 classes, and top-1 prediction. Used to establish classification baselines for boundary testing.
 
-Interface to NVIDIA's Alpamayo-R1-10B trajectory prediction model (git submodule).
+### question_rewrite
+
+Prototyping text manipulation strategies: Pegasus paraphrase, DIPPER, and Parrot models. Evaluates rewrite quality and diversity for seed expansion in the testing pipeline.
+
+## Hardware
+
+| Setup | Use Case | Details |
+|-------|----------|---------|
+| Apple Silicon (MPS) | Development, small experiments | See `infrastructure/local/` |
+| NVIDIA GPU (24GB+) | Full inference, batch experiments | See `infrastructure/workstation/` |
+| Cloud GPU (Docker) | Large-scale runs | See `infrastructure/docker/` |
+
+## Key References
+
+- Liang et al. 2025 — "Decision Boundary Testing for VLMs" ([arXiv:2510.03271](https://arxiv.org/abs/2510.03271))
+- Weißl et al. — MIMICRY: Targeted DL System Boundary Testing
+- Weißl et al. — SMOO: Modular Testing Framework
+- Dobslaw & Feldt 2023 — PDQ: Partition Distance Quantification
+- VLTest — Semantics-Preserving Multimodal Mutations for VLM Testing
+
+## Supervision
+
+| Role | Name | Affiliation |
+|------|------|-------------|
+| Supervisor | Prof. Andrea Stocco | TUM / fortiss |
+| Co-Supervisor | Oliver Weißl | fortiss |
 
 ## License
 

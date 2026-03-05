@@ -1,4 +1,10 @@
-# Pipeline
+# Pipeline [ARCHIVED]
+
+> **Note:** This pipeline implements the trajectory-based boundary sensitivity analysis from the initial thesis direction (Phases 0–4). The thesis has since pivoted to VLM boundary testing with classification-first approach, VQGAN/text manipulators, and search-based optimization. This code is preserved for reference but is no longer actively developed. See the [main README](../README.md) for the current direction.
+
+---
+
+*Original description:*
 
 5-step reproducible workflow for boundary sensitivity analysis in autonomous vehicle trajectory prediction.
 
