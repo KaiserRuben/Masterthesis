@@ -20,18 +20,18 @@ This project develops a search-based testing framework for finding decision boun
 │                        Optimizer                            │
 │                      (AGE-MOEA-2)                           │
 │                                                             │
-│  Genotype: [synonym_idx₁..synonym_idxₙ | code₁..codeₘ]    │
-│            ├── Text: |W| dims, each ∈{0..Kᵢ}              │
-│            └── Image: |P| dims, each ∈{0..N-1}            │
+│  Genotype: [synonym_idx₁..synonym_idxₙ | code₁..codeₘ]      │
+│            ├── Text: |W| dims, each ∈{0..Kᵢ}                │
+│            └── Image: |P| dims, each ∈{0..N-1}              │
 │                                                             │
 │  Objectives:                                                │
 │    ω₁: minimize text perturbation distance                  │
 │    ω₂: minimize image perturbation distance                 │
-│    ω₃: maximize boundary closeness (Liang) / detect flip   │
+│    ω₃: maximize boundary closeness (Liang) / detect flip    │
 ├──────────────┬──────────────────────────┬───────────────────┤
 │  Text Manip. │     Image Manipulator    │       SUT         │
 │              │                          │                   │
-│  POS-aware   │  VQGAN (pretrained       │  VLM (Qwen3-VL,  │
+│  POS-aware   │  VQGAN (pretrained       │  VLM (Qwen3-VL,   │
 │  synonym     │  codebook, e.g.          │  Gemma3, etc.)    │
 │  replacement │  imagenet_f16_16384)     │                   │
 │  via spaCy + │                          │  Tasks:           │
