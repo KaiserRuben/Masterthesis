@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Paths
-DATA_DIR = Path("/Users/kaiser/Projects/Masterarbeit/data")
+DATA_DIR = Path("/data")
 OUTPUT_DIR = DATA_DIR / "BND-002"
 FIG_DIR = OUTPUT_DIR / "figures"
 FIG_DIR.mkdir(exist_ok=True)

@@ -22,7 +22,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-PROJECT_ROOT = Path("/Users/kaiser/Projects/Masterarbeit")
+PROJECT_ROOT = Path("/")
 DATA_GAPS_PATH = PROJECT_ROOT / "data/BND-002/data_gaps.json"
 MISSING_CLIPS_PATH = PROJECT_ROOT / "data/BND-002/missing_clips.txt"
 OUTPUT_DIR = PROJECT_ROOT / "data/alpamayo_outputs"

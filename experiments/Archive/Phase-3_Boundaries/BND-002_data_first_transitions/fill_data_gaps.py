@@ -28,7 +28,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Paths
-PROJECT_ROOT = Path("/Users/kaiser/Projects/Masterarbeit")
+PROJECT_ROOT = Path("/")
 CLS_PATH = PROJECT_ROOT / "data/CLS-001/scene_classifications.json"
 EMB_PATH = PROJECT_ROOT / "data/EMB-001/v2/openclip_bigg_top_20260129_043407/embeddings.npz"
 TRAJ_PATH = PROJECT_ROOT / "data/alpamayo_outputs/workstation/inference_20260120_154727.json"

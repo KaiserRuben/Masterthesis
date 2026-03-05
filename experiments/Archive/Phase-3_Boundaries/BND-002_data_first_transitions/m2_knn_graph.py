@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 
 # Paths
-DATA_DIR = Path("/Users/kaiser/Projects/Masterarbeit/data")
+DATA_DIR = Path("/data")
 OUTPUT_DIR = DATA_DIR / "BND-002"
 
 # Configuration
