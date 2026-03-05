@@ -1,0 +1,2802 @@
+[
+  {
+    "Index": 253,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000253.png",
+    "adv_text": "Who is seeking at the panes ?"
+  },
+  {
+    "Index": 99,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000099.png",
+    "adv_text": "A someone stood by a roadbike is wacthing a dirtbike ."
+  },
+  {
+    "Index": 242,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000242.png",
+    "adv_text": "Does the boy have a green collar?"
+  },
+  {
+    "Index": 224,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000224.png",
+    "adv_text": "What is the cat drinking out of?"
+  },
+  {
+    "Index": 54,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000054.png",
+    "adv_text": "There is a insect brandens in the bedroom with the incense in it ."
+  },
+  {
+    "Index": 42,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000042.png",
+    "adv_text": "A gated grassy noel has a shorted stop sign stuck in part of the land."
+  },
+  {
+    "Index": 285,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000285.png",
+    "adv_text": "Do the those have their fingers aised ?"
+  },
+  {
+    "Index": 216,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000216.png",
+    "adv_text": "Where are the sheep staying?"
+  },
+  {
+    "Index": 238,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000238.png",
+    "adv_text": "What color is the signal light?"
+  },
+  {
+    "Index": 44,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000044.png",
+    "adv_text": "A gated grassy noel has a shorted stop sign stuck in part of the land."
+  },
+  {
+    "Index": 180,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000180.png",
+    "adv_text": "A kitten with a polkadot puppy is sat another to one another .",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 241,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000241.png",
+    "adv_text": "Does the boy have a green collar?"
+  },
+  {
+    "Index": 36,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000036.png",
+    "adv_text": "A young girl wearing a formal dress, and young man in a tie."
+  },
+  {
+    "Index": 287,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000287.png",
+    "adv_text": "The waveform bright is a hues ."
+  },
+  {
+    "Index": 223,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000223.png",
+    "adv_text": "What is the cat drinking out of?"
+  },
+  {
+    "Index": 39,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000039.png",
+    "adv_text": "A young girl wearing a formal dress, and young man in a tie."
+  },
+  {
+    "Index": 193,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000193.png",
+    "adv_text": "One catchment is knockout .",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 157,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000157.png",
+    "adv_text": "A pika 's tilted head with captivating orange tooth is displayed in an image .",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 277,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000277.png",
+    "adv_text": "Is it sunny?"
+  },
+  {
+    "Index": 116,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000116.png",
+    "adv_text": "There are at least 2 dogs next to each other.",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 88,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000088.png",
+    "adv_text": "A schoolgirl in a blouse and a middleaged guy in a tying ."
+  },
+  {
+    "Index": 281,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000281.png",
+    "adv_text": "Are all the folks grabbing their palms harmoniously ?"
+  },
+  {
+    "Index": 212,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000212.png",
+    "adv_text": "How many balls are in the water?"
+  },
+  {
+    "Index": 121,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000121.png",
+    "adv_text": "There are 3 dogs on the beach.",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 20,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000020.png",
+    "adv_text": "A man holding a motion controlled video game controller"
+  },
+  {
+    "Index": 222,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000222.png",
+    "adv_text": "What is the cat drinking out of?"
+  },
+  {
+    "Index": 66,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000066.png",
+    "adv_text": "A gentleman retains a clip multiplayer subcontroller"
+  },
+  {
+    "Index": 264,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000264.png",
+    "adv_text": "How numerous racquetballs are weightlessly on the subsurface of the wáter ?"
+  },
+  {
+    "Index": 257,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000257.png",
+    "adv_text": "Is the dachshunds utilizing the pillows ?"
+  },
+  {
+    "Index": 102,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000102.png",
+    "adv_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 49,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000049.png",
+    "adv_text": "A person standing by a bicycle as a motorcycle drives by."
+  },
+  {
+    "Index": 291,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000291.png",
+    "adv_text": "Is the man donning a blue neckband ?"
+  },
+  {
+    "Index": 71,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000071.png",
+    "adv_text": "A clambers in a pach of grime ."
+  },
+  {
+    "Index": 145,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000145.png",
+    "adv_text": "One basin is square and one is round.",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 7,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000007.png",
+    "adv_text": "A cat standing on the hood of a car."
+  },
+  {
+    "Index": 47,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000047.png",
+    "adv_text": "A person standing by a bicycle as a motorcycle drives by."
+  },
+  {
+    "Index": 143,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000143.png",
+    "adv_text": "One basin is square and one is round.",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 77,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000077.png",
+    "adv_text": "A tiolet and a shower in a bathroom"
+  },
+  {
+    "Index": 1,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000001.png",
+    "adv_text": "Bed in room with candles covered by a mosquito net"
+  },
+  {
+    "Index": 69,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000069.png",
+    "adv_text": "A gentleman secures a vieo play joystick"
+  },
+  {
+    "Index": 113,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000113.png",
+    "adv_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 218,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000218.png",
+    "adv_text": "Where are the sheep staying?"
+  },
+  {
+    "Index": 276,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000276.png",
+    "adv_text": "It is cloudy."
+  },
+  {
+    "Index": 128,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000128.png",
+    "adv_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 290,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000290.png",
+    "adv_text": "The thesignal glow is a hues ."
+  },
+  {
+    "Index": 188,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000188.png",
+    "adv_text": "The images contain only lower portions of a model's face, with more lips on the left and right.",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 292,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000292.png",
+    "adv_text": "Is the kid garb a blue cuffs ?"
+  },
+  {
+    "Index": 6,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000006.png",
+    "adv_text": "A cat standing on the hood of a car."
+  },
+  {
+    "Index": 51,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000051.png",
+    "adv_text": "A bedroom with candlelights and a anopheles vietnamnet ."
+  },
+  {
+    "Index": 297,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000297.png",
+    "adv_text": "They might be at a soiree ."
+  },
+  {
+    "Index": 144,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000144.png",
+    "adv_text": "One basin is square and one is round.",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 243,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000243.png",
+    "adv_text": "Does the boy have a green collar?"
+  },
+  {
+    "Index": 165,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000165.png",
+    "adv_text": "corgi canines are inisde a car , and there is no part of their organs ouside of a vehicle in the images .",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 164,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000164.png",
+    "adv_text": "corgi canines are underneath a SUV , and there is no part of their torso utside of a vehicle in the images .",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 120,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000120.png",
+    "adv_text": "There are at least 2 dogs next to each other.",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 4,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000004.png",
+    "adv_text": "Bed in room with candles covered by a mosquito net"
+  },
+  {
+    "Index": 181,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000181.png",
+    "adv_text": "numerous boxed sets of roducts as well as unboxed perfume bottles of various patterns and sizes are consisted in the combined images .",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 201,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000201.png",
+    "adv_text": "Who is looking out the window?"
+  },
+  {
+    "Index": 117,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000117.png",
+    "adv_text": "There are at least 2 dogs next to each other.",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 139,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000139.png",
+    "adv_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 184,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000184.png",
+    "adv_text": "various boxed sets of prducts as well as unboxed scent bottles of various colors and sizes are consisted in the combined images .",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 189,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000189.png",
+    "adv_text": "The models visage is divided into upper half with tinted cheeks and the theright half with no lips at sorts .",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 169,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000169.png",
+    "adv_text": "The 2 pooches are ogether .",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 123,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000123.png",
+    "adv_text": "There are 3 dogs on the beach.",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 98,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000098.png",
+    "adv_text": "A individual stood by a motorcycle as a dirtbike catches ."
+  },
+  {
+    "Index": 125,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000125.png",
+    "adv_text": "There are 3 dogs on the beach.",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 78,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000078.png",
+    "adv_text": "There is a shower in a tiny bathroom ."
+  },
+  {
+    "Index": 58,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000058.png",
+    "adv_text": "The moggie is on the bonnet of the minivan ."
+  },
+  {
+    "Index": 142,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000142.png",
+    "adv_text": "One basin is square and one is round.",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 73,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000073.png",
+    "adv_text": "A peson clambers on a bugfix of grime ."
+  },
+  {
+    "Index": 263,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000263.png",
+    "adv_text": "How numerous golfballs are weightlessly on the subsurface of the wáter ?"
+  },
+  {
+    "Index": 105,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000105.png",
+    "adv_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 220,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000220.png",
+    "adv_text": "Where are the sheep staying?"
+  },
+  {
+    "Index": 151,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000151.png",
+    "adv_text": "You can think a bench from the handside of the monument of the feces moths .",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 150,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000150.png",
+    "adv_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 211,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000211.png",
+    "adv_text": "How many balls are in the water?"
+  },
+  {
+    "Index": 80,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000080.png",
+    "adv_text": "A washroom and lavatory in a sizable bathroom ."
+  },
+  {
+    "Index": 244,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000244.png",
+    "adv_text": "Does the boy have a green collar?"
+  },
+  {
+    "Index": 37,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000037.png",
+    "adv_text": "A young girl wearing a formal dress, and young man in a tie."
+  },
+  {
+    "Index": 45,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000045.png",
+    "adv_text": "A gated grassy noel has a shorted stop sign stuck in part of the land."
+  },
+  {
+    "Index": 219,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000219.png",
+    "adv_text": "Where are the sheep staying?"
+  },
+  {
+    "Index": 132,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000132.png",
+    "adv_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 63,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000063.png",
+    "adv_text": "A techtonics of steak with potatoes and giblet ."
+  },
+  {
+    "Index": 62,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000062.png",
+    "adv_text": "A dish of beef , stew , and patatoes ."
+  },
+  {
+    "Index": 110,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000110.png",
+    "adv_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 175,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000175.png",
+    "adv_text": "puppies are on the seashore .",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 146,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000146.png",
+    "adv_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 195,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000195.png",
+    "adv_text": "One reservoir is sqaure and the these is final .",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 53,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000053.png",
+    "adv_text": "A couch with lanterns is noncovered by a insect thenet ."
+  },
+  {
+    "Index": 197,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000197.png",
+    "adv_text": "The one image shows a two of legs in grey knee pads , while the thther photo shows a pair of legs with long knee wraps on the left front .",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 217,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000217.png",
+    "adv_text": "Where are the sheep staying?"
+  },
+  {
+    "Index": 215,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000215.png",
+    "adv_text": "How many balls are in the water?"
+  },
+  {
+    "Index": 196,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000196.png",
+    "adv_text": "One image shows a pair of torso wearing black knee pads , and the other one shows a shoes of thighs with a short knee wrap on the left flip .",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 127,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000127.png",
+    "adv_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 171,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000171.png",
+    "adv_text": "The dogs are outside",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 298,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000298.png",
+    "adv_text": "Are they being a bachlorette ?"
+  },
+  {
+    "Index": 152,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000152.png",
+    "adv_text": "You can look a bench from the handside of the shrine of the manure weevils .",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 186,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000186.png",
+    "adv_text": "The behind and right images demonstrate the lower parts of the model 's face , while the left one showcases colored kissable .",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 84,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000084.png",
+    "adv_text": "A tiny bedroom with a mattress and wondow is floodgates ."
+  },
+  {
+    "Index": 198,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000198.png",
+    "adv_text": "One image shows a pair of thighs wearing black knee pads , and the other one shows a two of knees with a loong knee wrap on the left front .",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 24,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000024.png",
+    "adv_text": "A catches crouches on a patch of dirt."
+  },
+  {
+    "Index": 95,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000095.png",
+    "adv_text": "The quit roadsign is unstuck in portion of the meadowy noel ."
+  },
+  {
+    "Index": 293,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000293.png",
+    "adv_text": "Is the girl waering a purple undercollar ?"
+  },
+  {
+    "Index": 299,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000299.png",
+    "adv_text": "Are they being a soiree ?"
+  },
+  {
+    "Index": 282,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000282.png",
+    "adv_text": "Are all the individuals carrying their wrists ogether ?"
+  },
+  {
+    "Index": 265,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000265.png",
+    "adv_text": "How myriad golfballs are levitating on the suface of the wáter ?"
+  },
+  {
+    "Index": 255,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000255.png",
+    "adv_text": "Someone is lloking out the panes ."
+  },
+  {
+    "Index": 275,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000275.png",
+    "adv_text": "The moggie is imbibing ."
+  },
+  {
+    "Index": 278,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000278.png",
+    "adv_text": "Is it cloudy ?"
+  },
+  {
+    "Index": 108,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000108.png",
+    "adv_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 92,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000092.png",
+    "adv_text": "The start roadsign is unstuck in aspect of the meadowy noel ."
+  },
+  {
+    "Index": 119,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000119.png",
+    "adv_text": "There are at least 2 dogs next to each other.",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 89,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000089.png",
+    "adv_text": "A schoolgirl in a skirt and a precocious guy in a tying ."
+  },
+  {
+    "Index": 251,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000251.png",
+    "adv_text": "Who is loking at the ndow ?"
+  },
+  {
+    "Index": 256,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000256.png",
+    "adv_text": "The doonas may be commonly by the cats ."
+  },
+  {
+    "Index": 283,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000283.png",
+    "adv_text": "Are the folks grabbing fingers ?"
+  },
+  {
+    "Index": 122,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000122.png",
+    "adv_text": "There are 3 dogs on the beach.",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 274,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000274.png",
+    "adv_text": "The housecat is imbibing something ."
+  },
+  {
+    "Index": 172,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000172.png",
+    "adv_text": "There are cats inside .",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 76,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000076.png",
+    "adv_text": "A large bathroom with a toilet and loo ."
+  },
+  {
+    "Index": 266,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000266.png",
+    "adv_text": "Where are the cattle loacted ?"
+  },
+  {
+    "Index": 178,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000178.png",
+    "adv_text": "There is a dog and puppy sat sometime to each those .",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 79,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000079.png",
+    "adv_text": "A samll bedroom with a toilet and toliet ."
+  },
+  {
+    "Index": 236,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000236.png",
+    "adv_text": "What color is the signal light?"
+  },
+  {
+    "Index": 11,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000011.png",
+    "adv_text": "a plate of meat topped with potatoes veggies and gravy"
+  },
+  {
+    "Index": 214,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000214.png",
+    "adv_text": "How many balls are in the water?"
+  },
+  {
+    "Index": 85,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000085.png",
+    "adv_text": "A hallway with a sill allows in illumination ."
+  },
+  {
+    "Index": 204,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000204.png",
+    "adv_text": "Who is looking out the window?"
+  },
+  {
+    "Index": 269,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000269.png",
+    "adv_text": "Where are the baaing centrally ?"
+  },
+  {
+    "Index": 230,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000230.png",
+    "adv_text": "Is it cloudy?"
+  },
+  {
+    "Index": 34,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000034.png",
+    "adv_text": "A small room with a bed and window letting in light."
+  },
+  {
+    "Index": 167,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000167.png",
+    "adv_text": "The 2 pooches are first to each otehr .",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 262,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000262.png",
+    "adv_text": "How numerous racquetballs are weightlessly on the suface of the seawater ?"
+  },
+  {
+    "Index": 208,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000208.png",
+    "adv_text": "Are the dogs using the blankets?"
+  },
+  {
+    "Index": 28,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000028.png",
+    "adv_text": "A bath and a toilet in a small room."
+  },
+  {
+    "Index": 18,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000018.png",
+    "adv_text": "A man holding a motion controlled video game controller"
+  },
+  {
+    "Index": 254,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000254.png",
+    "adv_text": "Someone is interested out the panes ."
+  },
+  {
+    "Index": 158,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000158.png",
+    "adv_text": "A muskrat 's tilted head with captivating blue molars is seen in an image .",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 9,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000009.png",
+    "adv_text": "A cat standing on the hood of a car."
+  },
+  {
+    "Index": 14,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000014.png",
+    "adv_text": "a plate of meat topped with potatoes veggies and gravy"
+  },
+  {
+    "Index": 202,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000202.png",
+    "adv_text": "Who is looking out the window?"
+  },
+  {
+    "Index": 200,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000200.png",
+    "adv_text": "One image shows a pair of limbs wearing black knee pads , and the other one shows a trio of thighs with a short knee wrap on the left flip .",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 232,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000232.png",
+    "adv_text": "Are the people all raising their hands?"
+  },
+  {
+    "Index": 68,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000068.png",
+    "adv_text": "A guy carries a clip agame gamepad"
+  },
+  {
+    "Index": 273,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000273.png",
+    "adv_text": "The moggie is drunk ."
+  },
+  {
+    "Index": 154,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000154.png",
+    "adv_text": "You can find a bench from the right of the sculpture of the poo weevils .",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 237,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000237.png",
+    "adv_text": "What color is the signal light?"
+  },
+  {
+    "Index": 112,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000112.png",
+    "adv_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 267,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000267.png",
+    "adv_text": "Where are the goats ?"
+  },
+  {
+    "Index": 33,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000033.png",
+    "adv_text": "A small room with a bed and window letting in light."
+  },
+  {
+    "Index": 115,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000115.png",
+    "adv_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 300,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000300.png",
+    "adv_text": "Are they haing a houseparty ?"
+  },
+  {
+    "Index": 8,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000008.png",
+    "adv_text": "A cat standing on the hood of a car."
+  },
+  {
+    "Index": 83,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000083.png",
+    "adv_text": "A tiny upstairs with a mattress and ndow is doors ."
+  },
+  {
+    "Index": 82,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000082.png",
+    "adv_text": "The tiny upstairs is light in the evening ."
+  },
+  {
+    "Index": 280,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000280.png",
+    "adv_text": "It is hazy ."
+  },
+  {
+    "Index": 86,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000086.png",
+    "adv_text": "A teenager is wore a skirt and a man is wore a tying ."
+  },
+  {
+    "Index": 70,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000070.png",
+    "adv_text": "A gentleman retains a YouTube multiplayer joystick"
+  },
+  {
+    "Index": 75,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000075.png",
+    "adv_text": "A someone cowers on a hotfix of grime ."
+  },
+  {
+    "Index": 229,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000229.png",
+    "adv_text": "Is it cloudy?"
+  },
+  {
+    "Index": 106,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000106.png",
+    "adv_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 35,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000035.png",
+    "adv_text": "A small room with a bed and window letting in light."
+  },
+  {
+    "Index": 100,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000100.png",
+    "adv_text": "A someone seated by a motorcycle is seeing a bicycle ."
+  },
+  {
+    "Index": 38,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000038.png",
+    "adv_text": "A young girl wearing a formal dress, and young man in a tie."
+  },
+  {
+    "Index": 213,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000213.png",
+    "adv_text": "How many balls are in the water?"
+  },
+  {
+    "Index": 247,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000247.png",
+    "adv_text": "Are they at a party?"
+  },
+  {
+    "Index": 192,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000192.png",
+    "adv_text": "One catchment is tuit and the these sqaure .",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 161,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000161.png",
+    "adv_text": "corgi puppies are underneath a truck , and there is no part of their thebody ouside of a vehicle in the images .",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 166,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000166.png",
+    "adv_text": "The 2 pooches are first to each various .",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 133,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000133.png",
+    "adv_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 268,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000268.png",
+    "adv_text": "Where are the animals?"
+  },
+  {
+    "Index": 74,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000074.png",
+    "adv_text": "A someone is on a bugfix of gravel ."
+  },
+  {
+    "Index": 248,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000248.png",
+    "adv_text": "Are they at a party?"
+  },
+  {
+    "Index": 107,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000107.png",
+    "adv_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 17,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000017.png",
+    "adv_text": "A man holding a motion controlled video game controller"
+  },
+  {
+    "Index": 97,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000097.png",
+    "adv_text": "A someone stood by a bicycle is wacthing a moped ."
+  },
+  {
+    "Index": 160,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000160.png",
+    "adv_text": "A ptarmigan 's tilted head with vibrant orange tooth is seen in an image .",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 163,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000163.png",
+    "adv_text": "There are no corgi canines utside of a vehicle , and no daschund canines outside .",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 203,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000203.png",
+    "adv_text": "Who is looking out the window?"
+  },
+  {
+    "Index": 147,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000147.png",
+    "adv_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 65,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000065.png",
+    "adv_text": "A tray of meals noncovered in potatoes and giblet ."
+  },
+  {
+    "Index": 135,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000135.png",
+    "adv_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 176,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000176.png",
+    "adv_text": "There is a kitten and puppy standing second to each those .",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 141,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000141.png",
+    "adv_text": "One basin is square and one is round.",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 87,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000087.png",
+    "adv_text": "A teenager in a gown and a teenage gentleman in a tying ."
+  },
+  {
+    "Index": 252,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000252.png",
+    "adv_text": "Who is searching at the wondow ?"
+  },
+  {
+    "Index": 260,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000260.png",
+    "adv_text": "Is the cats utilizing the duvets ?"
+  },
+  {
+    "Index": 19,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000019.png",
+    "adv_text": "A man holding a motion controlled video game controller"
+  },
+  {
+    "Index": 52,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000052.png",
+    "adv_text": "A sofa with incense is blanketed by a insect brandens ."
+  },
+  {
+    "Index": 94,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000094.png",
+    "adv_text": "A try roadsign is trapped in a whole of the meadowy noel ."
+  },
+  {
+    "Index": 173,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000173.png",
+    "adv_text": "puppies are on the boardwalk .",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 179,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000179.png",
+    "adv_text": "The kitten has a glow brown and whtie polkadot feline .",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 289,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000289.png",
+    "adv_text": "What hues is the illumination ?"
+  },
+  {
+    "Index": 59,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000059.png",
+    "adv_text": "There is a feline on the grille of a truck ."
+  },
+  {
+    "Index": 294,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000294.png",
+    "adv_text": "Is the kid donning a red ecollar ?"
+  },
+  {
+    "Index": 48,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000048.png",
+    "adv_text": "A person standing by a bicycle as a motorcycle drives by."
+  },
+  {
+    "Index": 56,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000056.png",
+    "adv_text": "The moggie is on the bonnet of the automobile ."
+  },
+  {
+    "Index": 245,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000245.png",
+    "adv_text": "Does the boy have a green collar?"
+  },
+  {
+    "Index": 170,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000170.png",
+    "adv_text": "There are 2 dogs next to each other",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 207,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000207.png",
+    "adv_text": "Are the dogs using the blankets?"
+  },
+  {
+    "Index": 61,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000061.png",
+    "adv_text": "A underplate of meals has beef on bootom of patatoes ."
+  },
+  {
+    "Index": 191,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000191.png",
+    "adv_text": "One catchment is quare and the those is knockout .",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 183,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000183.png",
+    "adv_text": "various boxed sets of poducts as well as unboxed scent bottles of various colors and sizes are inlcuded in the combined images .",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 249,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000249.png",
+    "adv_text": "Are they at a party?"
+  },
+  {
+    "Index": 240,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000240.png",
+    "adv_text": "What color is the signal light?"
+  },
+  {
+    "Index": 136,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000136.png",
+    "adv_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 187,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000187.png",
+    "adv_text": "The models smile is divided into higher half with tinted cheeks and the rght half with no lips at those .",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 288,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000288.png",
+    "adv_text": "The singnal glow is not regarded ."
+  },
+  {
+    "Index": 25,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000025.png",
+    "adv_text": "A catches crouches on a patch of dirt."
+  },
+  {
+    "Index": 239,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000239.png",
+    "adv_text": "What color is the signal light?"
+  },
+  {
+    "Index": 91,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000091.png",
+    "adv_text": "A cease roadsign is sticking in a the of the unmown noel ."
+  },
+  {
+    "Index": 162,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000162.png",
+    "adv_text": "corgi canines are iside a car , and there is no part of their thebody ouside of a vehicle in the images .",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 12,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000012.png",
+    "adv_text": "a plate of meat topped with potatoes veggies and gravy"
+  },
+  {
+    "Index": 148,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000148.png",
+    "adv_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 199,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000199.png",
+    "adv_text": "One image shows a pair of knees wearing black knee pads , and the other one shows a two of knees with a lengthy knee wrap on the left opposite .",
+    "ref_image": "nlvr_ori_9_ref.png"
+  },
+  {
+    "Index": 72,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000072.png",
+    "adv_text": "A peson kneels on a bugfix of grime ."
+  },
+  {
+    "Index": 101,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000101.png",
+    "adv_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 261,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_2.png",
+    "orig_text": "How many balls are in the water?",
+    "adv_image": "adv_000000000261.png",
+    "adv_text": "How myriad golfballs are drifting on the suface of the ofwater ?"
+  },
+  {
+    "Index": 30,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000030.png",
+    "adv_text": "A bath and a toilet in a small room."
+  },
+  {
+    "Index": 185,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000185.png",
+    "adv_text": "several unboxed apart of poducts and unboxed fragrance bottles are included in the photographs .",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 177,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000177.png",
+    "adv_text": "There is a kitten and moggy seated another to each various .",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 231,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000231.png",
+    "adv_text": "Are the people all raising their hands?"
+  },
+  {
+    "Index": 206,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000206.png",
+    "adv_text": "Are the dogs using the blankets?"
+  },
+  {
+    "Index": 159,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000159.png",
+    "adv_text": "A pika 's tilted head with captivating pink molars is demonstrated in an image .",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 130,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000130.png",
+    "adv_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 235,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000235.png",
+    "adv_text": "Are the people all raising their hands?"
+  },
+  {
+    "Index": 134,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000134.png",
+    "adv_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 156,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000156.png",
+    "adv_text": "A chipmunk 's tilted head with vibrant pink tooth is depicted in an image .",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 31,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000031.png",
+    "adv_text": "A small room with a bed and window letting in light."
+  },
+  {
+    "Index": 111,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000111.png",
+    "adv_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 131,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000131.png",
+    "adv_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 155,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000155.png",
+    "adv_text": "You can look a bench from the behind of the sculpture of the poo insects .",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 3,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000003.png",
+    "adv_text": "Bed in room with candles covered by a mosquito net"
+  },
+  {
+    "Index": 205,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_0.png",
+    "orig_text": "Who is looking out the window?",
+    "adv_image": "adv_000000000205.png",
+    "adv_text": "Who is looking out the window?"
+  },
+  {
+    "Index": 64,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000064.png",
+    "adv_text": "A dish of meals convered in potatoes and giblet ."
+  },
+  {
+    "Index": 104,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000104.png",
+    "adv_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 43,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000043.png",
+    "adv_text": "A gated grassy noel has a shorted stop sign stuck in part of the land."
+  },
+  {
+    "Index": 26,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000026.png",
+    "adv_text": "A bath and a toilet in a small room."
+  },
+  {
+    "Index": 109,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_1.png",
+    "orig_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "adv_image": "adv_000000000109.png",
+    "adv_text": "An image shows a marmot's tilted head with vivid yellow teeth showing.",
+    "ref_image": "nlvr_ori_1_ref.png"
+  },
+  {
+    "Index": 221,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000221.png",
+    "adv_text": "What is the cat drinking out of?"
+  },
+  {
+    "Index": 295,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_8.png",
+    "orig_text": "Does the boy have a green collar?",
+    "adv_image": "adv_000000000295.png",
+    "adv_text": "Is the man garb a purple neckband ?"
+  },
+  {
+    "Index": 124,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000124.png",
+    "adv_text": "There are 3 dogs on the beach.",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 209,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000209.png",
+    "adv_text": "Are the dogs using the blankets?"
+  },
+  {
+    "Index": 5,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000005.png",
+    "adv_text": "Bed in room with candles covered by a mosquito net"
+  },
+  {
+    "Index": 10,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000010.png",
+    "adv_text": "A cat standing on the hood of a car."
+  },
+  {
+    "Index": 234,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000234.png",
+    "adv_text": "Are the people all raising their hands?"
+  },
+  {
+    "Index": 210,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000210.png",
+    "adv_text": "Are the dogs using the blankets?"
+  },
+  {
+    "Index": 103,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000103.png",
+    "adv_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 182,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_6.png",
+    "orig_text": "The combined images include multiple boxed sets of products as well as unboxed fragrance bottles of various shapes and sizes.",
+    "adv_image": "adv_000000000182.png",
+    "adv_text": "Multiple unboxed sets of products as well well unboxed scent vials are included in the blended images .",
+    "ref_image": "nlvr_ori_6_ref.png"
+  },
+  {
+    "Index": 114,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_2.png",
+    "orig_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "adv_image": "adv_000000000114.png",
+    "adv_text": "All images show corgi dogs inside a vehicle, and no dogs have a part of their body outside a vehicle.",
+    "ref_image": "nlvr_ori_2_ref.png"
+  },
+  {
+    "Index": 272,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000272.png",
+    "adv_text": "The feline is imbibing from a screwtop ."
+  },
+  {
+    "Index": 246,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000246.png",
+    "adv_text": "Are they at a party?"
+  },
+  {
+    "Index": 225,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000225.png",
+    "adv_text": "What is the cat drinking out of?"
+  },
+  {
+    "Index": 29,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000029.png",
+    "adv_text": "A bath and a toilet in a small room."
+  },
+  {
+    "Index": 21,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000021.png",
+    "adv_text": "A catches crouches on a patch of dirt."
+  },
+  {
+    "Index": 137,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000137.png",
+    "adv_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 140,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000140.png",
+    "adv_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 57,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000057.png",
+    "adv_text": "The housecat is on the liripipe of the automobile ."
+  },
+  {
+    "Index": 126,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000126.png",
+    "adv_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 129,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_5.png",
+    "orig_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "adv_image": "adv_000000000129.png",
+    "adv_text": "One puppy has a light brown and white striped kitten sitting next to it.",
+    "ref_image": "nlvr_ori_5_ref.png"
+  },
+  {
+    "Index": 284,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000284.png",
+    "adv_text": "Are the those in this pciture elevating their palms ?"
+  },
+  {
+    "Index": 168,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000168.png",
+    "adv_text": "There are 2 puppies last to each those",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 227,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000227.png",
+    "adv_text": "Is it cloudy?"
+  },
+  {
+    "Index": 153,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_0.png",
+    "orig_text": "To the left of one of the images of the statue of the dung beetles, you can see a bench.",
+    "adv_image": "adv_000000000153.png",
+    "adv_text": "You can know a bench from the right of the shrine of the manure moths .",
+    "ref_image": "nlvr_ori_0_ref.png"
+  },
+  {
+    "Index": 174,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_4.png",
+    "orig_text": "There are 3 dogs on the beach.",
+    "adv_image": "adv_000000000174.png",
+    "adv_text": "The canines are ouside",
+    "ref_image": "nlvr_ori_4_ref.png"
+  },
+  {
+    "Index": 286,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_7.png",
+    "orig_text": "What color is the signal light?",
+    "adv_image": "adv_000000000286.png",
+    "adv_text": "The waveform illumination is not regarded ."
+  },
+  {
+    "Index": 41,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000041.png",
+    "adv_text": "A gated grassy noel has a shorted stop sign stuck in part of the land."
+  },
+  {
+    "Index": 46,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000046.png",
+    "adv_text": "A person standing by a bicycle as a motorcycle drives by."
+  },
+  {
+    "Index": 279,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000279.png",
+    "adv_text": "Is it cloudy ?"
+  },
+  {
+    "Index": 50,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000050.png",
+    "adv_text": "A person standing by a bicycle as a motorcycle drives by."
+  },
+  {
+    "Index": 296,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000296.png",
+    "adv_text": "Are they haing a shindig ?"
+  },
+  {
+    "Index": 55,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000055.png",
+    "adv_text": "A bunk with lanterns is encompassed by a insect worths ."
+  },
+  {
+    "Index": 23,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000023.png",
+    "adv_text": "A catches crouches on a patch of dirt."
+  },
+  {
+    "Index": 270,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_3.png",
+    "orig_text": "Where are the sheep staying?",
+    "adv_image": "adv_000000000270.png",
+    "adv_text": "Where are the humans ?"
+  },
+  {
+    "Index": 81,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000081.png",
+    "adv_text": "A hallway with a panes helps in dark ."
+  },
+  {
+    "Index": 259,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000259.png",
+    "adv_text": "The cats might be use the scarves ."
+  },
+  {
+    "Index": 233,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_6.png",
+    "orig_text": "Are the people all raising their hands?",
+    "adv_image": "adv_000000000233.png",
+    "adv_text": "Are the people all raising their hands?"
+  },
+  {
+    "Index": 228,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000228.png",
+    "adv_text": "Is it cloudy?"
+  },
+  {
+    "Index": 258,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_1.png",
+    "orig_text": "Are the dogs using the blankets?",
+    "adv_image": "adv_000000000258.png",
+    "adv_text": "The dachshunds are utilizing duvets ."
+  },
+  {
+    "Index": 226,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_5.png",
+    "orig_text": "Is it cloudy?",
+    "adv_image": "adv_000000000226.png",
+    "adv_text": "Is it cloudy?"
+  },
+  {
+    "Index": 32,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_6.png",
+    "orig_text": "A small room with a bed and window letting in light.",
+    "adv_image": "adv_000000000032.png",
+    "adv_text": "A small room with a bed and window letting in light."
+  },
+  {
+    "Index": 93,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_8.png",
+    "orig_text": "A gated grassy noel has a shorted stop sign stuck in part of the land.",
+    "adv_image": "adv_000000000093.png",
+    "adv_text": "A halt placard is trapped in a integral of the meadowy noel ."
+  },
+  {
+    "Index": 22,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_4.png",
+    "orig_text": "A catches crouches on a patch of dirt.",
+    "adv_image": "adv_000000000022.png",
+    "adv_text": "A catches crouches on a patch of dirt."
+  },
+  {
+    "Index": 190,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000190.png",
+    "adv_text": "The right and right images exhibit the lower parts of the model 's face , while the left one showcases untinted cheeks .",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 194,
+    "Task": "nlvr",
+    "method": "joint",
+    "orig_image": "nlvr_ori_8.png",
+    "orig_text": "One basin is square and one is round.",
+    "adv_image": "adv_000000000194.png",
+    "adv_text": "One catchment is quarterfinal and the thther is aquare .",
+    "ref_image": "nlvr_ori_8_ref.png"
+  },
+  {
+    "Index": 67,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000067.png",
+    "adv_text": "A gentleman carries a thevideo gmae gamepad"
+  },
+  {
+    "Index": 271,
+    "Task": "vqa",
+    "method": "joint",
+    "orig_image": "vqa_ori_4.png",
+    "orig_text": "What is the cat drinking out of?",
+    "adv_image": "adv_000000000271.png",
+    "adv_text": "The moggie is quaffing from a swingtop ."
+  },
+  {
+    "Index": 13,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000013.png",
+    "adv_text": "a plate of meat topped with potatoes veggies and gravy"
+  },
+  {
+    "Index": 96,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_9.png",
+    "orig_text": "A person standing by a bicycle as a motorcycle drives by.",
+    "adv_image": "adv_000000000096.png",
+    "adv_text": "A individual is sitting sometime to a bicycle ."
+  },
+  {
+    "Index": 250,
+    "Task": "vqa",
+    "method": "image",
+    "orig_image": "vqa_ori_9.png",
+    "orig_text": "Are they at a party?",
+    "adv_image": "adv_000000000250.png",
+    "adv_text": "Are they at a party?"
+  },
+  {
+    "Index": 118,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_3.png",
+    "orig_text": "There are at least 2 dogs next to each other.",
+    "adv_image": "adv_000000000118.png",
+    "adv_text": "There are at least 2 dogs next to each other.",
+    "ref_image": "nlvr_ori_3_ref.png"
+  },
+  {
+    "Index": 60,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_1.png",
+    "orig_text": "A cat standing on the hood of a car.",
+    "adv_image": "adv_000000000060.png",
+    "adv_text": "There is a kitty on the bonnet of a automobile ."
+  },
+  {
+    "Index": 15,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_2.png",
+    "orig_text": "a plate of meat topped with potatoes veggies and gravy",
+    "adv_image": "adv_000000000015.png",
+    "adv_text": "a plate of meat topped with potatoes veggies and gravy"
+  },
+  {
+    "Index": 138,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_7.png",
+    "orig_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "adv_image": "adv_000000000138.png",
+    "adv_text": "Each image contains only lower halves of a model's face, including tinted lips, and the left image contains more lips than the right.",
+    "ref_image": "nlvr_ori_7_ref.png"
+  },
+  {
+    "Index": 27,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_5.png",
+    "orig_text": "A bath and a toilet in a small room.",
+    "adv_image": "adv_000000000027.png",
+    "adv_text": "A bath and a toilet in a small room."
+  },
+  {
+    "Index": 40,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000040.png",
+    "adv_text": "A young girl wearing a formal dress, and young man in a tie."
+  },
+  {
+    "Index": 2,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_0.png",
+    "orig_text": "Bed in room with candles covered by a mosquito net",
+    "adv_image": "adv_000000000002.png",
+    "adv_text": "Bed in room with candles covered by a mosquito net"
+  },
+  {
+    "Index": 90,
+    "Task": "itm",
+    "method": "joint",
+    "orig_image": "itm_ori_7.png",
+    "orig_text": "A young girl wearing a formal dress, and young man in a tie.",
+    "adv_image": "adv_000000000090.png",
+    "adv_text": "A teenage man and woman are attired in nonformal dress ."
+  },
+  {
+    "Index": 16,
+    "Task": "itm",
+    "method": "image",
+    "orig_image": "itm_ori_3.png",
+    "orig_text": "A man holding a motion controlled video game controller",
+    "adv_image": "adv_000000000016.png",
+    "adv_text": "A man holding a motion controlled video game controller"
+  },
+  {
+    "Index": 149,
+    "Task": "nlvr",
+    "method": "image",
+    "orig_image": "nlvr_ori_9.png",
+    "orig_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "adv_image": "adv_000000000149.png",
+    "adv_text": "One image shows a pair of legs wearing black knee pads, and the other image shows a pair of legs with a long knee wrap on only the left-side leg.",
+    "ref_image": "nlvr_ori_9_ref.png"
+  }
+]

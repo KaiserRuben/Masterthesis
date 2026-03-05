@@ -1,0 +1,2 @@
+# GUI & image loading
+Pillow>=9.0.0
