@@ -1,0 +1,3 @@
+[submodule "tools/smoo"]
+	path = tools/smoo
+	url = https://github.com/oliverweissl/SMOO.git
