@@ -1,0 +1,11 @@
+image_idx,ground_truth_idx,ground_truth_label,correct_log_prob,correct_log_prob_norm,correct_n_tokens,correct_rank,top1_label,top1_log_prob_norm,generated_text
+0,2,great white shark,-2.9569168090820312,-0.9856389363606771,3,1,great white shark,-0.9856389363606771,great white shark
+1,0,tench,-0.0019443035125732422,-0.0009721517562866211,2,1,tench,-0.0009721517562866211,tench
+2,4,hammerhead shark,-3.701171875,-1.2337239583333333,3,1,hammerhead shark,-1.2337239583333333,hammerhead shark
+3,4,hammerhead shark,-8.87255859375,-2.95751953125,3,3,tiger shark,-0.6600341796875,tiger shark
+4,9,ostrich,-4.2682342529296875,-2.1341171264648438,2,1,ostrich,-2.1341171264648438,ostrich
+5,2,great white shark,-2.1829566955566406,-0.7276522318522135,3,1,great white shark,-0.7276522318522135,great white shark
+6,3,tiger shark,-5.0537109375,-2.52685546875,2,5,great white shark,-1.208740234375,great white shark
+7,1,goldfish,-0.018174171447753906,-0.009087085723876953,2,1,goldfish,-0.009087085723876953,goldfish
+8,3,tiger shark,-4.2216796875,-2.11083984375,2,4,tench,-1.1191501021385193,great white shark
+9,0,tench,-0.002176046371459961,-0.0010880231857299805,2,1,tench,-0.0010880231857299805,tench

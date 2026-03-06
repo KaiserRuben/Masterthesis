@@ -1,0 +1,1 @@
+image_idx,ground_truth_idx,ground_truth_label,correct_log_prob,correct_log_prob_norm,correct_n_tokens,correct_rank,top1_label,top1_log_prob_norm,generated_text
