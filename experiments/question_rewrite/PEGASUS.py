@@ -6,9 +6,9 @@ tokenizer = PegasusTokenizer.from_pretrained(model_name)
 model = PegasusForConditionalGeneration.from_pretrained(model_name).to(torch_device)
 
 def get_response(input_text,num_return_sequences,num_beams):
-  batch = tokenizer([input_text],truncation=True,padding='longest',max_length=60, return_tensors="pt").to(torch_device)
-  translated = model.generate(**batch,max_length=60,num_beams=num_beams, num_return_sequences=num_return_sequences)
+  batch = tokenizer([input_text],truncation=True,padding='longest',max_length=500, return_tensors="pt").to(torch_device)
+  translated = model.generate(**batch,max_length=500,num_beams=num_beams, num_return_sequences=num_return_sequences)
   tgt_text = tokenizer.batch_decode(translated, skip_special_tokens=True)
   return tgt_text
 
-print(get_response("What is the capital of France?", num_return_sequences=5, num_beams=5))
+print(get_response("What is the main object in this image? Answer in one expression, but as specific as possible:", num_return_sequences=5, num_beams=5))
