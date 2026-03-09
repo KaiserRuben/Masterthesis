@@ -20,7 +20,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.step_1_embed import TEXT_VOCABULARY
+from archive.pipeline.step_1_embed import TEXT_VOCABULARY
 
 # Paths
 DATA_DIR = PROJECT_ROOT / "data" / "BND-004"
@@ -437,7 +437,6 @@ def generate_trust_spectrum(df: pd.DataFrame, analysis: dict, output_dir: Path):
     - Annotations: Significance stars
     """
     import plotly.graph_objects as go
-    from scipy import stats
 
     print("Generating Trust Spectrum...")
 

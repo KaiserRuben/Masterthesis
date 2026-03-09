@@ -39,7 +39,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "tools" / "smoo"))
 sys.path.insert(0, str(PROJECT_ROOT / "tools" / "alpamayo" / "src"))
 
-from pipeline.lib.io import get_git_hash
+from archive.pipeline.lib.io import get_git_hash
 
 from boundary_finder import (
     AlpamayoSUT,

@@ -14,7 +14,6 @@ Usage:
 
 import json
 import sys
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -26,7 +25,7 @@ from scipy import stats
 PROJECT_ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.step_1_embed import TEXT_VOCABULARY
+from archive.pipeline.step_1_embed import TEXT_VOCABULARY
 
 # Paths
 DATA_DIR = PROJECT_ROOT / "data" / "BND-004"

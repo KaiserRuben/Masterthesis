@@ -16,14 +16,13 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.lib.schema import load_scenes
+from archive.pipeline.lib.schema import load_scenes
 
 # =============================================================================
 # CONFIGURATION

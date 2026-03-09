@@ -41,14 +41,14 @@ from scipy import stats
 PROJECT_ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.lib.schema import load_scenes, CLASSIFICATION_KEYS
-from pipeline.lib.io import load_embeddings, get_git_hash
-from pipeline.notebooks.utils.hypothesis import (
+from archive.pipeline.lib.schema import load_scenes, CLASSIFICATION_KEYS
+from archive.pipeline.lib.io import load_embeddings, get_git_hash
+from archive.pipeline.notebooks.utils.hypothesis import (
     compute_centroids,
     compute_boundary_margin,
 )
-from pipeline.step_4_analyze import build_knn_graph, find_pairs
-from pipeline.notebooks.utils.style import THEME, plotly_layout, axis_style
+from archive.pipeline.step_4_analyze import build_knn_graph, find_pairs
+from archive.pipeline.notebooks.utils import THEME, plotly_layout, axis_style
 
 # =============================================================================
 # CONFIGURATION

@@ -37,8 +37,8 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.lib.schema import load_scenes
-from pipeline.lib.io import load_config
+from archive.pipeline.lib.schema import load_scenes
+from archive.pipeline.lib.io import load_config
 
 # =============================================================================
 # CONFIGURATION
@@ -304,7 +304,6 @@ def main():
     model.eval()
 
     from alpamayo_r1 import helper
-    from transformers import AutoProcessor
 
     processor = helper.get_processor(model.tokenizer)
 

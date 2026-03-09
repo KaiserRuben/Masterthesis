@@ -31,11 +31,10 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.lib.schema import load_scenes, CLASSIFICATION_KEYS
-from pipeline.lib.io import load_config, load_embeddings, load_text_vocabulary, get_git_hash
-from pipeline.step_1_embed import (
+from archive.pipeline.lib.schema import load_scenes, CLASSIFICATION_KEYS
+from archive.pipeline.lib.io import load_embeddings, load_text_vocabulary, get_git_hash
+from archive.pipeline.step_1_embed import (
     OpenCLIPBigGProvider,
-    TEXT_VOCABULARY,
     generate_text_vocabulary_embeddings,
 )
 
@@ -100,7 +99,7 @@ def ensure_text_embeddings(embeddings_file: Path, device: str = "mps"):
     text_emb, vocab_map = generate_text_vocabulary_embeddings(provider)
 
     # Save to embeddings file
-    from pipeline.lib.io import save_embeddings
+    from archive.pipeline.lib.io import save_embeddings
     save_embeddings(embeddings_file, text_embeddings=text_emb, text_vocab_map=vocab_map)
     print(f"Saved text embeddings: {text_emb.shape}")
 
