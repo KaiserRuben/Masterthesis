@@ -1,6 +1,6 @@
 # Pipeline [ARCHIVED]
 
-> **Note:** This pipeline implements the trajectory-based boundary sensitivity analysis from the initial thesis direction (Phases 0–4). The thesis has since pivoted to VLM boundary testing with classification-first approach, VQGAN/text manipulators, and search-based optimization. This code is preserved for reference but is no longer actively developed. See the [main README](../README.md) for the current direction.
+> **Note:** This pipeline implements the trajectory-based boundary sensitivity analysis from the initial thesis direction (Phases 0–4). The thesis has since pivoted to VLM boundary testing with classification-first approach, VQGAN/text manipulators, and search-based optimization. This code is preserved for reference but is no longer actively developed. See the [main README](../../README.md) for the current direction.
 
 ---
 
@@ -111,7 +111,7 @@ python step_3_infer.py --max-scenes 100   # Limit number of scenes
 
 **Output:** `data/pipeline/results/inference_*.json`
 
-For cloud GPU inference, see [`../infrastructure/docker/README.md`](../infrastructure/docker/README.md).
+For cloud GPU inference, see [`../infrastructure/docker/README.md`](../../infrastructure/docker/README.md).
 
 ### Step 4: Analyze Boundaries
 
@@ -297,7 +297,7 @@ Interactive analysis notebooks in `notebooks/`:
 The `notebooks/utils/` module provides reusable analysis functions:
 
 ```python
-from pipeline.notebooks.utils import (
+from archive.pipeline.notebooks.utils import (
     load_pipeline_data,
     classify_ade,
     compute_boundary_margin,
