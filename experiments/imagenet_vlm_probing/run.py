@@ -25,10 +25,8 @@ Usage:
 
 import argparse
 import gc
-import json
-import urllib.request
+import sys
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -36,16 +34,16 @@ from typing import Optional
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from datasets import load_dataset
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForImageTextToText
 from tqdm import tqdm
 
+# Ensure project root is importable
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from src.data.imagenet import load_imagenet_labels, stream_imagenet_val
+
 MODEL_ID = "Qwen/Qwen3.5-9B"
-IMAGENET_LABELS_URL = (
-    "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels"
-    "/master/imagenet-simple-labels.json"
-)
 CATEGORIES = [
     "tench", "goldfish", "great white shark", "tiger shark",
     "hammerhead shark", "electric ray", "stingray", "cock", "hen", "ostrich",
@@ -57,51 +55,6 @@ PROMPT = (
 )
 
 THINK_END_TOKEN = "</think>"
-
-
-# ---------------------------------------------------------------------------
-# Data loading
-# ---------------------------------------------------------------------------
-
-def load_imagenet_labels(cache_dir: Path) -> list[str]:
-    cache_file = cache_dir / "imagenet_labels.json"
-    if not cache_file.exists():
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(IMAGENET_LABELS_URL, cache_file)
-    return json.loads(cache_file.read_text())
-
-
-def stream_imagenet_val(
-    labels: list[str],
-    categories: list[str],
-    max_images: int | None = None,
-    max_per_class: int | None = None,
-) -> list[dict]:
-    """Stream ImageNet validation from HuggingFace, filtered to categories."""
-    category_indices = {labels.index(c) for c in categories}
-    ds = load_dataset("ILSVRC/imagenet-1k", split="validation", streaming=True)
-
-    samples = []
-    class_counts: dict[int, int] = defaultdict(int)
-    for sample in tqdm(ds, desc="Streaming ImageNet val", total=50_000):
-        label_idx = sample["label"]
-
-        if label_idx not in category_indices:
-            continue
-
-        if max_per_class and class_counts[label_idx] >= max_per_class:
-            continue
-        class_counts[label_idx] += 1
-
-        samples.append({
-            "image": sample["image"].convert("RGB"),
-            "idx": label_idx,
-        })
-
-        if max_images and len(samples) >= max_images:
-            break
-
-    return samples
 
 
 # ---------------------------------------------------------------------------
@@ -489,8 +442,7 @@ def main():
     parser.add_argument("--out-dir", type=Path, default=Path(__file__).parent / "results")
     args = parser.parse_args()
 
-    cache_dir = Path(__file__).parent / ".cache"
-    labels = load_imagenet_labels(cache_dir)
+    labels = load_imagenet_labels()
     print(f"Loaded {len(labels)} ImageNet labels")
 
     # Stream from HuggingFace (filtered to categories)
