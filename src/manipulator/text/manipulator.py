@@ -65,7 +65,7 @@ class TextManipulator:
     def from_pretrained(
         cls,
         spacy_model: str = "en_core_web_sm",
-        embedding_model: str = "fasttext-wiki-news-subvectors-300d",
+        embedding_model: str = "fasttext-wiki-news-subwords-300",
         config: TextManipulatorConfig | None = None,
     ) -> TextManipulator:
         """Load spaCy and gensim models by name.
