@@ -78,6 +78,29 @@ class ImageManipulator:
         )
 
     @classmethod
+    def from_preset(
+        cls,
+        name: str = "f8-16384",
+        device: str = "cpu",
+        config: ImageManipulatorConfig | None = None,
+    ) -> ImageManipulator:
+        """Load a VQGAN by preset name and build the manipulator.
+
+        Available presets: ``"f16-1024"``, ``"f16-16384"``, ``"f8-16384"``.
+
+        Args:
+            name: Preset name (default: best quality model).
+            device: Torch device string, e.g. ``"mps"`` or ``"cuda"``.
+            config: Manipulator configuration.
+        """
+        from .loading import load_vqgan
+
+        cfg = config or ImageManipulatorConfig()
+        model = load_vqgan(name)
+        codec = VQGANCodec(model, device=device, resolution=cfg.resolution)
+        return cls(codec, cfg)
+
+    @classmethod
     def from_huggingface(
         cls,
         repo_id: str,

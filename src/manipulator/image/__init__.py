@@ -15,10 +15,7 @@ Usage::
 
     from src.manipulator.image import ImageManipulator, ImageManipulatorConfig
 
-    m = ImageManipulator.from_huggingface(
-        repo_id="thomwolf/vqgan_imagenet_f16_1024",
-        device="mps",
-    )
+    m = ImageManipulator.from_preset("f8-16384", device="mps")
 
     ctx = m.prepare(seed_image)
     genotype = ctx.random_genotype(rng=np.random.default_rng(42))

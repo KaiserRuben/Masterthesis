@@ -1,9 +1,12 @@
-"""VQGAN model loading from HuggingFace or taming-transformers checkpoints.
+"""VQGAN model loading: presets, HuggingFace repos, and checkpoints.
 
 Uses the self-contained ``vqgan.VQModel`` — no dependency on taming,
 pytorch-lightning, einops, or omegaconf.
 
 Usage::
+
+    # By preset name (recommended)
+    model = load_vqgan("f8-16384")
 
     # From HuggingFace
     model = load_huggingface_vqgan("thomwolf/vqgan_imagenet_f16_1024")
@@ -15,14 +18,102 @@ Usage::
 from __future__ import annotations
 
 import json
+import logging
+import urllib.request
 import warnings
+import zipfile
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import torch
 import torch.nn as nn
 
 from .vqgan import VQModel
+
+log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Presets for known models
+# ---------------------------------------------------------------------------
+
+
+class _Preset(NamedTuple):
+    """Architecture config + weight location for a known VQGAN."""
+
+    config: dict[str, Any]
+    location: str  # HuggingFace repo_id or URL
+
+
+PRESETS: dict[str, _Preset] = {
+    "f16-1024": _Preset(
+        config=dict(
+            n_embed=1024, embed_dim=256, z_channels=256,
+            ch=128, ch_mult=[1, 1, 2, 2, 4],
+            num_res_blocks=2, attn_resolutions=[16],
+            resolution=256, in_channels=3, out_ch=3,
+            dropout=0.0, double_z=False,
+        ),
+        location="thomwolf/vqgan_imagenet_f16_1024",
+    ),
+    "f16-16384": _Preset(
+        config=dict(
+            n_embed=16384, embed_dim=256, z_channels=256,
+            ch=128, ch_mult=[1, 1, 2, 2, 4],
+            num_res_blocks=2, attn_resolutions=[16],
+            resolution=256, in_channels=3, out_ch=3,
+            dropout=0.0, double_z=False,
+        ),
+        location="dalle-mini/vqgan_imagenet_f16_16384",
+    ),
+    "f8-16384": _Preset(
+        config=dict(
+            n_embed=16384, embed_dim=4, z_channels=4,
+            ch=128, ch_mult=[1, 2, 2, 4],
+            num_res_blocks=2, attn_resolutions=[32],
+            resolution=256, in_channels=3, out_ch=3,
+            dropout=0.0, double_z=False,
+        ),
+        location="https://ommer-lab.com/files/latent-diffusion/vq-f8.zip",
+    ),
+}
+
+
+def load_vqgan(name: str) -> nn.Module:
+    """Load a VQGAN by preset name.
+
+    Available presets:
+
+    ========== ===== =========== ======= =========
+    Name       f     Codebook    Grid    Val rFID
+    ========== ===== =========== ======= =========
+    f16-1024   16    1 024       16x16   7.94
+    f16-16384  16    16 384      16x16   4.98
+    f8-16384   8     16 384      32x32   1.14
+    ========== ===== =========== ======= =========
+
+    Returns:
+        ``VQModel`` in eval mode on CPU.
+    """
+    if name not in PRESETS:
+        available = ", ".join(sorted(PRESETS))
+        raise ValueError(f"Unknown preset {name!r}. Choose from: {available}")
+
+    preset = PRESETS[name]
+    model = _vqmodel_from_hf_config(preset.config)
+
+    if _is_url(preset.location):
+        path = _download_checkpoint(preset.location)
+        _load_weights(model, path, source="ckpt")
+    else:
+        path = _download_hf_weights(preset.location)
+        _load_weights(model, path, source="bin")
+
+    return model.eval()
+
+
+def _is_url(location: str) -> bool:
+    return location.startswith("http://") or location.startswith("https://")
 
 
 # ---------------------------------------------------------------------------
@@ -97,6 +188,64 @@ def load_checkpoint_vqgan(
     _load_weights(model, checkpoint_path, source="ckpt")
 
     return model.eval()
+
+
+# ---------------------------------------------------------------------------
+# Download helpers
+# ---------------------------------------------------------------------------
+
+
+def _download_hf_weights(repo_id: str) -> Path:
+    """Download pytorch_model.bin from a HuggingFace repo."""
+    from huggingface_hub import hf_hub_download
+
+    return Path(hf_hub_download(repo_id, "pytorch_model.bin"))
+
+
+def _download_checkpoint(url: str) -> Path:
+    """Download a checkpoint from a URL (zip or ckpt), with local caching."""
+    cache_dir = Path(torch.hub.get_dir()) / "vqgan"
+    # Derive a stable cache key from the URL filename
+    url_stem = Path(urllib.request.urlparse(url).path).stem  # e.g. "vq-f8"
+    dest_dir = cache_dir / url_stem
+
+    # Check for cached .ckpt
+    cached = _find_ckpt(dest_dir)
+    if cached is not None:
+        log.info("Using cached checkpoint: %s", cached)
+        return cached
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    log.info("Downloading %s ...", url)
+    tmp_path, _ = urllib.request.urlretrieve(url)
+    tmp = Path(tmp_path)
+
+    if zipfile.is_zipfile(tmp):
+        log.info("Extracting to %s", dest_dir)
+        with zipfile.ZipFile(tmp) as zf:
+            zf.extractall(dest_dir)
+        tmp.unlink(missing_ok=True)
+    else:
+        # Assume it's a bare .ckpt file
+        final = dest_dir / "model.ckpt"
+        tmp.rename(final)
+
+    ckpt = _find_ckpt(dest_dir)
+    if ckpt is None:
+        raise FileNotFoundError(
+            f"No .ckpt file found after downloading {url}"
+        )
+    return ckpt
+
+
+def _find_ckpt(directory: Path) -> Path | None:
+    """Find the first .ckpt file in a directory tree."""
+    if not directory.exists():
+        return None
+    for p in directory.rglob("*.ckpt"):
+        return p
+    return None
 
 
 # ---------------------------------------------------------------------------

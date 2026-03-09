@@ -37,8 +37,11 @@ from src.manipulator.image import (
 )
 
 DEFAULT_CATEGORIES = [
-    "tench", "goldfish", "great white shark", "tiger shark",
-    "hammerhead shark", "electric ray", "stingray", "cock", "hen", "ostrich",
+    # Animals — vivid colors and textures
+    "macaw", "peacock", "flamingo", "monarch butterfly", "jellyfish",
+    "chameleon", "toucan", "leopard", "red panda", "lionfish",
+    # Scenes & structures
+    "coral reef", "volcano", "castle", "mosque", "palace",
 ]
 
 # Enough UNIFORM candidates to span nearest → farthest in codebook space
@@ -296,6 +299,8 @@ def process_sample(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Image manipulator demo")
+    parser.add_argument("--preset", default="f8-16384",
+                        choices=["f16-1024", "f16-16384", "f8-16384"])
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--n-samples", type=int, default=1)
     parser.add_argument("--categories", nargs="*", default=None)
@@ -307,7 +312,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     categories = args.categories or DEFAULT_CATEGORIES
 
-    print("Loading VQGAN from thomwolf/vqgan_imagenet_f16_1024 ...")
+    print(f"Loading VQGAN preset '{args.preset}' ...")
     config = ImageManipulatorConfig(
         patch_ratio=1.0,
         patch_strategy=PatchStrategy.ALL,
@@ -315,8 +320,8 @@ def main() -> None:
         candidate_strategy=CandidateStrategy.UNIFORM,
         knn_cache_path=output_dir / "codebook_knn.npz",
     )
-    manipulator = ImageManipulator.from_huggingface(
-        repo_id="thomwolf/vqgan_imagenet_f16_1024",
+    manipulator = ImageManipulator.from_preset(
+        name=args.preset,
         device=args.device,
         config=config,
     )
