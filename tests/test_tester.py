@@ -10,21 +10,8 @@ import json
 import numpy as np
 import pytest
 import torch
-from gensim.models import KeyedVectors
 from PIL import Image
 
-from src.manipulator.image.manipulator import apply_genotype as apply_image_genotype
-from src.manipulator.image.types import (
-    CodeGrid,
-    ManipulationContext as ImageManipulationContext,
-    PatchSelection,
-)
-from src.manipulator.text.manipulator import apply_genotype as apply_text_genotype
-from src.manipulator.text.types import (
-    ManipulationContext as TextManipulationContext,
-    TokenSequence,
-    WordSelection,
-)
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import (
     ArchiveSparsity,
@@ -36,109 +23,27 @@ from src.objectives import (
     TextReplacementDistance,
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
-from src.tester.config import ExperimentConfig, SeedTriple
+from src.config import ExperimentConfig, SeedTriple
 from src.tester.vlm_boundary_tester import (
     VLMBoundaryTester,
     _pil_to_tensor,
 )
 
+from conftest import (
+    FakeImageManipulator,
+    FakeTextManipulator,
+    make_embeddings,
+    VOCAB,
+)
+
 
 # ---------------------------------------------------------------------------
-# Synthetic data builders (reused from test_vlm_manipulator.py)
+# Test-local constants and fakes
 # ---------------------------------------------------------------------------
 
 CATEGORIES = ("cat_a", "cat_b", "cat_c")
 PROMPT_TEMPLATE = "Classify this"
 ANSWER_FORMAT = " from: {categories}."
-
-
-def _make_embeddings(vocab: dict[str, list[float]]) -> KeyedVectors:
-    dim = len(next(iter(vocab.values())))
-    kv = KeyedVectors(vector_size=dim)
-    words = list(vocab.keys())
-    vectors = np.array(list(vocab.values()), dtype=np.float32)
-    kv.add_vectors(words, vectors)
-    return kv
-
-
-def _make_tokens(*items: tuple[str, str, str]) -> TokenSequence:
-    return TokenSequence(
-        tokens=tuple(w for w, _, _ in items),
-        pos_tags=tuple(p for _, p, _ in items),
-        whitespace=tuple(s for _, _, s in items),
-    )
-
-
-def _make_image_context() -> ImageManipulationContext:
-    grid = CodeGrid(np.array([[10, 20], [30, 40]], dtype=np.int64))
-    selection = PatchSelection(
-        positions=np.array([[0, 0], [1, 1]], dtype=np.intp),
-        candidates=(
-            np.array([11, 12, 13], dtype=np.int64),
-            np.array([41, 42], dtype=np.int64),
-        ),
-        original_codes=np.array([10, 40], dtype=np.int64),
-    )
-    return ImageManipulationContext(original_grid=grid, selection=selection)
-
-
-def _make_text_context() -> TextManipulationContext:
-    tokens = _make_tokens(
-        ("Classify", "VERB", " "),
-        ("this", "DET", " "),
-        ("quick", "ADJ", " "),
-        ("fox", "NOUN", ""),
-    )
-    selection = WordSelection(
-        positions=np.array([2, 3], dtype=np.intp),
-        candidates=(("fast", "rapid"), ("wolf", "dog", "cat")),
-        original_words=("quick", "fox"),
-    )
-    return TextManipulationContext(original_tokens=tokens, selection=selection)
-
-
-VOCAB = {
-    "quick": [1.0, 0.0, 0.0],
-    "fast": [0.95, 0.05, 0.0],
-    "rapid": [0.85, 0.15, 0.0],
-    "fox": [0.0, 1.0, 0.0],
-    "wolf": [0.0, 0.9, 0.1],
-    "dog": [0.0, 0.8, 0.2],
-    "cat": [0.0, 0.6, 0.4],
-}
-
-
-# ---------------------------------------------------------------------------
-# Fake components
-# ---------------------------------------------------------------------------
-
-
-class FakeImageManipulator:
-    def prepare(self, image: Image.Image) -> ImageManipulationContext:
-        return _make_image_context()
-
-    def apply(self, ctx: ImageManipulationContext, genotype) -> Image.Image:
-        apply_image_genotype(ctx.original_grid, ctx.selection, genotype)
-        r = int(np.sum(genotype)) % 256
-        return Image.new("RGB", (8, 8), (r, 0, 0))
-
-
-class FakeTextManipulator:
-    def __init__(self, kv: KeyedVectors) -> None:
-        self._embeddings = kv
-
-    @property
-    def embeddings(self) -> KeyedVectors:
-        return self._embeddings
-
-    def prepare(self, text: str, exclude_words=None) -> TextManipulationContext:
-        return _make_text_context()
-
-    def apply(self, ctx: TextManipulationContext, genotype) -> str:
-        mutated = apply_text_genotype(
-            ctx.original_tokens, ctx.selection, genotype,
-        )
-        return mutated.text
 
 
 class FakeSUT:
@@ -155,7 +60,7 @@ class FakeSUT:
 
 @pytest.fixture()
 def embeddings():
-    return _make_embeddings(VOCAB)
+    return make_embeddings(VOCAB)
 
 
 @pytest.fixture()

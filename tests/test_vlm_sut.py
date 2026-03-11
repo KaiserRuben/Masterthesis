@@ -6,21 +6,17 @@ a real 10GB VLM model.  All tests use real objects and deterministic values.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import FrozenInstanceError
-from pathlib import Path
 
 import pytest
 import torch
 
-# Ensure project root is importable.
-_project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_project_root))
-
-from src.sut.config import (
+from src.config import (
     DEFAULT_CATEGORIES,
     DEFAULT_PROMPT_TEMPLATE,
-    VLMSUTConfig,
+    DEFAULT_ANSWER_FORMAT,
+    ExperimentConfig,
+    SUTConfig,
 )
 from src.sut.scorer import VLMScorer
 
@@ -92,7 +88,7 @@ class FakeScorer(VLMScorer):
 
 
 def _make_sut(
-    config: VLMSUTConfig | None = None,
+    config: ExperimentConfig | None = None,
 ) -> "FakeSUT":
     """Build a VLMSUT-like object backed by FakeScorer.
 
@@ -105,12 +101,15 @@ def _make_sut(
         """VLMSUT subclass that injects a FakeScorer instead of loading
         a real model."""
 
-        def __init__(self, config: VLMSUTConfig | None = None) -> None:
-            self._config = config or VLMSUTConfig()
+        def __init__(self, config: ExperimentConfig | None = None) -> None:
+            self._config = config or ExperimentConfig()
             self._device = torch.device(self._config.device)
             self._scorer = FakeScorer()
-            self._prompt = self._config.prompt_template.format(
-                categories=", ".join(self._config.categories)
+            self._prompt = (
+                self._config.prompt_template
+                + self._config.answer_format.format(
+                    categories=", ".join(self._config.categories),
+                )
             )
 
     return FakeSUT(config)
@@ -124,50 +123,56 @@ def _dummy_image() -> "Image.Image":
 
 
 # =========================================================================
-# TestVLMSUTConfig
+# TestExperimentConfig (formerly TestVLMSUTConfig)
 # =========================================================================
 
 
-class TestVLMSUTConfig:
+class TestExperimentConfig:
     """Configuration dataclass validation."""
 
     def test_default_values(self) -> None:
-        cfg = VLMSUTConfig()
-        assert cfg.model_id == "Qwen/Qwen3.5-9B"
+        cfg = ExperimentConfig()
+        assert cfg.sut.model_id == "Qwen/Qwen3.5-9B"
         assert cfg.device == "cpu"
         assert cfg.categories == DEFAULT_CATEGORIES
-        assert cfg.prompt_template == DEFAULT_PROMPT_TEMPLATE
-        assert cfg.enable_thinking is False
-        assert cfg.max_thinking_tokens == 2000
-        assert cfg.max_pixels is None
+        assert cfg.sut.enable_thinking is False
+        assert cfg.sut.max_thinking_tokens == 2000
+        assert cfg.sut.max_pixels is None
 
     def test_custom_values(self) -> None:
         cats = ("cat", "dog")
-        cfg = VLMSUTConfig(
-            model_id="test/model",
+        cfg = ExperimentConfig(
             device="cuda",
             categories=cats,
-            prompt_template="Pick one: {categories}",
-            enable_thinking=True,
-            max_thinking_tokens=500,
-            max_pixels=1024,
+            prompt_template="Pick one:",
+            answer_format=" {categories}",
+            sut=SUTConfig(
+                model_id="test/model",
+                enable_thinking=True,
+                max_thinking_tokens=500,
+                max_pixels=1024,
+            ),
         )
-        assert cfg.model_id == "test/model"
+        assert cfg.sut.model_id == "test/model"
         assert cfg.device == "cuda"
         assert cfg.categories == cats
-        assert cfg.prompt_template == "Pick one: {categories}"
-        assert cfg.enable_thinking is True
-        assert cfg.max_thinking_tokens == 500
-        assert cfg.max_pixels == 1024
+        assert cfg.prompt_template == "Pick one:"
+        assert cfg.answer_format == " {categories}"
+        assert cfg.sut.enable_thinking is True
+        assert cfg.sut.max_thinking_tokens == 500
+        assert cfg.sut.max_pixels == 1024
 
     def test_frozen_immutability(self) -> None:
-        cfg = VLMSUTConfig()
+        cfg = ExperimentConfig()
         with pytest.raises(FrozenInstanceError):
-            cfg.model_id = "other/model"  # type: ignore[misc]
+            cfg.device = "cuda"  # type: ignore[misc]
 
-    def test_prompt_template_has_placeholder(self) -> None:
-        """Default template contains the {categories} placeholder."""
-        assert "{categories}" in DEFAULT_PROMPT_TEMPLATE
+    def test_prompt_template_and_answer_format(self) -> None:
+        """Default template + answer_format together contain {categories}."""
+        assert "{categories}" in DEFAULT_ANSWER_FORMAT
+        full = DEFAULT_PROMPT_TEMPLATE + DEFAULT_ANSWER_FORMAT
+        assert "What is the main subject" in full
+        assert "{categories}" in full
 
 
 # =========================================================================
@@ -180,21 +185,25 @@ class TestPromptBuilding:
 
     def test_default_prompt(self) -> None:
         sut = _make_sut()
-        expected = DEFAULT_PROMPT_TEMPLATE.format(
-            categories=", ".join(DEFAULT_CATEGORIES)
+        expected = (
+            DEFAULT_PROMPT_TEMPLATE
+            + DEFAULT_ANSWER_FORMAT.format(
+                categories=", ".join(DEFAULT_CATEGORIES),
+            )
         )
         assert sut._prompt == expected
 
     def test_custom_template(self) -> None:
-        cfg = VLMSUTConfig(
-            prompt_template="Choose: {categories}.",
+        cfg = ExperimentConfig(
+            prompt_template="Choose:",
+            answer_format=" {categories}.",
             categories=("cat", "dog", "bird"),
         )
         sut = _make_sut(cfg)
         assert sut._prompt == "Choose: cat, dog, bird."
 
     def test_category_subset(self) -> None:
-        cfg = VLMSUTConfig(categories=("macaw", "peacock"))
+        cfg = ExperimentConfig(categories=("macaw", "peacock"))
         sut = _make_sut(cfg)
         assert "macaw" in sut._prompt
         assert "peacock" in sut._prompt
@@ -248,7 +257,7 @@ class TestProcessInput:
 
     def test_returns_correct_shape(self) -> None:
         cats = ("cat", "dog", "bird")
-        sut = _make_sut(VLMSUTConfig(categories=cats))
+        sut = _make_sut(ExperimentConfig(categories=cats))
         result = sut.process_input(_dummy_image())
         assert isinstance(result, torch.Tensor)
         assert result.shape == (3,)
@@ -256,7 +265,7 @@ class TestProcessInput:
     def test_category_ordering(self) -> None:
         """tensor[i] corresponds to categories[i], not sorted order."""
         cats = ("dog", "cat", "bird")
-        sut = _make_sut(VLMSUTConfig(categories=cats))
+        sut = _make_sut(ExperimentConfig(categories=cats))
         result = sut.process_input(_dummy_image())
         assert result[0].item() == pytest.approx(-0.40, abs=1e-6)  # dog
         assert result[1].item() == pytest.approx(-0.10, abs=1e-6)  # cat
@@ -264,7 +273,7 @@ class TestProcessInput:
 
     def test_category_override(self) -> None:
         """Passing categories= overrides config categories."""
-        sut = _make_sut(VLMSUTConfig(categories=("macaw", "peacock")))
+        sut = _make_sut(ExperimentConfig(categories=("macaw", "peacock")))
         # Override with different categories.
         result = sut.process_input(
             _dummy_image(), categories=("cat", "dog")
@@ -275,7 +284,7 @@ class TestProcessInput:
 
     def test_text_override(self) -> None:
         """Passing text= overrides the config prompt."""
-        sut = _make_sut(VLMSUTConfig(categories=("macaw",)))
+        sut = _make_sut(ExperimentConfig(categories=("macaw",)))
         # FakeScorer ignores the prompt, but VLMSUT should pass it through.
         result = sut.process_input(_dummy_image(), text="Custom prompt")
         assert result.shape == (1,)

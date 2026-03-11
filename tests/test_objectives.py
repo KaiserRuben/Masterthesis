@@ -3,17 +3,10 @@
 All tests use real tensors and arrays with known values -- no mocks.
 """
 
-import sys
-from pathlib import Path
-
 import numpy as np
 import pytest
 import torch
 import torch.nn.functional as F
-
-# Ensure project root is importable
-_project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_project_root))
 
 from src.objectives import (
     Concentration,
