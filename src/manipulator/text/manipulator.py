@@ -88,13 +88,27 @@ class TextManipulator:
     def config(self) -> TextManipulatorConfig:
         return self._config
 
+    @property
+    def embeddings(self) -> KeyedVectors:
+        """The embedding model used for candidate generation."""
+        return self._embeddings
+
     # -- two-phase API -------------------------------------------------------
 
-    def prepare(self, text: str) -> ManipulationContext:
+    def prepare(
+        self,
+        text: str,
+        exclude_words: frozenset[str] | None = None,
+    ) -> ManipulationContext:
         """Tokenize, PoS-tag, and build the search space for a text.
 
         Call once per seed. The returned context holds the tokenized
         text and word selection — everything the optimizer needs.
+
+        Args:
+            text: Seed text to manipulate.
+            exclude_words: Words to exclude from mutation (case-insensitive).
+                Use this to protect category labels in a classification prompt.
         """
         tokens = tokenize(self._nlp, text)
 
@@ -103,6 +117,7 @@ class TextManipulator:
             embeddings=self._embeddings,
             n_candidates=self._config.n_candidates,
             content_pos=self._config.content_pos_tags,
+            exclude_words=exclude_words,
         )
 
         return ManipulationContext(

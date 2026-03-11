@@ -40,16 +40,20 @@ def select_content_words(
     tokens: TokenSequence,
     embeddings: KeyedVectors,
     content_pos: frozenset[str] = CONTENT_POS_TAGS,
+    exclude_words: frozenset[str] | None = None,
 ) -> NDArray[np.intp]:
     """Return indices of content-bearing words that exist in the embedding vocabulary.
 
     A word must:
       1. Have a PoS tag in ``content_pos``
       2. Exist in the embedding model's vocabulary (for candidate lookup)
+      3. Not be in ``exclude_words`` (case-insensitive)
     """
     positions = []
     for i, (token, pos) in enumerate(zip(tokens.tokens, tokens.pos_tags)):
         if pos in content_pos and token.lower() in embeddings:
+            if exclude_words and token.lower() in exclude_words:
+                continue
             positions.append(i)
     return np.array(positions, dtype=np.intp) if positions else np.empty(0, dtype=np.intp)
 
@@ -86,13 +90,16 @@ def build_word_selection(
     embeddings: KeyedVectors,
     n_candidates: int,
     content_pos: frozenset[str] = CONTENT_POS_TAGS,
+    exclude_words: frozenset[str] | None = None,
 ) -> WordSelection:
     """Build a complete WordSelection for one text.
 
     Identifies content-bearing words, finds synonym candidates
     for each via embedding KNN, and assembles the search space.
     """
-    positions = select_content_words(tokens, embeddings, content_pos)
+    positions = select_content_words(
+        tokens, embeddings, content_pos, exclude_words=exclude_words,
+    )
 
     if len(positions) == 0:
         return WordSelection(
