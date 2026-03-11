@@ -125,16 +125,8 @@ def _select_by_frequency(
     n_select = max(1, int(n_unique * ratio))
     top_codes = frozenset(ranked_codes[:n_select])
 
-    h, w = grid.shape
-    positions = [
-        (r, c)
-        for r in range(h)
-        for c in range(w)
-        if grid.indices[r, c] in top_codes
-    ]
-    return np.array(positions, dtype=np.intp) if positions else np.empty(
-        (0, 2), dtype=np.intp
-    )
+    mask = np.isin(grid.indices, list(top_codes))
+    return np.argwhere(mask).astype(np.intp)
 
 
 # ---------------------------------------------------------------------------

@@ -13,9 +13,10 @@ The design separates three concerns:
 
 Usage::
 
-    from src.manipulator.image import ImageManipulator, ImageManipulatorConfig
+    from src.manipulator.image import ImageManipulator
+    from src.config import ImageConfig
 
-    m = ImageManipulator.from_preset("f8-16384", device="mps")
+    m = ImageManipulator.from_preset(device="mps")
 
     ctx = m.prepare(seed_image)
     genotype = ctx.random_genotype(rng=np.random.default_rng(42))
@@ -23,7 +24,7 @@ Usage::
 """
 
 from .codec import VQGANCodec
-from .manipulator import ImageManipulator, ImageManipulatorConfig, apply_genotype
+from .manipulator import ImageManipulator, apply_genotype
 from .types import (
     CandidateStrategy,
     CodeGrid,
@@ -36,7 +37,6 @@ __all__ = [
     "CandidateStrategy",
     "CodeGrid",
     "ImageManipulator",
-    "ImageManipulatorConfig",
     "ManipulationContext",
     "PatchSelection",
     "PatchStrategy",

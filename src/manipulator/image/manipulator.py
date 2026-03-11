@@ -31,21 +31,19 @@ from .types import (
 
 
 @dataclass(frozen=True)
-class ImageManipulatorConfig:
-    """All knobs for the image manipulator in one place."""
+class ImageConfig:
+    """Image manipulator settings (VQGAN codebook swaps).
 
-    # Patch selection
+    Defined here (not in ``src/config``) to avoid circular imports.
+    Re-exported via ``src.config.ImageConfig``.
+    """
+
+    preset: str = "f8-16384"
     patch_ratio: float = 0.1
     patch_strategy: PatchStrategy = PatchStrategy.FREQUENCY
-
-    # Candidate selection
     n_candidates: int = 25
     candidate_strategy: CandidateStrategy = CandidateStrategy.KNN
-
-    # Model
     resolution: int = 256
-
-    # Disk cache for codebook KNN (None = recompute every time)
     knn_cache_path: Path | None = None
 
 
@@ -68,10 +66,10 @@ class ImageManipulator:
     def __init__(
         self,
         codec: VQGANCodec,
-        config: ImageManipulatorConfig | None = None,
+        config: ImageConfig | None = None,
     ) -> None:
         self._codec = codec
-        self._config = config or ImageManipulatorConfig()
+        self._config = config or ImageConfig()
         self._knn = build_codebook_knn(
             codec.codebook,
             cache_path=self._config.knn_cache_path,
@@ -80,23 +78,22 @@ class ImageManipulator:
     @classmethod
     def from_preset(
         cls,
-        name: str = "f8-16384",
         device: str = "cpu",
-        config: ImageManipulatorConfig | None = None,
+        config: ImageConfig | None = None,
     ) -> ImageManipulator:
         """Load a VQGAN by preset name and build the manipulator.
 
         Available presets: ``"f16-1024"``, ``"f16-16384"``, ``"f8-16384"``.
+        Set via ``config.preset`` (default: ``"f8-16384"``).
 
         Args:
-            name: Preset name (default: best quality model).
             device: Torch device string, e.g. ``"mps"`` or ``"cuda"``.
             config: Manipulator configuration.
         """
         from .loading import load_vqgan
 
-        cfg = config or ImageManipulatorConfig()
-        model = load_vqgan(name)
+        cfg = config or ImageConfig()
+        model = load_vqgan(cfg.preset)
         codec = VQGANCodec(model, device=device, resolution=cfg.resolution)
         return cls(codec, cfg)
 
@@ -105,7 +102,7 @@ class ImageManipulator:
         cls,
         repo_id: str,
         device: str = "cpu",
-        config: ImageManipulatorConfig | None = None,
+        config: ImageConfig | None = None,
     ) -> ImageManipulator:
         """Load a VQGAN from HuggingFace and build the manipulator.
 
@@ -116,7 +113,7 @@ class ImageManipulator:
         """
         from .loading import load_huggingface_vqgan
 
-        cfg = config or ImageManipulatorConfig()
+        cfg = config or ImageConfig()
         model = load_huggingface_vqgan(repo_id)
         codec = VQGANCodec(model, device=device, resolution=cfg.resolution)
         return cls(codec, cfg)
@@ -127,7 +124,7 @@ class ImageManipulator:
         arch_config: dict,
         checkpoint_path: str | Path,
         device: str = "cpu",
-        config: ImageManipulatorConfig | None = None,
+        config: ImageConfig | None = None,
     ) -> ImageManipulator:
         """Load a VQGAN from architecture config + checkpoint file.
 
@@ -139,7 +136,7 @@ class ImageManipulator:
         """
         from .loading import load_checkpoint_vqgan
 
-        cfg = config or ImageManipulatorConfig()
+        cfg = config or ImageConfig()
         model = load_checkpoint_vqgan(arch_config, Path(checkpoint_path))
         codec = VQGANCodec(model, device=device, resolution=cfg.resolution)
         return cls(codec, cfg)
@@ -151,7 +148,7 @@ class ImageManipulator:
         return self._codec
 
     @property
-    def config(self) -> ImageManipulatorConfig:
+    def config(self) -> ImageConfig:
         return self._config
 
     # -- two-phase API -------------------------------------------------------

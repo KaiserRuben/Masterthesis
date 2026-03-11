@@ -28,9 +28,15 @@ from .types import (
 
 
 @dataclass(frozen=True)
-class TextManipulatorConfig:
-    """All knobs for the text manipulator."""
+class TextConfig:
+    """Text manipulator settings (PoS-aware synonym replacement).
 
+    Defined here (not in ``src/config``) to avoid circular imports.
+    Re-exported via ``src.config.TextConfig``.
+    """
+
+    spacy_model: str = "en_core_web_sm"
+    embedding_model: str = "fasttext-wiki-news-subwords-300"
     n_candidates: int = 25
     content_pos_tags: frozenset[str] = CONTENT_POS_TAGS
 
@@ -55,37 +61,36 @@ class TextManipulator:
         self,
         nlp: spacy.language.Language,
         embeddings: KeyedVectors,
-        config: TextManipulatorConfig | None = None,
+        config: TextConfig | None = None,
     ) -> None:
         self._nlp = nlp
         self._embeddings = embeddings
-        self._config = config or TextManipulatorConfig()
+        self._config = config or TextConfig()
 
     @classmethod
     def from_pretrained(
         cls,
-        spacy_model: str = "en_core_web_sm",
-        embedding_model: str = "fasttext-wiki-news-subwords-300",
-        config: TextManipulatorConfig | None = None,
+        config: TextConfig | None = None,
     ) -> TextManipulator:
         """Load spaCy and gensim models by name.
 
+        Model names are read from ``config.spacy_model`` and
+        ``config.embedding_model``.
+
         Args:
-            spacy_model: spaCy model name (e.g. ``"en_core_web_sm"``).
-            embedding_model: gensim model name or path to KeyedVectors file.
-                Defaults to FastText wiki-news 300d (downloaded on first use).
             config: Manipulator configuration.
         """
         import gensim.downloader as api
 
-        nlp = spacy.load(spacy_model, disable=["ner", "parser", "lemmatizer"])
-        embeddings = api.load(embedding_model)
-        return cls(nlp, embeddings, config)
+        cfg = config or TextConfig()
+        nlp = spacy.load(cfg.spacy_model, disable=["ner", "parser", "lemmatizer"])
+        embeddings = api.load(cfg.embedding_model)
+        return cls(nlp, embeddings, cfg)
 
     # -- properties ----------------------------------------------------------
 
     @property
-    def config(self) -> TextManipulatorConfig:
+    def config(self) -> TextConfig:
         return self._config
 
     @property

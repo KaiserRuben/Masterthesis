@@ -10,6 +10,7 @@ cosine KNN. The genotype encoding mirrors the image manipulator:
 Usage::
 
     from src.manipulator.text import TextManipulator
+    from src.config import TextConfig
 
     m = TextManipulator.from_pretrained()
     ctx = m.prepare("The quick brown fox jumps over the lazy dog.")
@@ -18,7 +19,7 @@ Usage::
     result = m.apply(ctx, genotype)
 """
 
-from .manipulator import TextManipulator, TextManipulatorConfig, apply_genotype
+from .manipulator import TextManipulator, apply_genotype
 from .types import (
     CONTENT_POS_TAGS,
     ManipulationContext,
@@ -30,7 +31,6 @@ __all__ = [
     "CONTENT_POS_TAGS",
     "ManipulationContext",
     "TextManipulator",
-    "TextManipulatorConfig",
     "TokenSequence",
     "WordSelection",
     "apply_genotype",

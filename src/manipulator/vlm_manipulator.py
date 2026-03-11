@@ -73,24 +73,17 @@ class VLMManipulator(Manipulator):
     def _compute_text_distances(self) -> tuple[np.ndarray, ...]:
         """Compute cosine distances between each original word and its candidates.
 
-        Uses gensim ``KeyedVectors.distance()`` for each (original, candidate)
-        pair.  Returns a tuple of 1-D arrays: ``distances[i][k]`` is the
-        cosine distance for word *i*, candidate *k*.
+        Returns a tuple of 1-D arrays: ``distances[i][k]`` is the cosine
+        distance for word *i*, candidate *k*.
         """
         embeddings = self._text.embeddings
-        distances: list[np.ndarray] = []
-        for orig, cands in zip(
-            self._text_ctx.selection.original_words,
-            self._text_ctx.selection.candidates,
-        ):
-            word_dists = np.array(
-                [
-                    float(embeddings.distance(orig.lower(), cand))
-                    for cand in cands
-                ]
+        return tuple(
+            np.array([float(embeddings.distance(orig.lower(), c)) for c in cands])
+            for orig, cands in zip(
+                self._text_ctx.selection.original_words,
+                self._text_ctx.selection.candidates,
             )
-            distances.append(word_dists)
-        return tuple(distances)
+        )
 
     # -- properties ----------------------------------------------------------
 

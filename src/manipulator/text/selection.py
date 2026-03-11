@@ -49,12 +49,13 @@ def select_content_words(
       2. Exist in the embedding model's vocabulary (for candidate lookup)
       3. Not be in ``exclude_words`` (case-insensitive)
     """
-    positions = []
-    for i, (token, pos) in enumerate(zip(tokens.tokens, tokens.pos_tags)):
-        if pos in content_pos and token.lower() in embeddings:
-            if exclude_words and token.lower() in exclude_words:
-                continue
-            positions.append(i)
+    positions = [
+        i
+        for i, (token, pos) in enumerate(zip(tokens.tokens, tokens.pos_tags))
+        if pos in content_pos
+        and token.lower() in embeddings
+        and not (exclude_words and token.lower() in exclude_words)
+    ]
     return np.array(positions, dtype=np.intp) if positions else np.empty(0, dtype=np.intp)
 
 
