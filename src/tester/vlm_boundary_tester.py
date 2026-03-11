@@ -29,6 +29,7 @@ from numpy.typing import NDArray
 from PIL import Image
 from smoo import SMOO
 from torch import Tensor
+from tqdm import tqdm
 
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import (
@@ -38,14 +39,9 @@ from src.objectives import (
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 
-from .config import ExperimentConfig, SeedTriple
+from src.config import ExperimentConfig, SeedTriple
 
 logger = logging.getLogger(__name__)
-
-# Number of batched objectives in the CriterionCollection.
-# The 5th (ArchiveSparsity) is evaluated separately.
-_N_BATCHED = 4
-_N_TOTAL = 5
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +55,92 @@ def _pil_to_tensor(img: Image.Image) -> Tensor:
     if arr.ndim == 2:
         arr = arr[:, :, np.newaxis]
     return torch.from_numpy(arr).permute(2, 0, 1)
+
+
+def _build_trace_rows(
+    seed_idx: int,
+    gen: int,
+    genotypes: NDArray,
+    logits: Tensor,
+    texts: list[str],
+    batched_results: dict[str, Any],
+    batched_fitness: tuple,
+    sparsity_arr: NDArray,
+    target_classes: tuple[int, int],
+    categories: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    """Build per-individual trace rows (pure — no side effects)."""
+    probs = F.softmax(logits, dim=-1)
+    idx_a, idx_b = target_classes
+    fitness_names = list(batched_results.keys())
+    return [
+        {
+            "seed_id": seed_idx,
+            "generation": gen,
+            "individual": i,
+            "genotype": genotypes[i].tolist(),
+            "logprobs": logits[i].tolist(),
+            "decoded_text": texts[i],
+            "predicted_class": categories[int(logits[i].argmax())],
+            "p_class_a": float(probs[i, idx_a]),
+            "p_class_b": float(probs[i, idx_b]),
+            **{
+                f"fitness_{name}": float(batched_fitness[j][i])
+                for j, name in enumerate(fitness_names)
+            },
+            "fitness_ArchiveSparsity": float(sparsity_arr[i]),
+        }
+        for i in range(len(genotypes))
+    ]
+
+
+def _build_stats(
+    seed_idx: int,
+    seed: SeedTriple,
+    config: ExperimentConfig,
+    manipulator: VLMManipulator,
+    n_pareto: int,
+    archive_size: int,
+    runtime: float,
+    categories: tuple[str, ...],
+) -> dict[str, Any]:
+    """Build stats metadata dict (pure)."""
+    return {
+        "seed_idx": seed_idx,
+        "class_a": seed.class_a,
+        "class_b": seed.class_b,
+        "prompt_template": config.prompt_template,
+        "answer_format": config.answer_format,
+        "runtime_seconds": runtime,
+        "generations": config.generations,
+        "pop_size": config.pop_size,
+        "gene_bounds": manipulator.gene_bounds.tolist(),
+        "image_dim": manipulator.image_dim,
+        "text_dim": manipulator.text_dim,
+        "categories": list(categories),
+        "n_pareto": n_pareto,
+        "archive_size": archive_size,
+    }
+
+
+def _build_context_meta(manipulator: VLMManipulator) -> dict[str, Any]:
+    """Build context metadata for offline reconstruction (pure).
+
+    Requires ``manipulator.prepare()`` to have been called.
+    """
+    img_sel = manipulator.image_context.selection
+    txt_sel = manipulator.text_context.selection
+    return {
+        "image_patch_positions": img_sel.positions.tolist(),
+        "image_original_codes": img_sel.original_codes.tolist(),
+        "image_candidates": [c.tolist() for c in img_sel.candidates],
+        "text_word_positions": txt_sel.positions.tolist(),
+        "text_original_words": list(txt_sel.original_words),
+        "text_candidates": [list(c) for c in txt_sel.candidates],
+        "text_candidate_distances": [
+            d.tolist() for d in manipulator.text_candidate_distances
+        ],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -124,21 +206,22 @@ class VLMBoundaryTester(SMOO):
             categories=", ".join(categories),
         )
 
-        logger.info(
-            f"Starting experiment '{self._config.name}' "
-            f"with {len(seeds)} seed(s), "
-            f"{self._config.generations} generations each."
-        )
+        n_gens = self._config.generations
+        pbar = tqdm(total=n_gens, unit="gen")
 
         for seed_idx, seed in enumerate(seeds):
-            logger.info(
-                f"Seed {seed_idx}: '{seed.class_a}' vs '{seed.class_b}'"
+            pbar.reset()
+            pbar.set_description(
+                f"[{seed_idx + 1}/{len(seeds)}] "
+                f"{seed.class_a} vs {seed.class_b}"
             )
             self._run_seed(
-                seed_idx, seed, categories, answer_suffix,
+                seed_idx, seed, categories, answer_suffix, pbar,
             )
             self._optimizer.reset()
             self._cleanup()
+
+        pbar.close()
 
     # ------------------------------------------------------------------
     # Per-seed loop
@@ -150,6 +233,7 @@ class VLMBoundaryTester(SMOO):
         seed: SeedTriple,
         categories: tuple[str, ...],
         answer_suffix: str,
+        pbar: tqdm,
     ) -> None:
         start_time = time()
 
@@ -197,15 +281,16 @@ class VLMBoundaryTester(SMOO):
             trace_rows.extend(gen_traces)
 
             # Grow archive with current Pareto front.
-            for cand in self._optimizer.best_candidates:
-                genome_archive.append(cand.solution.copy())
-
-            logger.info(
-                f"  Gen {gen + 1}/{self._config.generations} "
-                f"({time() - gen_start:.1f}s, "
-                f"pareto={len(self._optimizer.best_candidates)}, "
-                f"archive={len(genome_archive)})"
+            genome_archive.extend(
+                c.solution.copy() for c in self._optimizer.best_candidates
             )
+
+            pbar.set_postfix(
+                pareto=len(self._optimizer.best_candidates),
+                archive=len(genome_archive),
+                t=f"{time() - gen_start:.0f}s",
+            )
+            pbar.update(1)
 
         # 7. Save everything.
         runtime = time() - start_time
@@ -242,15 +327,12 @@ class VLMBoundaryTester(SMOO):
         # -- SUT evaluation -----------------------------------------------
         # Append answer options AFTER text mutation so categories are
         # never exposed to the text optimizer.
-        logits_list: list[Tensor] = []
-        for img, txt in zip(images, texts):
-            full_prompt = txt + answer_suffix
-            logits_list.append(
-                self._sut.process_input(
-                    img, text=full_prompt, categories=categories,
-                )
+        logits = torch.stack([
+            self._sut.process_input(
+                img, text=txt + answer_suffix, categories=categories,
             )
-        logits = torch.stack(logits_list)
+            for img, txt in zip(images, texts)
+        ])
 
         # -- Tensor conversion for MatrixDistance -------------------------
         perturbed_batch = torch.stack(
@@ -290,53 +372,29 @@ class VLMBoundaryTester(SMOO):
         self._optimizer.update()
 
         # -- Build trace rows ---------------------------------------------
-        probs = F.softmax(logits, dim=-1)
-        idx_a, idx_b = target_classes
-
-        traces: list[dict[str, Any]] = []
-        for i in range(len(genotypes)):
-            row: dict[str, Any] = {
-                "seed_id": seed_idx,
-                "generation": gen,
-                "individual": i,
-                "genotype": genotypes[i].tolist(),
-                "logprobs": logits[i].tolist(),
-                "decoded_text": texts[i],
-                "predicted_class": categories[int(logits[i].argmax())],
-                "p_class_a": float(probs[i, idx_a]),
-                "p_class_b": float(probs[i, idx_b]),
-            }
-            for j, name in enumerate(batched_results.keys()):
-                row[f"fitness_{name}"] = float(batched_fitness[j][i])
-            row["fitness_ArchiveSparsity"] = float(sparsity_arr[i])
-            traces.append(row)
-
-        return traces
+        return _build_trace_rows(
+            seed_idx, gen, genotypes, logits, texts,
+            batched_results, batched_fitness, sparsity_arr,
+            target_classes, categories,
+        )
 
     def _evaluate_sparsity(
         self,
         genotypes: NDArray,
         genome_archive: list[NDArray],
     ) -> list[float]:
-        """Evaluate ArchiveSparsity per-individual.
-
-        :param genotypes: Population array ``(pop_size, n_var)``.
-        :param genome_archive: Archive of genotypes from past generations.
-        :returns: List of sparsity values, one per individual.
-        """
+        """Evaluate ArchiveSparsity per-individual."""
         if not genome_archive:
             return [0.0] * len(genotypes)
-
-        results: list[float] = []
-        for genotype in genotypes:
-            val = self._sparsity.evaluate(
+        return [
+            float(self._sparsity.evaluate(
                 images=[None, None],
                 solution_archive=[],
-                genome_target=genotype,
+                genome_target=g,
                 genome_archive=genome_archive,
-            )
-            results.append(float(val))
-        return results
+            ))
+            for g in genotypes
+        ]
 
     # ------------------------------------------------------------------
     # Result saving
@@ -388,52 +446,16 @@ class VLMBoundaryTester(SMOO):
         seed.image.save(run_dir / "origin.png")
 
         # -- Stats JSON ---------------------------------------------------
-        stats = {
-            "seed_idx": seed_idx,
-            "class_a": seed.class_a,
-            "class_b": seed.class_b,
-            "prompt_template": self._config.prompt_template,
-            "answer_format": self._config.answer_format,
-            "runtime_seconds": runtime,
-            "generations": self._config.generations,
-            "pop_size": self._config.pop_size,
-            "gene_bounds": self._manipulator.gene_bounds.tolist(),
-            "image_dim": self._manipulator.image_dim,
-            "text_dim": self._manipulator.text_dim,
-            "categories": list(categories),
-            "n_pareto": len(self._optimizer.best_candidates),
-            "archive_size": len(genome_archive),
-        }
+        stats = _build_stats(
+            seed_idx, seed, self._config, self._manipulator,
+            len(self._optimizer.best_candidates), len(genome_archive),
+            runtime, categories,
+        )
         with open(run_dir / "stats.json", "w") as f:
             json.dump(stats, f, indent=2)
 
         # -- Context metadata (for offline reconstruction) ----------------
-        ctx_meta = {
-            "image_patch_positions": (
-                self._manipulator.image_context.selection.positions.tolist()
-            ),
-            "image_original_codes": (
-                self._manipulator.image_context.selection.original_codes.tolist()
-            ),
-            "image_candidates": [
-                c.tolist()
-                for c in self._manipulator.image_context.selection.candidates
-            ],
-            "text_word_positions": (
-                self._manipulator.text_context.selection.positions.tolist()
-            ),
-            "text_original_words": list(
-                self._manipulator.text_context.selection.original_words
-            ),
-            "text_candidates": [
-                list(c)
-                for c in self._manipulator.text_context.selection.candidates
-            ],
-            "text_candidate_distances": [
-                d.tolist()
-                for d in self._manipulator.text_candidate_distances
-            ],
-        }
+        ctx_meta = _build_context_meta(self._manipulator)
         with open(run_dir / "context.json", "w") as f:
             json.dump(ctx_meta, f, indent=2)
 
