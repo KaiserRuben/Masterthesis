@@ -445,10 +445,10 @@ def main():
     labels = load_imagenet_labels()
     print(f"Loaded {len(labels)} ImageNet labels")
 
-    # Stream from HuggingFace (filtered to categories)
+    # Stream from HuggingFace (filtered to categories, no caching)
     print(f"Streaming ImageNet validation for {len(CATEGORIES)} categories ...")
     samples = stream_imagenet_val(
-        labels=labels,
+        labels,
         categories=CATEGORIES,
         max_images=args.max_images,
         max_per_class=args.max_per_class,
@@ -507,12 +507,12 @@ def main():
         if i in done_indices:
             continue
 
-        gt_idx = sample["idx"]
-        gt_label = labels[gt_idx]
+        gt_idx = sample.class_idx
+        gt_label = sample.class_name
 
         try:
             generated_text, thinking_text, scored = scorer.score_image(
-                sample["image"], args.prompt, CATEGORIES,
+                sample.image, args.prompt, CATEGORIES,
             )
             scorer.cleanup()
 

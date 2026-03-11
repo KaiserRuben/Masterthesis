@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.data.imagenet import load_imagenet_labels, stream_imagenet_val
+from src.data.imagenet import load_samples
 from src.manipulator.image import (
     ImageManipulator,
     ImageManipulatorConfig,
@@ -48,26 +48,6 @@ DEFAULT_CATEGORIES = [
 N_CANDIDATES = 100
 
 DISTANCE_LEVELS = ("near", "mid", "far")
-
-
-# ---------------------------------------------------------------------------
-# Data loading
-# ---------------------------------------------------------------------------
-
-
-def fetch_samples(
-    n_samples: int = 1,
-    categories: list[str] | None = None,
-) -> list[tuple[Image.Image, int, str]]:
-    """Fetch ImageNet validation images via the shared data loader."""
-    labels = load_imagenet_labels()
-    samples = stream_imagenet_val(
-        labels,
-        categories=categories,
-        max_images=n_samples,
-        max_per_class=1 if categories else None,
-    )
-    return [(s["image"], s["idx"], labels[s["idx"]]) for s in samples]
 
 
 # ---------------------------------------------------------------------------
@@ -330,14 +310,14 @@ def main() -> None:
     print(f"  Candidates: {N_CANDIDATES} per patch (UNIFORM: nearest \u2192 farthest)")
 
     print(f"\nFetching {args.n_samples} ImageNet sample(s) ...")
-    samples = fetch_samples(n_samples=args.n_samples, categories=categories)
+    samples = load_samples(categories=categories, n_per_class=args.n_samples)
     print(f"  Got {len(samples)} image(s)")
 
-    for i, (image, label_idx, label_name) in enumerate(samples):
+    for i, sample in enumerate(samples):
         sample_dir = (output_dir if len(samples) == 1
-                      else output_dir / f"{i:03d}_{label_name.replace(' ', '_')}")
-        print(f"\n[{i + 1}/{len(samples)}] Processing {label_name} ...")
-        process_sample(manipulator, image, label_name, label_idx, sample_dir)
+                      else output_dir / f"{i:03d}_{sample.class_name.replace(' ', '_')}")
+        print(f"\n[{i + 1}/{len(samples)}] Processing {sample.class_name} ...")
+        process_sample(manipulator, sample.image, sample.class_name, sample.class_idx, sample_dir)
 
     print(f"\nDone. All outputs in {output_dir}/")
 
