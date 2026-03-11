@@ -69,7 +69,7 @@ Initial focus: **Classification** (cleanest boundary definition), then generaliz
 │   └── Archive/                 # Previous experiments (Phases 0–4, trajectory-based)
 ├── tools/
 │   ├── VLTest/                  # VLTest framework (reference implementation)
-│   ├── smoo/                    # SMOO framework (modular SUT/Manipulator/Optimizer)
+│   ├── smoo/                    # SMOO framework (pip install -e tools/smoo)
 │   ├── vlm/                     # VLM inference queue (Ollama-based)
 │   ├── scene/                   # Classification schemas & prompts
 │   └── alpamayo/                # NVIDIA Alpamayo-R1 trajectory model (submodule)
@@ -88,9 +88,21 @@ Initial focus: **Classification** (cleanest boundary definition), then generaliz
 
 Black-box VLM testing framework using VQGAN codebook mutation and POS-aware text perturbation. Primary reference for the image manipulation methodology.
 
-### SMOO (Reference)
+### SMOO
 
-Modular search-based testing framework (SUT → Manipulator → Optimizer → Objectives). Architectural reference — the thesis pipeline follows this structure.
+Modular search-based testing framework (SUT -> Manipulator -> Optimizer -> Objectives). The thesis pipeline builds on this structure. SMOO lives in `tools/smoo/` as a git submodule and is installed as an editable Python package:
+
+```bash
+pip install -e tools/smoo
+```
+
+This exposes the `smoo` package for clean imports:
+
+```python
+from smoo.optimizer import DiscreteOptimizer
+from smoo.objectives import ObjectiveBase
+from smoo.sut import SUTBase
+```
 
 ### vlm/
 
