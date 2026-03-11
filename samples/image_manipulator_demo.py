@@ -28,21 +28,13 @@ from PIL import Image, ImageDraw, ImageFont
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.config import DEFAULT_CATEGORIES, ImageConfig
 from src.data.imagenet import load_samples
 from src.manipulator.image import (
     ImageManipulator,
-    ImageManipulatorConfig,
     PatchStrategy,
     CandidateStrategy,
 )
-
-DEFAULT_CATEGORIES = [
-    # Animals — vivid colors and textures
-    "macaw", "peacock", "flamingo", "monarch butterfly", "jellyfish",
-    "chameleon", "toucan", "leopard", "red panda", "lionfish",
-    # Scenes & structures
-    "coral reef", "volcano", "castle", "mosque", "palace",
-]
 
 # Enough UNIFORM candidates to span nearest → farthest in codebook space
 N_CANDIDATES = 100
@@ -290,10 +282,11 @@ def main() -> None:
 
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    categories = args.categories or DEFAULT_CATEGORIES
+    categories = args.categories or list(DEFAULT_CATEGORIES)
 
     print(f"Loading VQGAN preset '{args.preset}' ...")
-    config = ImageManipulatorConfig(
+    config = ImageConfig(
+        preset=args.preset,
         patch_ratio=1.0,
         patch_strategy=PatchStrategy.ALL,
         n_candidates=N_CANDIDATES,
@@ -301,7 +294,6 @@ def main() -> None:
         knn_cache_path=output_dir / "codebook_knn.npz",
     )
     manipulator = ImageManipulator.from_preset(
-        name=args.preset,
         device=args.device,
         config=config,
     )

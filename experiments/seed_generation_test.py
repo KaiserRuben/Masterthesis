@@ -13,9 +13,13 @@ import argparse
 import logging
 import os
 import sys
+from pathlib import Path
 
-from src.sut import VLMSUT, VLMSUTConfig
-from src.tester import ExperimentConfig, generate_seeds
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.config import ExperimentConfig, SeedConfig, SUTConfig
+from src.sut import VLMSUT
+from src.tester import generate_seeds
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,7 +33,7 @@ def main():
     parser.add_argument("--device", default="mps")
     parser.add_argument("--model", default="Qwen/Qwen3.5-9B")
     parser.add_argument("--n-per-class", type=int, default=2)
-    parser.add_argument("--max-top2-gap", type=float, default=2.0)
+    parser.add_argument("--max-logprob-gap", type=float, default=2.0)
     parser.add_argument(
         "--categories",
         nargs="+",
@@ -37,25 +41,22 @@ def main():
     )
     args = parser.parse_args()
 
-    sut_config = VLMSUTConfig(
-        model_id=args.model,
+    config = ExperimentConfig(
         device=args.device,
-    )
-    exp_config = ExperimentConfig(
         categories=tuple(args.categories),
+        sut=SUTConfig(model_id=args.model),
+        seeds=SeedConfig(
+            n_per_class=args.n_per_class,
+            max_logprob_gap=args.max_logprob_gap,
+        ),
     )
 
     print(f"Loading SUT: {args.model} on {args.device}...")
-    sut = VLMSUT(sut_config)
+    sut = VLMSUT(config)
 
     print(f"Generating seeds ({args.n_per_class}/class, "
-          f"gap <= {args.max_top2_gap})...")
-    seeds = generate_seeds(
-        sut,
-        exp_config,
-        n_per_class=args.n_per_class,
-        max_top2_gap=args.max_top2_gap,
-    )
+          f"gap <= {args.max_logprob_gap})...")
+    seeds = generate_seeds(sut, config)
 
     print(f"\n--- Results: {len(seeds)} seeds ---")
     for i, s in enumerate(seeds):
