@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import gc
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -304,8 +303,8 @@ class VLMScorer(ABC):
 # -----------------------------------------------------------------------
 
 
-class Qwen3VLScorer(VLMScorer):
-    """Scorer for Qwen3-VL models (standard attention).
+class QwenVLScorer(VLMScorer):
+    """Scorer for Qwen VL models (Qwen3-VL and Qwen3.5).
 
     Defaults *max_pixels* to ``512 * 28 * 28`` (~400 image tokens)
     when not explicitly set.
@@ -335,66 +334,7 @@ class Qwen3VLScorer(VLMScorer):
         prompt: str,
         enable_thinking: bool,
     ) -> dict:
-        """Build Qwen3-VL chat-template inputs.
-
-        :param image: PIL image.
-        :param prompt: Text prompt.
-        :param enable_thinking: Whether to enable thinking.
-        :returns: Tokenized inputs dict on device.
-        """
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": image},
-                    {"type": "text", "text": prompt},
-                ],
-            }
-        ]
-        text = self._processor.apply_chat_template(
-            messages,
-            add_generation_prompt=True,
-            tokenize=False,
-            enable_thinking=enable_thinking,
-        )
-        return self._processor(
-            text=[text], images=[image], return_tensors="pt"
-        ).to(self._device)
-
-
-class Qwen35Scorer(VLMScorer):
-    """Scorer for Qwen3.5 models (DeltaNet architecture).
-
-    Defaults *max_pixels* to ``512 * 28 * 28`` (~400 image tokens) to
-    avoid memory blowup in the DeltaNet fallback implementation on
-    MPS/CPU.
-    """
-
-    def __init__(
-        self,
-        model_id: str,
-        device: str,
-        enable_thinking: bool = True,
-        max_thinking_tokens: int = 2000,
-        dtype: torch.dtype | None = None,
-        max_pixels: int | None = None,
-    ) -> None:
-        super().__init__(
-            model_id,
-            device,
-            enable_thinking,
-            max_thinking_tokens,
-            dtype,
-            max_pixels=max_pixels if max_pixels is not None else 512 * 28 * 28,
-        )
-
-    def _prepare_inputs(
-        self,
-        image: Image.Image,
-        prompt: str,
-        enable_thinking: bool,
-    ) -> dict:
-        """Build Qwen3.5 chat-template inputs.
+        """Build Qwen VL chat-template inputs.
 
         :param image: PIL image.
         :param prompt: Text prompt.
@@ -426,8 +366,8 @@ class Qwen35Scorer(VLMScorer):
 # -----------------------------------------------------------------------
 
 SCORER_REGISTRY: dict[str, type[VLMScorer]] = {
-    "qwen3-vl": Qwen3VLScorer,
-    "qwen3.5": Qwen35Scorer,
+    "qwen3-vl": QwenVLScorer,
+    "qwen3.5": QwenVLScorer,
 }
 
 

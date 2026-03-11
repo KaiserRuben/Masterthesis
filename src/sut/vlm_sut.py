@@ -14,7 +14,8 @@ from PIL import Image
 from smoo.sut import SUT
 from torch import Tensor
 
-from .config import VLMSUTConfig
+from src.config import ExperimentConfig
+
 from .scorer import create_scorer
 
 
@@ -28,18 +29,21 @@ class VLMSUT(SUT):
     :param config: Configuration object.  Uses defaults when ``None``.
     """
 
-    def __init__(self, config: VLMSUTConfig | None = None) -> None:
-        self._config = config or VLMSUTConfig()
+    def __init__(self, config: ExperimentConfig | None = None) -> None:
+        self._config = config or ExperimentConfig()
         self._device = torch.device(self._config.device)
         self._scorer = create_scorer(
-            model_id=self._config.model_id,
+            model_id=self._config.sut.model_id,
             device=self._config.device,
-            enable_thinking=self._config.enable_thinking,
-            max_thinking_tokens=self._config.max_thinking_tokens,
-            max_pixels=self._config.max_pixels,
+            enable_thinking=self._config.sut.enable_thinking,
+            max_thinking_tokens=self._config.sut.max_thinking_tokens,
+            max_pixels=self._config.sut.max_pixels,
         )
-        self._prompt = self._config.prompt_template.format(
-            categories=", ".join(self._config.categories)
+        self._prompt = (
+            self._config.prompt_template
+            + self._config.answer_format.format(
+                categories=", ".join(self._config.categories),
+            )
         )
 
     # ------------------------------------------------------------------
