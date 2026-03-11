@@ -110,15 +110,12 @@ def load_samples(
     """
     labels = load_imagenet_labels(cache_dir)
     cat_to_idx = {cat: labels.index(cat) for cat in categories}
-    cached: dict[str, list[Path]] = {}
-    need: dict[str, int] = {}
-
-    for cat in categories:
-        paths = _load_cached(cache_dir, cat)
-        cached[cat] = paths
-        shortfall = n_per_class - len(paths)
-        if shortfall > 0:
-            need[cat] = shortfall
+    cached = {cat: _load_cached(cache_dir, cat) for cat in categories}
+    need = {
+        cat: n_per_class - len(paths)
+        for cat, paths in cached.items()
+        if len(paths) < n_per_class
+    }
 
     if need:
         total_cached = sum(len(v) for v in cached.values())
@@ -135,16 +132,15 @@ def load_samples(
             f">= {n_per_class} images."
         )
 
-    samples: list[ImageSample] = []
-    for cat in categories:
-        for p in cached[cat][:n_per_class]:
-            samples.append(ImageSample(
-                image=Image.open(p).convert("RGB"),
-                class_idx=cat_to_idx[cat],
-                class_name=cat,
-            ))
-
-    return samples
+    return [
+        ImageSample(
+            image=Image.open(p).convert("RGB"),
+            class_idx=cat_to_idx[cat],
+            class_name=cat,
+        )
+        for cat in categories
+        for p in cached[cat][:n_per_class]
+    ]
 
 
 def _stream_and_cache(

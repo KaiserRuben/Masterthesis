@@ -54,13 +54,11 @@ class TextReplacementDistance(Criterion):
         :returns: List of floats, one cumulative distance per individual.
         """
         genotypes = np.atleast_2d(text_genotypes)
-        results: list[float] = []
-
-        for geno in genotypes:
-            total = 0.0
-            for i, gene in enumerate(geno):
-                if gene > 0:
-                    total += float(text_candidate_distances[i][gene - 1])
-            results.append(total)
-
-        return results
+        return [
+            sum(
+                (float(text_candidate_distances[i][g - 1])
+                 for i, g in enumerate(geno) if g > 0),
+                0.0,
+            )
+            for geno in genotypes
+        ]
