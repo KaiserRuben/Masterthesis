@@ -12,11 +12,17 @@ import pytest
 import torch
 
 from src.config import (
-    DEFAULT_CATEGORIES,
     DEFAULT_PROMPT_TEMPLATE,
     DEFAULT_ANSWER_FORMAT,
     ExperimentConfig,
     SUTConfig,
+)
+
+# Test-only category list matching the keys in _FAKE_RESULTS.
+_TEST_CATEGORIES: tuple[str, ...] = (
+    "macaw", "peacock", "flamingo", "monarch butterfly", "jellyfish",
+    "chameleon", "toucan", "leopard", "red panda", "lionfish",
+    "coral reef", "volcano", "castle", "mosque", "palace",
 )
 from src.sut.scorer import VLMScorer
 
@@ -102,7 +108,7 @@ def _make_sut(
         a real model."""
 
         def __init__(self, config: ExperimentConfig | None = None) -> None:
-            self._config = config or ExperimentConfig()
+            self._config = config or ExperimentConfig(categories=_TEST_CATEGORIES)
             self._device = torch.device(self._config.device)
             self._scorer = FakeScorer()
             self._prompt = (
@@ -134,7 +140,7 @@ class TestExperimentConfig:
         cfg = ExperimentConfig()
         assert cfg.sut.model_id == "Qwen/Qwen3.5-9B"
         assert cfg.device == "cpu"
-        assert cfg.categories == DEFAULT_CATEGORIES
+        assert cfg.categories == ()
         assert cfg.sut.enable_thinking is False
         assert cfg.sut.max_thinking_tokens == 2000
         assert cfg.sut.max_pixels is None
@@ -188,7 +194,7 @@ class TestPromptBuilding:
         expected = (
             DEFAULT_PROMPT_TEMPLATE
             + DEFAULT_ANSWER_FORMAT.format(
-                categories=", ".join(DEFAULT_CATEGORIES),
+                categories=", ".join(_TEST_CATEGORIES),
             )
         )
         assert sut._prompt == expected
@@ -306,7 +312,7 @@ class TestInputValid:
         is_valid, logprobs = sut.input_valid(_dummy_image(), "macaw")
         assert is_valid is True
         assert isinstance(logprobs, torch.Tensor)
-        assert logprobs.shape == (len(DEFAULT_CATEGORIES),)
+        assert logprobs.shape == (len(_TEST_CATEGORIES),)
 
     def test_wrong_prediction(self) -> None:
         """Top prediction does not match condition -> is_valid=False."""

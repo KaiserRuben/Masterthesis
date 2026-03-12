@@ -16,6 +16,7 @@ in their respective component modules (to avoid circular imports).
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -31,24 +32,6 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Shared constants (ONE copy — never duplicated)
 # ---------------------------------------------------------------------------
-
-DEFAULT_CATEGORIES: tuple[str, ...] = (
-    "macaw",
-    "peacock",
-    "flamingo",
-    "monarch butterfly",
-    "jellyfish",
-    "chameleon",
-    "toucan",
-    "leopard",
-    "red panda",
-    "lionfish",
-    "coral reef",
-    "volcano",
-    "castle",
-    "mosque",
-    "palace",
-)
 
 DEFAULT_PROMPT_TEMPLATE: str = "What is the main subject in this image?"
 
@@ -70,6 +53,7 @@ class SUTConfig:
     enable_thinking: bool = False
     max_thinking_tokens: int = 2000
     max_pixels: int | None = None
+    redis_url: str = "redis://localhost:6379"
 
 
 @dataclass(frozen=True)
@@ -131,7 +115,8 @@ class ExperimentConfig:
 
     # Shared
     device: str = "cpu"
-    categories: tuple[str, ...] = DEFAULT_CATEGORIES
+    categories: tuple[str, ...] = ()
+    n_categories: int | None = None
     prompt_template: str = DEFAULT_PROMPT_TEMPLATE
     answer_format: str = DEFAULT_ANSWER_FORMAT
 
@@ -141,6 +126,10 @@ class ExperimentConfig:
     save_dir: Path = field(default_factory=lambda: Path("runs"))
     name: str = "vlm_boundary"
 
+    # Cache — first entry is primary (writable), rest are read-only fallbacks.
+    # Empty → auto-creates .cache/imagenet relative to CWD.
+    cache_dirs: tuple[Path, ...] = ()
+
     # Components
     sut: SUTConfig = field(default_factory=SUTConfig)
     image: ImageConfig = field(default_factory=ImageConfig)
@@ -148,9 +137,32 @@ class ExperimentConfig:
     seeds: SeedConfig = field(default_factory=SeedConfig)
 
 
+def resolve_categories(
+    config: ExperimentConfig,
+    all_labels: list[str] | tuple[str, ...],
+) -> ExperimentConfig:
+    """Resolve categories against a data source's label set.
+
+    When ``categories`` is empty, fills from *all_labels*.  When
+    ``n_categories`` is set, truncates the resolved list to that length.
+
+    :param config: Experiment config (possibly with empty categories).
+    :param all_labels: Complete label set from the data source.
+    :returns: Config with categories guaranteed non-empty.
+    """
+    if config.n_categories is not None:
+        cats = tuple(all_labels)[: config.n_categories]
+    elif config.categories:
+        cats = config.categories
+    else:
+        cats = tuple(all_labels)
+    if cats == config.categories:
+        return config
+    return dataclasses.replace(config, categories=cats)
+
+
 __all__ = [
     "DEFAULT_ANSWER_FORMAT",
-    "DEFAULT_CATEGORIES",
     "DEFAULT_PROMPT_TEMPLATE",
     "ExperimentConfig",
     "ImageConfig",
@@ -158,4 +170,5 @@ __all__ = [
     "SeedTriple",
     "SUTConfig",
     "TextConfig",
+    "resolve_categories",
 ]

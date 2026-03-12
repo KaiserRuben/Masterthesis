@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 # Ensure project root is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import DEFAULT_CATEGORIES, ImageConfig
+from src.config import ImageConfig
 from src.data.imagenet import load_samples
 from src.manipulator.image import (
     ImageManipulator,
@@ -282,7 +282,7 @@ def main() -> None:
 
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    categories = args.categories or list(DEFAULT_CATEGORIES)
+    categories = args.categories or ["macaw", "peacock", "flamingo"]
 
     print(f"Loading VQGAN preset '{args.preset}' ...")
     config = ImageConfig(

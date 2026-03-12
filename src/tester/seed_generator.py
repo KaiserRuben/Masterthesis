@@ -13,9 +13,8 @@ from typing import TYPE_CHECKING
 import torch
 from tqdm import tqdm
 
-from src.data.imagenet import load_samples
-
 from src.config import ExperimentConfig, SeedTriple
+from src.data import DataSource
 
 if TYPE_CHECKING:
     from src.sut.vlm_sut import VLMSUT
@@ -24,29 +23,31 @@ if TYPE_CHECKING:
 def generate_seeds(
     sut: VLMSUT,
     config: ExperimentConfig,
+    data_source: DataSource,
 ) -> list[SeedTriple]:
     """Generate seed triples from ImageNet validation images.
 
     :param sut: The VLM system-under-test (used for scoring).
-    :param config: Experiment config (categories, prompt, answer format,
-        seed generation parameters via ``config.seeds``).
+    :param config: Experiment config — ``config.categories`` must be
+        resolved (non-empty) before calling.
+    :param data_source: Data source for loading samples.
     :returns: List of :class:`SeedTriple` that passed both filters.
     """
     categories = config.categories
     n_per_class = config.seeds.n_per_class
     max_logprob_gap = config.seeds.max_logprob_gap
 
+    # Load images (cached or streamed).
+    samples = data_source.load_samples(
+        categories=list(categories),
+        n_per_class=n_per_class,
+    )
+
     # Build the full prompt (unmutated question + answer options).
     answer_suffix = config.answer_format.format(
         categories=", ".join(categories),
     )
     full_prompt = config.prompt_template + answer_suffix
-
-    # Load images (cached or streamed).
-    samples = load_samples(
-        categories=list(categories),
-        n_per_class=n_per_class,
-    )
 
     seeds: list[SeedTriple] = []
     n_wrong = 0
