@@ -13,6 +13,13 @@
 # ===========================================================================
 
 device: mps                             # cpu | cuda | mps
+generations: 30                      # Optimizer generations per seed
+pop_size: 20                          # Population size
+seeds:
+  n_per_class: 2
+  max_logprob_gap: .5
+
+n_categories: 100
 
 # categories:                           # Labels the VLM chooses from
 #   - macaw
@@ -30,7 +37,6 @@ device: mps                             # cpu | cuda | mps
 #   - castle
 #   - mosque
 #   - palace
-# n_categories: 50                      # Use first N ImageNet labels (ignores categories list)
 
 # prompt_template: "What is the main subject in this image?"
 # answer_format: " Answer with exactly one of these options: {categories}."
@@ -40,7 +46,7 @@ device: mps                             # cpu | cuda | mps
 # ===========================================================================
 
 # name: vlm_boundary                    # Used in result directory names
-save_dir: runs                          # Root directory for results
+save_dir: /Volumes/SanDisk/runs                          # Root directory for results
 # generations: 100                      # Optimizer generations per seed
 # pop_size: 50                          # Population size
 
@@ -51,8 +57,8 @@ save_dir: runs                          # Root directory for results
 # Omit entirely → auto-creates .cache/imagenet in working directory.
 
 cache_dirs:
+  - /Volumes/SanDisk/.cache/imagenet     # external drive (skipped when not mounted)
   - ~/.cache/imagenet                   # local (primary)
-  - /Volumes/SanDisk/Cache/imagenet     # external drive (skipped when not mounted)
 
 # ===========================================================================
 # SUT (Vision-Language Model)
