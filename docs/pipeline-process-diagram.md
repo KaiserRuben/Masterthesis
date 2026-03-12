@@ -143,9 +143,9 @@
 │  │    │      |P(class_A) - P(class_B)|                  │ │ │
 │  │    │      → minimize = push toward decision boundary │ │ │
 │  │    ├─────────────────────────────────────────────────┤ │ │
-│  │    │  #4 Concentration         ← logits              │ │ │
+│  │    │  #4 Concentration         ← logits  [DISABLED]  │ │ │
 │  │    │      Σ P(c) for c ∉ {A, B}                      │ │ │
-│  │    │      → minimize = keep mass on target pair      │ │ │
+│  │    │      Conflicts with TB: 0 already minimises it  │ │ │
 │  │    ├─────────────────────────────────────────────────┤ │ │
 │  │    │  #5 ArchiveSparsity       ← genome_target,      │ │ │
 │  │    │                             genome_archive      │ │ │
@@ -244,9 +244,9 @@
  #3 TargetedBalance         DONE        src/objectives/targeted_balance.py
  #4 Concentration           DONE        src/objectives/concentration.py
  #5 ArchiveSparsity         REUSE SMOO  tools/smoo/.../auxiliary_criteria/
- VLMBoundaryTester          TODO        src/tester/  (new)
- ExperimentConfig           TODO        src/tester/  (new)
- Entry point / run script   TODO        experiments/ (new)
+ VLMBoundaryTester          DONE        src/tester/vlm_boundary_tester.py
+ ExperimentConfig           DONE        src/config.py
+ Entry point / run script   DONE        experiments/run_boundary_test.py
 ```
 
 ## Data Flow Summary
