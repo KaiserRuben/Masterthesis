@@ -35,3 +35,4 @@ pymoo
 pyarrow
 scipy
 lpips
+redis

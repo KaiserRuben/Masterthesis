@@ -7,6 +7,9 @@ Wraps a :class:`~src.sut.scorer.VLMScorer` into SMOO's
 
 from __future__ import annotations
 
+import hashlib
+import json
+import logging
 from typing import Any
 
 import torch
@@ -18,6 +21,24 @@ from src.config import ExperimentConfig
 
 from .scorer import create_scorer
 
+logger = logging.getLogger(__name__)
+
+
+def _cache_key(
+    model_id: str,
+    image: Image.Image,
+    prompt: str,
+    categories: tuple[str, ...],
+) -> str:
+    """Build a deterministic cache key from the exact inference inputs."""
+    h = hashlib.sha256()
+    h.update(model_id.encode())
+    h.update(image.tobytes())
+    h.update(f"{image.size}|{image.mode}".encode())
+    h.update(prompt.encode())
+    h.update("\0".join(categories).encode())
+    return h.hexdigest()
+
 
 class VLMSUT(SUT):
     """VLM system-under-test with teacher-forced scoring.
@@ -25,6 +46,10 @@ class VLMSUT(SUT):
     Wraps a VLM scorer into SMOO's SUT interface.  For each input
     (image + optional text), runs teacher-forced decoding to produce a
     log-prob vector over the category set.
+
+    If a Redis server is reachable at ``config.sut.redis_url``, inference
+    results are cached by exact input hash.  If Redis is unavailable the
+    SUT works normally without caching.
 
     :param config: Configuration object.  Uses defaults when ``None``.
     """
@@ -45,6 +70,9 @@ class VLMSUT(SUT):
                 categories=", ".join(self._config.categories),
             )
         )
+        self._redis = _connect_redis(self._config.sut.redis_url)
+        self._cache_hits = 0
+        self._cache_misses = 0
 
     # ------------------------------------------------------------------
     # SUT interface
@@ -57,6 +85,9 @@ class VLMSUT(SUT):
         categories: tuple[str, ...] | None = None,
     ) -> Tensor:
         """Score an image against categories.
+
+        Results are cached in Redis (when available) keyed on the exact
+        pixel content, prompt, and category tuple.
 
         :param image: PIL image to classify.
         :param text: Override prompt text.  If ``None``, uses the prompt
@@ -71,7 +102,25 @@ class VLMSUT(SUT):
         """
         cats = categories if categories is not None else self._config.categories
         prompt = text if text is not None else self._prompt
-        return self._scorer.score_categories_tensor(image, prompt, cats)
+
+        # --- cache lookup ---
+        if self._redis is not None:
+            key = _cache_key(
+                self._config.sut.model_id, image, prompt, cats,
+            )
+            cached = self._redis.get(key)
+            if cached is not None:
+                self._cache_hits += 1
+                return torch.tensor(json.loads(cached), dtype=torch.float32)
+            self._cache_misses += 1
+
+        result = self._scorer.score_categories_tensor(image, prompt, cats)
+
+        # --- cache store ---
+        if self._redis is not None:
+            self._redis.set(key, json.dumps(result.tolist()))
+
+        return result
 
     def input_valid(self, inpt: Any, cond: Any) -> tuple[bool, Any]:
         """Validate that the VLM's top prediction matches the condition.
@@ -91,3 +140,29 @@ class VLMSUT(SUT):
         top_idx = int(logprobs.argmax().item())
         top_label = self._config.categories[top_idx]
         return top_label == cond, logprobs
+
+    @property
+    def cache_stats(self) -> dict[str, int]:
+        """Return cache hit/miss counts."""
+        return {"hits": self._cache_hits, "misses": self._cache_misses}
+
+
+# -----------------------------------------------------------------------
+# Redis helper
+# -----------------------------------------------------------------------
+
+
+def _connect_redis(url: str):
+    """Try to connect to Redis.  Return client or ``None`` on failure."""
+    if not url:
+        return None
+    try:
+        import redis
+
+        client = redis.Redis.from_url(url, decode_responses=True)
+        client.ping()
+        logger.info("Inference cache connected to Redis at %s", url)
+        return client
+    except Exception:  # noqa: BLE001
+        logger.info("Redis unavailable at %s — running without cache", url)
+        return None
