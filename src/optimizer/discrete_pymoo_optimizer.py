@@ -84,7 +84,10 @@ class DiscretePymooOptimizer(Optimizer):
         self._algo_params = dict(algo_params) if algo_params else {}
         self._n_var = len(self._gene_bounds)
 
-        self._init_algorithm()
+        # Defer initialization when bounds are placeholder zeros —
+        # _init_algorithm will be called via update_gene_bounds with real bounds.
+        if self._gene_bounds.any():
+            self._init_algorithm()
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -149,7 +152,7 @@ class DiscretePymooOptimizer(Optimizer):
 
     def update(self) -> None:
         """Advance one generation: tell fitness, ask for new population."""
-        logger.info("Telling fitness and asking for next generation.")
+        logger.debug("Telling fitness and asking for next generation.")
         static = StaticProblem(self._problem, F=np.column_stack(self._fitness))
         Evaluator().eval(static, self._pop_current)
         self._pymoo_algo.tell(self._pop_current)

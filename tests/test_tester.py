@@ -73,7 +73,7 @@ def manipulator(embeddings):
 
 @pytest.fixture()
 def objectives():
-    """4 batched objectives (ArchiveSparsity is handled separately)."""
+    """4 batched objectives."""
     return CriterionCollection(
         MatrixDistance(),
         TextReplacementDistance(),

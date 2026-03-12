@@ -1,17 +1,23 @@
 """VLM boundary tester — the main orchestrator.
 
 Wires together :class:`VLMManipulator`, :class:`VLMSUT`,
-:class:`DiscretePymooOptimizer`, and 5 objectives into a
+:class:`DiscretePymooOptimizer`, and 4 objectives into a
 multi-objective evolutionary search loop.
 
-Four batched objectives run through a :class:`CriterionCollection`;
-the fifth (SMOO's :class:`ArchiveSparsity`) is evaluated per-individual
-because it is not batched.
+All 4 objectives (MatrixDistance, TextReplacementDistance,
+TargetedBalance, Concentration) are batched and run through a
+:class:`CriterionCollection`.
 
 Each seed triple ``(image, class_A, class_B)`` is tested independently:
 the manipulator prepares image + text contexts, the optimizer evolves
 integer genotypes, and every SUT interaction is logged to a Parquet
 trace for offline analysis.
+
+.. note::
+
+   ArchiveSparsity (genotype diversity) was removed — optimal boundary
+   genotypes are sparse (mostly zeros), so diversity pressure drives the
+   optimizer toward non-sparse genotypes that are not boundary solutions.
 """
 
 from __future__ import annotations
@@ -32,11 +38,7 @@ from torch import Tensor
 from tqdm import tqdm
 
 from src.manipulator.vlm_manipulator import VLMManipulator
-from src.objectives import (
-    ArchiveSparsity,
-    CriterionCollection,
-    NormalizedGenomeDistance,
-)
+from src.objectives import CriterionCollection
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 
 from src.config import ExperimentConfig, SeedTriple
@@ -65,7 +67,6 @@ def _build_trace_rows(
     texts: list[str],
     batched_results: dict[str, Any],
     batched_fitness: tuple,
-    sparsity_arr: NDArray,
     target_classes: tuple[int, int],
     categories: tuple[str, ...],
 ) -> list[dict[str, Any]]:
@@ -88,7 +89,6 @@ def _build_trace_rows(
                 f"fitness_{name}": float(batched_fitness[j][i])
                 for j, name in enumerate(fitness_names)
             },
-            "fitness_ArchiveSparsity": float(sparsity_arr[i]),
         }
         for i in range(len(genotypes))
     ]
@@ -100,7 +100,6 @@ def _build_stats(
     config: ExperimentConfig,
     manipulator: VLMManipulator,
     n_pareto: int,
-    archive_size: int,
     runtime: float,
     categories: tuple[str, ...],
 ) -> dict[str, Any]:
@@ -119,7 +118,6 @@ def _build_stats(
         "text_dim": manipulator.text_dim,
         "categories": list(categories),
         "n_pareto": n_pareto,
-        "archive_size": archive_size,
     }
 
 
@@ -156,10 +154,8 @@ class VLMBoundaryTester(SMOO):
         seed → prepare → [ask → manipulate → SUT → objectives → fitness
                           → update] × generations → save
 
-    The :class:`CriterionCollection` holds the 4 batched objectives
-    (MatrixDistance, TextReplacementDistance, TargetedBalance,
-    Concentration).  The 5th objective — :class:`ArchiveSparsity` —
-    is evaluated per-individual and appended to the fitness tuple.
+    All 4 objectives are batched and passed via the
+    :class:`CriterionCollection`.
 
     :param sut: The VLM system-under-test.
     :param manipulator: Multi-modal manipulator (image + text).
@@ -170,7 +166,6 @@ class VLMBoundaryTester(SMOO):
 
     _manipulator: VLMManipulator
     _optimizer: DiscretePymooOptimizer
-    _sparsity: ArchiveSparsity | None
 
     def __init__(
         self,
@@ -190,7 +185,6 @@ class VLMBoundaryTester(SMOO):
             use_wandb=False,
         )
         self._config = config
-        self._sparsity = None  # created per-seed (depends on gene_bounds)
 
     # ------------------------------------------------------------------
     # Public API
@@ -247,19 +241,12 @@ class VLMBoundaryTester(SMOO):
         # 2. Re-configure optimizer for this seed's genotype dimensions.
         self._optimizer.update_gene_bounds(self._manipulator.gene_bounds)
 
-        # 3. Create ArchiveSparsity with gene-bound-aware distance metric.
-        self._sparsity = ArchiveSparsity(
-            metric=NormalizedGenomeDistance(self._manipulator.gene_bounds),
-            regime="min",
-            on_genomes=True,
-        )
-
-        # 4. Resolve target class indices.
+        # 3. Resolve target class indices.
         idx_a = categories.index(seed.class_a)
         idx_b = categories.index(seed.class_b)
         target_classes = (idx_a, idx_b)
 
-        # 5. Compute VQGAN-reconstructed baseline (fair comparison for
+        # 4. Compute VQGAN-reconstructed baseline (fair comparison for
         #    MatrixDistance — both origin and perturbed go through VQGAN).
         zero_geno = self._manipulator.zero_genotype().reshape(1, -1)
         baseline_imgs, _ = self._manipulator.manipulate(
@@ -267,35 +254,28 @@ class VLMBoundaryTester(SMOO):
         )
         origin_tensor = _pil_to_tensor(baseline_imgs[0])
 
-        # 6. Generation loop.
+        # 5. Generation loop.
         trace_rows: list[dict[str, Any]] = []
-        genome_archive: list[NDArray] = []
 
         for gen in range(self._config.generations):
             gen_start = time()
 
             gen_traces = self._run_generation(
                 seed_idx, gen, target_classes, origin_tensor,
-                genome_archive, categories, answer_suffix,
+                categories, answer_suffix,
             )
             trace_rows.extend(gen_traces)
 
-            # Grow archive with current Pareto front.
-            genome_archive.extend(
-                c.solution.copy() for c in self._optimizer.best_candidates
-            )
-
             pbar.set_postfix(
                 pareto=len(self._optimizer.best_candidates),
-                archive=len(genome_archive),
                 t=f"{time() - gen_start:.0f}s",
             )
             pbar.update(1)
 
-        # 7. Save everything.
+        # 6. Save everything.
         runtime = time() - start_time
         self._save_seed_results(
-            seed_idx, seed, trace_rows, genome_archive,
+            seed_idx, seed, trace_rows,
             categories, answer_suffix, runtime,
         )
 
@@ -309,7 +289,6 @@ class VLMBoundaryTester(SMOO):
         gen: int,
         target_classes: tuple[int, int],
         origin_tensor: Tensor,
-        genome_archive: list[NDArray],
         categories: tuple[str, ...],
         answer_suffix: str,
     ) -> list[dict[str, Any]]:
@@ -355,17 +334,10 @@ class VLMBoundaryTester(SMOO):
         )
 
         batched_results = self._objectives.results
-        batched_fitness = tuple(
+        fitness = tuple(
             f.cpu().numpy() if isinstance(f, Tensor) else np.asarray(f)
             for f in batched_results.values()
         )
-
-        # -- Evaluate ArchiveSparsity per-individual ----------------------
-        sparsity_vals = self._evaluate_sparsity(genotypes, genome_archive)
-        sparsity_arr = np.asarray(sparsity_vals)
-
-        # -- Combine into 5-objective fitness tuple -----------------------
-        fitness = batched_fitness + (sparsity_arr,)
 
         # -- Assign fitness & update optimizer ----------------------------
         self._optimizer.assign_fitness(fitness)
@@ -374,27 +346,9 @@ class VLMBoundaryTester(SMOO):
         # -- Build trace rows ---------------------------------------------
         return _build_trace_rows(
             seed_idx, gen, genotypes, logits, texts,
-            batched_results, batched_fitness, sparsity_arr,
+            batched_results, fitness,
             target_classes, categories,
         )
-
-    def _evaluate_sparsity(
-        self,
-        genotypes: NDArray,
-        genome_archive: list[NDArray],
-    ) -> list[float]:
-        """Evaluate ArchiveSparsity per-individual."""
-        if not genome_archive:
-            return [0.0] * len(genotypes)
-        return [
-            float(self._sparsity.evaluate(
-                images=[None, None],
-                solution_archive=[],
-                genome_target=g,
-                genome_archive=genome_archive,
-            ))
-            for g in genotypes
-        ]
 
     # ------------------------------------------------------------------
     # Result saving
@@ -405,7 +359,6 @@ class VLMBoundaryTester(SMOO):
         seed_idx: int,
         seed: SeedTriple,
         trace_rows: list[dict[str, Any]],
-        genome_archive: list[NDArray],
         categories: tuple[str, ...],
         answer_suffix: str,
         runtime: float,
@@ -448,7 +401,7 @@ class VLMBoundaryTester(SMOO):
         # -- Stats JSON ---------------------------------------------------
         stats = _build_stats(
             seed_idx, seed, self._config, self._manipulator,
-            len(self._optimizer.best_candidates), len(genome_archive),
+            len(self._optimizer.best_candidates),
             runtime, categories,
         )
         with open(run_dir / "stats.json", "w") as f:
