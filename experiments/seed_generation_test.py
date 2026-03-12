@@ -17,7 +17,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import ExperimentConfig, SeedConfig, SUTConfig
+from src.config import ExperimentConfig, SeedConfig, SUTConfig, resolve_categories
+from src.data import ImageNetCache
 from src.sut import VLMSUT
 from src.tester import generate_seeds
 
@@ -51,12 +52,15 @@ def main():
         ),
     )
 
+    data_source = ImageNetCache(dirs=config.cache_dirs)
+    config = resolve_categories(config, data_source.labels())
+
     print(f"Loading SUT: {args.model} on {args.device}...")
     sut = VLMSUT(config)
 
     print(f"Generating seeds ({args.n_per_class}/class, "
           f"gap <= {args.max_logprob_gap})...")
-    seeds = generate_seeds(sut, config)
+    seeds = generate_seeds(sut, config, data_source)
 
     print(f"\n--- Results: {len(seeds)} seeds ---")
     for i, s in enumerate(seeds):
