@@ -13,7 +13,7 @@
 #   python experiments/run_pdq_test.py configs/pdq_v2_deep.yaml
 
 device: mps                              # override with --device cuda
-n_categories: 15
+n_categories: 50
 
 sut:
   load_in_8bit: false                    # set true for 24GB GPUs (4090)
@@ -42,7 +42,7 @@ seeds:
 stage1:
   budget_sut_calls: 150
   max_flips_per_seed: 30
-  max_distinct_targets: 10
+  max_distinct_targets: 50
   strategies:
     - name: dense_uniform
       weight: 0.30
@@ -66,7 +66,7 @@ stage1:
 # ===========================================================================
 
 stage2:
-  budget_sut_calls_per_flip: 300         # 2× overnight — test diminishing returns
+  budget_sut_calls_per_flip: 500
   flip_preserve_policy: any_non_anchor
   passes:
     zero:

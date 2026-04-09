@@ -15,10 +15,10 @@
 #   python experiments/run_pdq_test.py configs/pdq_v2_gap.yaml
 
 device: mps                              # override with --device cuda
-n_categories: 15
+n_categories: 50
 
 sut:
-  load_in_8bit: flase                    # set true for 24GB GPUs (4090)
+  load_in_8bit: false                    # set true for 24GB GPUs (4090)
 
 name: pdq_v2_gap
 save_dir: runs
@@ -68,7 +68,7 @@ stage1:
 # ===========================================================================
 
 stage2:
-  budget_sut_calls_per_flip: 300
+  budget_sut_calls_per_flip: 500
   flip_preserve_policy: any_non_anchor
   passes:
     zero:
