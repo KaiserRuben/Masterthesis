@@ -12,8 +12,11 @@
 # Usage:
 #   python experiments/run_pdq_test.py configs/pdq_v2_deep.yaml
 
-device: mps
+device: mps                              # override with --device cuda
 n_categories: 15
+
+sut:
+  load_in_8bit: true                    # set true for 24GB GPUs (4090)
 
 name: pdq_v2_deep
 save_dir: runs

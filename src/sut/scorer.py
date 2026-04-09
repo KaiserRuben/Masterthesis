@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn.functional as F
 from PIL import Image
-from transformers import AutoModelForImageTextToText, AutoProcessor
+from transformers import AutoModelForImageTextToText, AutoProcessor, BitsAndBytesConfig
 
 THINK_END_TOKEN = "</think>"
 
@@ -58,6 +58,8 @@ class VLMScorer(ABC):
         max_thinking_tokens: int = 2000,
         dtype: torch.dtype | None = None,
         max_pixels: int | None = None,
+        load_in_8bit: bool = False,
+        load_in_4bit: bool = False,
     ) -> None:
         self._device = torch.device(device)
         self._enable_thinking = enable_thinking
@@ -67,10 +69,20 @@ class VLMScorer(ABC):
         if max_pixels is not None:
             proc_kwargs["max_pixels"] = max_pixels
         self._processor = AutoProcessor.from_pretrained(model_id, **proc_kwargs)
+
+        model_kwargs: dict = {}
+        if load_in_8bit:
+            model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+            model_kwargs["device_map"] = device
+        elif load_in_4bit:
+            model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
+            model_kwargs["device_map"] = device
+        else:
+            model_kwargs["torch_dtype"] = dtype or torch.float16
+            model_kwargs["device_map"] = device
+
         self._model = AutoModelForImageTextToText.from_pretrained(
-            model_id,
-            torch_dtype=dtype or torch.float16,
-            device_map=device,
+            model_id, **model_kwargs,
         )
         self._model.eval()
 
@@ -318,6 +330,8 @@ class QwenVLScorer(VLMScorer):
         max_thinking_tokens: int = 2000,
         dtype: torch.dtype | None = None,
         max_pixels: int | None = None,
+        load_in_8bit: bool = False,
+        load_in_4bit: bool = False,
     ) -> None:
         super().__init__(
             model_id,
@@ -326,6 +340,8 @@ class QwenVLScorer(VLMScorer):
             max_thinking_tokens,
             dtype,
             max_pixels=max_pixels if max_pixels is not None else 512 * 28 * 28,
+            load_in_8bit=load_in_8bit,
+            load_in_4bit=load_in_4bit,
         )
 
     def _prepare_inputs(
@@ -377,6 +393,8 @@ def create_scorer(
     enable_thinking: bool = True,
     max_thinking_tokens: int = 2000,
     max_pixels: int | None = None,
+    load_in_8bit: bool = False,
+    load_in_4bit: bool = False,
 ) -> VLMScorer:
     """Instantiate the right scorer for *model_id*.
 
@@ -388,6 +406,8 @@ def create_scorer(
     :param enable_thinking: Allow thinking traces.
     :param max_thinking_tokens: Token budget for thinking.
     :param max_pixels: Pixel cap forwarded to the scorer.
+    :param load_in_8bit: Load model quantized to 8-bit (bitsandbytes).
+    :param load_in_4bit: Load model quantized to 4-bit (bitsandbytes).
     :returns: A concrete :class:`VLMScorer` instance.
     :raises ValueError: If no registry key matches *model_id*.
     """
@@ -400,6 +420,8 @@ def create_scorer(
                 enable_thinking,
                 max_thinking_tokens,
                 max_pixels=max_pixels,
+                load_in_8bit=load_in_8bit,
+                load_in_4bit=load_in_4bit,
             )
     raise ValueError(
         f"No scorer for model '{model_id}'. "

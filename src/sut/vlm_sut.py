@@ -63,6 +63,8 @@ class VLMSUT(SUT):
             enable_thinking=self._config.sut.enable_thinking,
             max_thinking_tokens=self._config.sut.max_thinking_tokens,
             max_pixels=self._config.sut.max_pixels,
+            load_in_8bit=self._config.sut.load_in_8bit,
+            load_in_4bit=self._config.sut.load_in_4bit,
         )
         self._prompt = (
             self._config.prompt_template

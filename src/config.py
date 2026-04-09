@@ -53,6 +53,8 @@ class SUTConfig:
     enable_thinking: bool = False
     max_thinking_tokens: int = 2000
     max_pixels: int | None = None
+    load_in_8bit: bool = False
+    load_in_4bit: bool = False
     redis_url: str = "redis://localhost:6379"
 
 
