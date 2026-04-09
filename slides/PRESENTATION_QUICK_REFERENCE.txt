@@ -1,0 +1,164 @@
+================================================================================
+MASTER THESIS PRESENTATION - TOP 12 FIGURES FOR SUPERVISOR
+================================================================================
+
+RECOMMENDED FIGURE ORDER (Narrative Flow):
+
+1. smoo_convergence_03_cadence.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/
+   Story: Proves SMOO converges robustly across 3 metrics with tight confidence bounds (55 seeds)
+   Talking Points: 
+   - Image distance: tight convergence within 5-10 generations
+   - Text distance: sharp exponential decay (0.9→0.3 in 15 gens)
+   - Multiple objectives converge at different rates (key insight)
+
+2. g_surface_SMOO_brambling_vs_goldfinch.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/
+   Story: Complex decision topology with sharp boundaries - SMOO navigates intricate landscape
+   Talking Points:
+   - 3D shows multimodal landscape with valleys (blue = low loss)
+   - 2D heatmap reveals irregular boundary structure
+   - Performance trace: oscillatory optimization behavior
+   - Demonstrates method handles non-convex search spaces
+
+3. g_surface_SMOO_goldfish_vs_goldfinch.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/
+   Story: Contrast case showing robustness on hard-to-distinguish classes
+   Talking Points:
+   - Different class pair shows similar convergence capability
+   - More volatile performance trace = harder optimization
+   - Algorithm handles diverse class similarity levels
+
+4. g_surface_evolution_goldfish.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/
+   Story: Temporal progression of boundary discovery (exploration → exploitation → refinement)
+   Talking Points:
+   - Gen 0: Sparse exploration
+   - Gen 15: Regions coalesce
+   - Gen 30-45: Network formation and refinement
+   - Shows progressive learning behavior
+
+5. pdq_strategy.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/
+   Story: PDQ identifies discriminative search strategies (modality_drift dominates)
+   Talking Points:
+   - 4 subplots show different strategy aspects
+   - modality_drift (~24%) vastly outperforms others in candidate generation
+   - Only 2-3 strategies achieve meaningful PDQ scores
+   - Clear hierarchy: not all strategies equally useful
+
+6. pdq_minimisation.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/
+   Story: PDQ two-stage pipeline: Stage 1 discovery → Stage 2 refinement
+   Talking Points:
+   - S1→S2 filtering: 3000+ → ~100 selected candidates
+   - Roughly 50% pass rate in Stage 2 shows meaningful validation
+   - Refinement depth distribution: Gaussian with mean ~35 steps
+   - Consistency proves reproducibility
+
+7. topology_gene_heatmap_pdq.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/
+   Story: PDQ boundaries exploit specific VLM feature subsets (modality-specific vulnerabilities)
+   Talking Points:
+   - Panel (a): ~250 genes active, sharp collapse
+   - Panel (b): Per-class activation patterns show feature hierarchy
+   - Some genes consistently active (core features)
+   - Others class-specific (modality-targeted)
+   - Mechanistic insight into why PDQ works
+
+8. g_surface_PDQ_brambling_vs_goldfinch.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/
+   Story: PDQ finds cleaner, more exploitable boundaries than SMOO (direct comparison)
+   Talking Points:
+   - 3D: stark blue/red division vs SMOO's multimodal complexity
+   - 2D: simpler topology indicates targeted boundary discovery
+   - Less volatile performance trace
+   - PDQ exploits sharp discontinuities vs SMOO's exploration
+
+9. boundary_density_s0_goldfish.png
+   Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/
+   Story: Boundary points consistently positioned (reproducibility validation)
+   Talking Points:
+   - Histograms across 4 seeds show tight distributions
+   - Mean delta ~0.1-0.2 = well-positioned boundaries
+   - Low variance across seeds validates reproducibility
+   - Technical validation of boundary quality
+
+10. smoo_convergence_02_4obj.png
+    Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/
+    Story: Convergence behavior generalizes across problem dimensions (4-obj vs 5-obj)
+    Talking Points:
+    - Similar convergence patterns on 4-objective variant
+    - Darker colors show fewer seeds (n=5 vs n=55)
+    - Validates robustness to problem variation
+
+11. g_surface_comparison.png
+    Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/
+    Story: Cross-setup generalization (multiple class pairs, all show consistent behavior)
+    Talking Points:
+    - Shows representative surfaces from multiple runs
+    - Consistent topology discovery across setups
+    - Gallery of diverse boundary types discovered
+
+12. topology_rank_profiles.png
+    Location: /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/
+    Story: Gene importance profiles show feature contribution to boundary crossing
+    Talking Points:
+    - 6 panels showing rank importance across stages
+    - High-ranked genes drive boundary discovery
+    - Stage 2 (minimisation) refines which genes matter most
+    - Mathematical proof of mechanistic insight
+
+================================================================================
+ALTERNATIVE COMBINATIONS (if time/space constrained):
+
+MINIMAL SET (6 figures):
+1. smoo_convergence_03_cadence.png
+2. g_surface_SMOO_brambling_vs_goldfinch.png
+3. g_surface_evolution_goldfish.png
+4. pdq_strategy.png
+5. pdq_minimisation.png
+6. topology_gene_heatmap_pdq.png
+
+EXTENDED SET (15 figures, for detailed slides):
+[All 12 above + add]
+13. smoo_pareto_03_cadence.png (multi-objective trade-off)
+14. g_surface_SMOO_junco_vs_great_white_shark.png (different domain: birds vs sharks)
+15. pdq_strategy.png v2 variant (robustness across implementations)
+
+================================================================================
+KEY STATISTICS FOR TALKING POINTS:
+
+- Total figures discovered: 3,469
+- Highest-quality figures: 77 with specific scientific value
+- Runs analyzed: 5 (01_5obj-sparsityActive, 02_4obj, 03_cadence, pdq_overnight, pdq_v2_strategies)
+- Seed counts: 5, 5, 55, 60+, 20+ (validation across multiple random seeds)
+- Convergence metrics: Image distance, Text distance, Targeted balance, Flip rate
+- Decision surface types: 30+ SMOO surfaces, 5+ PDQ surfaces, evolution series
+- Boundary quality metrics: Density analysis, convergence histograms, distribution analysis
+
+================================================================================
+FILE LOCATIONS (All accessible):
+
+SMOO Results:
+  03_cadence/figures/ (MAIN - 55 seeds, highest confidence)
+  01_5obj-sparsityActive/figures/ (13 seeds variant)
+  02_4obj/figures/ (5 seeds variant)
+
+PDQ Results:
+  pdq_overnight/figures/ (MAIN - long-run experiment)
+  pdq_v2_strategies/figures/ (variant comparison)
+
+Master catalog: /sessions/clever-amazing-rubin/mnt/Masterarbeit/FIGURES_CATALOG.md
+
+================================================================================
+PRESENTATION FLOW NOTES:
+
+- Spend most time on SMOO results (slides 1-4): this is the core contribution
+- Use PDQ as the "advanced technique" that validates SMOO insights
+- Topology/heatmap slides show mechanistic understanding (PhD-level insight)
+- Always pair SMOO with PDQ comparisons to show method differences
+- Use convergence plots to establish reliability, surfaces to show capability
+- End with topology to suggest future research directions
+
+================================================================================

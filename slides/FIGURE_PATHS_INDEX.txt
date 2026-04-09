@@ -1,0 +1,129 @@
+================================================================================
+MASTER THESIS FIGURES - COMPLETE PATH INDEX
+================================================================================
+
+RECOMMENDED 12 FIGURES FOR PRESENTATION:
+
+1. smoo_convergence_03_cadence.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/smoo_convergence_03_cadence.png
+   Description: Primary convergence proof (55 seeds, 3 metrics)
+
+2. g_surface_SMOO_brambling_vs_goldfinch.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_brambling_vs_goldfinch.png
+   Description: Complex decision surface with boundary navigation
+
+3. g_surface_SMOO_goldfish_vs_goldfinch.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_goldfish_vs_goldfinch.png
+   Description: Similar class pair (robustness validation)
+
+4. g_surface_evolution_goldfish.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_evolution_goldfish.png
+   Description: Temporal progression across generations
+
+5. boundary_density_s0_goldfish.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/boundary_density_s0_goldfish.png
+   Description: Boundary quality and reproducibility
+
+6. g_surface_comparison.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_comparison.png
+   Description: Cross-setup generalization (multiple class pairs)
+
+7. smoo_convergence_02_4obj.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/smoo_convergence_02_4obj.png
+   Description: Generalization across problem dimensions
+
+8. pdq_strategy.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/pdq_strategy.png
+   Description: PDQ strategy selection mechanism
+
+9. pdq_minimisation.png
+   /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/pdq_minimisation.png
+   Description: Two-stage PDQ pipeline
+
+10. g_surface_PDQ_brambling_vs_goldfinch.png
+    /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/g_surface_PDQ_brambling_vs_goldfinch.png
+    Description: PDQ decision surface (SMOO vs PDQ comparison)
+
+11. topology_gene_heatmap_pdq.png
+    /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/topology_gene_heatmap_pdq.png
+    Description: Gene activation patterns and feature vulnerabilities
+
+12. topology_rank_profiles.png
+    /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/topology_rank_profiles.png
+    Description: Gene importance ranking across stages
+
+================================================================================
+ALTERNATIVE/SUPPORTING FIGURES:
+
+SMOO CONVERGENCE VARIANTS:
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/01_5obj-sparsityActive/figures/smoo_convergence_01_5obj-sparsityActive.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/smoo_convergence_02_4obj.png
+
+ADDITIONAL SMOO SURFACES (30+ total, select from):
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_junco_vs_great_white_shark.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_goldfinch_vs_brambling.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_leatherback_sea_turtle_vs_loggerhead_sea_turtle.png
+- [and 25+ more in runs/03_cadence/figures/]
+
+PARETO FRONTS:
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/01_5obj-sparsityActive/figures/smoo_pareto_01_5obj-sparsityActive.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/smoo_pareto_02_4obj.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/smoo_pareto_03_cadence.png
+
+BOUNDARY DENSITY ANALYSIS (24 total):
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/01_5obj-sparsityActive/figures/boundary_density_s0_monarch_butterfly.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/01_5obj-sparsityActive/figures/boundary_density_s1_toucan.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/01_5obj-sparsityActive/figures/boundary_density_s2_red_panda.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/boundary_density_s0_stingray.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/boundary_density_s1_indigo_bunting.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/boundary_density_s2_fire_salamander.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/boundary_density_s10_junco.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/boundary_density_s11_junco.png
+- [and 16+ more]
+
+PDQ DECISION SURFACES (5+ total):
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/g_surface_PDQ_goldfinch_vs_goldfish.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/g_surface_PDQ_goldfish_vs_goldfish.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/g_surface_PDQ_goldfish_vs_tench.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/g_surface_PDQ_hammerhead_shark_vs_great_white_shark.png
+
+PDQ VARIANT FIGURES:
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_v2_strategies/figures/pdq_strategy.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_v2_strategies/figures/pdq_minimisation.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_v2_strategies/figures/topology_gene_heatmap_pdq.png
+
+TOPOLOGY ANALYSIS:
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/topology_clustering_pdq.png
+- /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_v2_strategies/figures/topology_rank_profiles.png
+
+================================================================================
+DIRECTORY STRUCTURE SUMMARY:
+
+/sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/
+├── 01_5obj-sparsityActive/figures/ (14 figures)
+├── 02_4obj/figures/ (14 figures)
+├── 03_cadence/figures/ (50+ figures) ← PRIMARY RECOMMENDATION
+├── pdq_overnight/figures/ (60+ figures) ← PRIMARY RECOMMENDATION
+└── pdq_v2_strategies/figures/ (15+ figures)
+
+Total: 3,469 figure files (77 high-quality, 12 presentation-ready)
+
+================================================================================
+QUICK COPY-PASTE COMMANDS:
+
+# Copy all recommended presentation figures to a folder:
+mkdir -p ~/presentation_figures
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/smoo_convergence_03_cadence.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_brambling_vs_goldfinch.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_SMOO_goldfish_vs_goldfinch.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_evolution_goldfish.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/boundary_density_s0_goldfish.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/03_cadence/figures/g_surface_comparison.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/02_4obj/figures/smoo_convergence_02_4obj.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/pdq_strategy.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/pdq_minimisation.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/g_surface_PDQ_brambling_vs_goldfinch.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/topology_gene_heatmap_pdq.png ~/presentation_figures/
+cp /sessions/clever-amazing-rubin/mnt/Masterarbeit/runs/pdq_overnight/figures/topology_rank_profiles.png ~/presentation_figures/
+
+================================================================================
