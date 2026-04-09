@@ -1,0 +1,38 @@
+[project]
+name = "smoo"
+version = "0.0.0"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+smoo = "src"
+
+[tool.setuptools]
+packages = [
+    "smoo",
+    "smoo.manipulator",
+    "smoo.manipulator.diffusion_manipulator",
+    "smoo.manipulator.diffusion_manipulator._internal",
+    "smoo.manipulator.diffusion_manipulator._internal.models",
+    "smoo.manipulator.diffusion_manipulator.hypernets",
+    "smoo.manipulator.diffusion_manipulator.hypernets.blocks",
+    "smoo.manipulator.style_gan_manipulator",
+    "smoo.manipulator.style_gan_manipulator._internal",
+    "smoo.manipulator.style_gan_manipulator._internal.dnnlib",
+    "smoo.manipulator.style_gan_manipulator._internal.feature_networks",
+    "smoo.manipulator.style_gan_manipulator._internal.pg_modules",
+    "smoo.manipulator.style_gan_manipulator._internal.torch_utils",
+    "smoo.manipulator.style_gan_manipulator._internal.torch_utils.ops",
+    "smoo.manipulator.style_gan_manipulator._internal.training",
+    "smoo.objectives",
+    "smoo.objectives.auxiliary_criteria",
+    "smoo.objectives.classifier_criteria",
+    "smoo.objectives.image_criteria",
+    "smoo.optimizer",
+    "smoo.optimizer.auxiliary_components",
+    "smoo.sut",
+    "smoo.sut.auxiliary_components",
+    "smoo.utils",
+]
