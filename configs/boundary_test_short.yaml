@@ -16,10 +16,10 @@ device: mps                             # cpu | cuda | mps
 generations: 30                      # Optimizer generations per seed
 pop_size: 20                          # Population size
 seeds:
-  n_per_class: 2
-  max_logprob_gap: .5
+  n_per_class: 1
+  max_logprob_gap: .2
 
-n_categories: 100
+n_categories: 1000
 
 # categories:                           # Labels the VLM chooses from
 #   - macaw
@@ -64,8 +64,8 @@ cache_dirs:
 # SUT (Vision-Language Model)
 # ===========================================================================
 
-# sut:
-#   model_id: Qwen/Qwen3.5-9B          # HuggingFace model identifier
+sut:
+  model_id: Qwen/Qwen3.5-4B            # HuggingFace model identifier
 #   enable_thinking: false              # Allow model thinking trace
 #   max_thinking_tokens: 2000           # Token budget for thinking
 #   max_pixels: null                    # Pixel cap (null = scorer default)

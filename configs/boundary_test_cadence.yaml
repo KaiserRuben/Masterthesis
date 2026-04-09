@@ -1,0 +1,68 @@
+# VLM Boundary Test — Cadence Experiment
+#
+# Tuned from Run 02 findings:
+#   - 4/5 seeds converged to TgtBal < 0.001 with gap=2.0
+#   - Seed 4 (spotted salamander) stalled at 0.065 — too far from boundary
+#   - Tighter seed filter (0.5) ensures all seeds start close enough
+#   - 50 gens / 30 pop sufficient — convergence typically by gen 30-40
+#
+# Estimated cost on L40S @ $1.55/hr:
+#   ~13 min/seed → 20 seeds ≈ $7, 50 seeds ≈ $17 | actual ~$19 for this config
+#
+# Usage:
+#   python experiments/run_boundary_test.py configs/boundary_test_cadence.yaml
+
+# ===========================================================================
+# Shared
+# ===========================================================================
+
+device: cuda
+generations: 50
+pop_size: 30
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 1
+
+# ===========================================================================
+# Experiment
+# ===========================================================================
+
+save_dir: runs/03_cadence
+
+# ===========================================================================
+# Cache (ImageNet images)
+# ===========================================================================
+
+cache_dirs:
+  - .cache/imagenet
+
+# ===========================================================================
+# SUT (Vision-Language Model)
+# ===========================================================================
+
+sut:
+  model_id: Qwen/Qwen3.5-9B
+
+# ===========================================================================
+# Image manipulator (VQGAN codebook swaps)
+# ===========================================================================
+
+# image:
+#   preset: f8-16384
+#   patch_ratio: 0.1
+#   patch_strategy: FREQUENCY
+#   n_candidates: 25
+#   candidate_strategy: KNN
+#   resolution: 256
+
+# ===========================================================================
+# Text manipulator (PoS-aware synonym replacement)
+# ===========================================================================
+
+# text:
+#   spacy_model: en_core_web_sm
+#   embedding_model: fasttext-wiki-news-subwords-300
+#   n_candidates: 25
