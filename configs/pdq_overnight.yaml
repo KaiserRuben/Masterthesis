@@ -1,0 +1,139 @@
+# PDQ Overnight Run — Deep Minimisation
+#
+# Target: ~45 seeds (n_categories=15 × n_per_class=3), Stage1=150/seed,
+#         Stage2=100/flip.  Estimated wall time: 10–18 h (see below).
+#
+# Usage:
+#   mkdir -p logs
+#   nohup /Users/kaiser/miniconda3/envs/uni/bin/python \
+#       experiments/run_pdq_test.py configs/pdq_overnight.yaml \
+#       > logs/pdq_overnight.log 2>&1 &
+#   echo "PID $!" > logs/pdq_overnight.pid
+#
+# Kill-switch:
+#   kill $(cat logs/pdq_overnight.pid)
+#
+# Live tail:
+#   tail -f logs/pdq_overnight.log
+
+# ===========================================================================
+# Shared
+# ===========================================================================
+
+device: mps
+
+n_categories: 15                        # 15 ImageNet labels → ~45 seeds
+
+# ===========================================================================
+# Experiment
+# ===========================================================================
+
+name: pdq_overnight
+save_dir: runs
+
+# ===========================================================================
+# Reproducibility
+# ===========================================================================
+
+reproducibility:
+  seed_int: 42
+  dump_rng_state: true
+  dump_git_hash: true
+  dump_env: true
+
+# ===========================================================================
+# Cache (ImageNet images)
+# ===========================================================================
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+# ===========================================================================
+# Seeds
+# ===========================================================================
+
+seeds:
+  n_per_class: 2
+  max_logprob_gap: 2.0
+
+# ===========================================================================
+# Stage 1 — Flip discovery
+# ===========================================================================
+
+stage1:
+  budget_sut_calls: 150                 # 3× gate (50) — good strategy saturation
+  max_flips_per_seed: 30
+  max_distinct_targets: 10
+  strategies:
+    - name: dense_uniform
+      weight: 0.25
+    - name: sparsity_sweep
+      weight: 0.20
+      densities: [0.2, 0.4, 0.6, 0.8, 1.0]
+    - name: max_rank
+      weight: 0.10
+      subset_fractions: [0.1, 0.25, 0.5, 1.0]
+    - name: modality_image
+      weight: 0.10
+      density: 0.6
+    - name: modality_text
+      weight: 0.05
+      density: 1.0
+    - name: bituniform_density
+      weight: 0.10
+    - name: sparse_small
+      weight: 0.20
+      densities: [1, 2, 3, 4, 5]
+      subset_fractions: [1, 2]
+
+# ===========================================================================
+# Stage 2 — Minimisation (deep: 100 calls/flip)
+# ===========================================================================
+
+stage2:
+  budget_sut_calls_per_flip: 150        # 10× gate — ~35% d_i reduction expected
+  flip_preserve_policy: any_non_anchor
+  passes:
+    zero:
+      enabled: true
+      order: by_gene_value_desc         # zero highest-rank genes first
+      full_sweep_only: true
+    rank:
+      enabled: true
+      order: by_gene_value_desc
+      max_sweeps: 10
+      step: 1
+    random_subset:
+      enabled: false                    # keep off — budget to A+B only
+
+# ===========================================================================
+# Distances
+# ===========================================================================
+
+distances:
+  d_i_primary: rank_sum
+  d_i_compute_all: true
+  d_o_primary: label_mismatch
+  d_o_compute_all: true
+
+# ===========================================================================
+# Archive
+# ===========================================================================
+
+# archive:
+#   pdq_min_threshold: 0.0
+#   dedupe_by: genotype_min
+#   keep_per_target: 1
+#   rank_by: d_i_primary
+
+# ===========================================================================
+# Logging
+# ===========================================================================
+
+logging:
+  save_anchor_images: true
+  save_flip_images: true
+  save_all_candidate_images: false
+  parquet_compression: zstd
+  flush_interval_calls: 50              # flush more often for long runs
