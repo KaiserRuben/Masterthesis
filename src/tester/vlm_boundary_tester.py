@@ -118,6 +118,18 @@ def _build_stats(
         "text_dim": manipulator.text_dim,
         "categories": list(categories),
         "n_pareto": n_pareto,
+        # Reproducibility metadata
+        "model_id": config.sut.model_id,
+        "max_logprob_gap": config.seeds.max_logprob_gap,
+        "n_per_class": config.seeds.n_per_class,
+        "n_categories_seed": config.n_categories,
+        "image_preset": config.image.preset,
+        "image_patch_ratio": config.image.patch_ratio,
+        "image_patch_strategy": config.image.patch_strategy.name,
+        "image_candidate_strategy": config.image.candidate_strategy.name,
+        "image_n_candidates": config.image.n_candidates,
+        "text_n_candidates": config.text.n_candidates,
+        "device": config.device,
     }
 
 
@@ -195,11 +207,6 @@ class VLMBoundaryTester(SMOO):
 
         :param seeds: Sequence of ``(image, class_a, class_b)`` triples.
         """
-        categories = self._config.categories
-        answer_suffix = self._config.answer_format.format(
-            categories=", ".join(categories),
-        )
-
         n_gens = self._config.generations
         pbar = tqdm(total=n_gens, unit="gen")
 
@@ -209,9 +216,7 @@ class VLMBoundaryTester(SMOO):
                 f"[{seed_idx + 1}/{len(seeds)}] "
                 f"{seed.class_a} vs {seed.class_b}"
             )
-            self._run_seed(
-                seed_idx, seed, categories, answer_suffix, pbar,
-            )
+            self._run_seed(seed_idx, seed, pbar)
             self._optimizer.reset()
             self._cleanup()
 
@@ -225,15 +230,18 @@ class VLMBoundaryTester(SMOO):
         self,
         seed_idx: int,
         seed: SeedTriple,
-        categories: tuple[str, ...],
-        answer_suffix: str,
         pbar: tqdm,
     ) -> None:
         start_time = time()
 
+        # Build pair-specific prompt suffix (only the two target classes).
+        # Categories stay out of the mutable text — appended after mutation.
+        pair = (seed.class_a, seed.class_b)
+        answer_suffix = self._config.answer_format.format(
+            categories=", ".join(pair),
+        )
+
         # 1. Prepare manipulator with just the question prompt.
-        #    Categories are NOT in the mutable text — they are appended
-        #    after mutation via answer_suffix.
         self._manipulator.prepare(
             seed.image, self._config.prompt_template,
         )
@@ -241,10 +249,8 @@ class VLMBoundaryTester(SMOO):
         # 2. Re-configure optimizer for this seed's genotype dimensions.
         self._optimizer.update_gene_bounds(self._manipulator.gene_bounds)
 
-        # 3. Resolve target class indices.
-        idx_a = categories.index(seed.class_a)
-        idx_b = categories.index(seed.class_b)
-        target_classes = (idx_a, idx_b)
+        # 3. Target class indices are (0, 1) for a pair.
+        target_classes = (0, 1)
 
         # 4. Compute VQGAN-reconstructed baseline (fair comparison for
         #    MatrixDistance — both origin and perturbed go through VQGAN).
@@ -256,27 +262,61 @@ class VLMBoundaryTester(SMOO):
 
         # 5. Generation loop.
         trace_rows: list[dict[str, Any]] = []
+        convergence_rows: list[dict[str, Any]] = []
 
         for gen in range(self._config.generations):
             gen_start = time()
 
             gen_traces = self._run_generation(
                 seed_idx, gen, target_classes, origin_tensor,
-                categories, answer_suffix,
+                pair, answer_suffix,
             )
             trace_rows.extend(gen_traces)
 
-            pbar.set_postfix(
-                pareto=len(self._optimizer.best_candidates),
-                t=f"{time() - gen_start:.0f}s",
-            )
+            # -- Convergence stats from Pareto front ----------------------
+            pareto = self._optimizer.best_candidates
+            pareto_fitness = np.array([c.fitness for c in pareto])
+            obj_names = list(self._objectives.results.keys())
+
+            conv_row: dict[str, Any] = {
+                "generation": gen,
+                "n_pareto": len(pareto),
+                "wall_time": time() - gen_start,
+            }
+            for j, name in enumerate(obj_names):
+                conv_row[f"pareto_min_{name}"] = float(pareto_fitness[:, j].min())
+                conv_row[f"pareto_mean_{name}"] = float(pareto_fitness[:, j].mean())
+
+            # Population stats from this generation's traces.
+            pop_fitness = {name: [] for name in obj_names}
+            for row in gen_traces:
+                for name in obj_names:
+                    pop_fitness[name].append(row[f"fitness_{name}"])
+            for name in obj_names:
+                vals = np.array(pop_fitness[name])
+                conv_row[f"pop_min_{name}"] = float(vals.min())
+                conv_row[f"pop_mean_{name}"] = float(vals.mean())
+
+            convergence_rows.append(conv_row)
+
+            # -- Progress bar with convergence info -----------------------
+            best_bal = conv_row.get("pareto_min_TgtBal")
+            postfix: dict[str, Any] = {"pareto": len(pareto)}
+            if best_bal is not None:
+                postfix["bal"] = f"{best_bal:.3f}"
+            for name in obj_names:
+                if name != "TgtBal":
+                    short = name.replace("MatrixDistance_", "img_")
+                    postfix[short] = f"{conv_row[f'pareto_min_{name}']:.3f}"
+            postfix["t"] = f"{time() - gen_start:.0f}s"
+            pbar.set_postfix(postfix)
             pbar.update(1)
 
         # 6. Save everything.
         runtime = time() - start_time
         self._save_seed_results(
-            seed_idx, seed, trace_rows,
-            categories, answer_suffix, runtime,
+            seed_idx, seed, trace_rows, convergence_rows,
+            pair, answer_suffix, runtime,
         )
 
     # ------------------------------------------------------------------
@@ -359,6 +399,7 @@ class VLMBoundaryTester(SMOO):
         seed_idx: int,
         seed: SeedTriple,
         trace_rows: list[dict[str, Any]],
+        convergence_rows: list[dict[str, Any]],
         categories: tuple[str, ...],
         answer_suffix: str,
         runtime: float,
@@ -372,6 +413,11 @@ class VLMBoundaryTester(SMOO):
         # -- Trace parquet ------------------------------------------------
         pd.DataFrame(trace_rows).to_parquet(
             run_dir / "trace.parquet", index=False,
+        )
+
+        # -- Convergence parquet ------------------------------------------
+        pd.DataFrame(convergence_rows).to_parquet(
+            run_dir / "convergence.parquet", index=False,
         )
 
         # -- Pareto-optimal candidates ------------------------------------

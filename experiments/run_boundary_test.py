@@ -32,7 +32,6 @@ from src.manipulator.image.types import CandidateStrategy, PatchStrategy
 from src.manipulator.text.manipulator import TextManipulator
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import (
-    Concentration,
     CriterionCollection,
     MatrixDistance,
     TargetedBalance,
@@ -100,12 +99,11 @@ def run_experiment(cfg: dict) -> None:
         MatrixDistance(),
         TextReplacementDistance(),
         TargetedBalance(),
-        Concentration(),
     )
 
     optimizer = DiscretePymooOptimizer(
         gene_bounds=np.zeros(1, dtype=np.int64),  # updated per-seed
-        num_objectives=4,
+        num_objectives=3,
         pop_size=exp.pop_size,
     )
 
