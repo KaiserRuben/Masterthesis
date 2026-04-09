@@ -2,15 +2,15 @@
 # Mirrors infrastructure/workstation/setup.sh exactly
 # Requires Python 3.12
 
---extra-index-url https://download.pytorch.org/whl/cu124
+--extra-index-url https://download.pytorch.org/whl/cu126
 
-# PyTorch (workstation: pip install torch torchvision torchaudio --index-url .../cu124)
-torch
-torchvision
-torchaudio
+# PyTorch — pin cu126 builds (CUDA 12.6, compatible with CI driver 12.9)
+torch==2.8.0+cu126
+torchvision==0.23.0+cu126
+torchaudio==2.8.0+cu126
 
 # Core (from workstation setup.sh lines 94-103)
-transformers==4.57.1
+transformers>=4.57.1
 accelerate>=1.12.0
 huggingface-hub
 einops>=0.8.1
@@ -31,8 +31,16 @@ datasets
 filelock
 
 # BND-006: Boundary search
+dacite
+pyyaml
 pymoo
+numba
 pyarrow
 scipy
 lpips
 redis
+sewar
+spacy
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+gensim
+pytorch_lightning
