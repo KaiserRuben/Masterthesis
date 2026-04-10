@@ -17,6 +17,7 @@ n_categories: 50
 
 sut:
   load_in_8bit: false                    # set true for 24GB GPUs (4090)
+  model_id: Qwen/Qwen3.5-4B
 
 name: pdq_v2_deep
 save_dir: runs

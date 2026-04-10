@@ -19,6 +19,10 @@ n_categories: 15
 name: pdq_v2_strategies
 save_dir: runs
 
+sut:
+    load_in_8bit: false
+    model_id: Qwen/Qwen3.5-4B
+
 reproducibility:
   seed_int: 42
   dump_rng_state: true
