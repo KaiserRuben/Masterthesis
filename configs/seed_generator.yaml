@@ -16,7 +16,7 @@ device: mps                             # cpu | cuda | mps
 #   - castle
 #   - mosque
 #   - palace
-n_categories: 500                      # Use first N ImageNet labels (ignores categories list)
+n_categories: 200                      # Use first N ImageNet labels (ignores categories list)
 
 # prompt_template: "What is the main subject in this image?"
 # answer_format: " Answer with exactly one of these options: {categories}."
