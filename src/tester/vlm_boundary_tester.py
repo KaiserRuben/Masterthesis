@@ -65,6 +65,7 @@ def _build_trace_rows(
     genotypes: NDArray,
     logits: Tensor,
     texts: list[str],
+    cache_hits: list[bool],
     batched_results: dict[str, Any],
     batched_fitness: tuple,
     target_classes: tuple[int, int],
@@ -82,6 +83,7 @@ def _build_trace_rows(
             "genotype": genotypes[i].tolist(),
             "logprobs": logits[i].tolist(),
             "decoded_text": texts[i],
+            "cache_hit": cache_hits[i],
             "predicted_class": categories[int(logits[i].argmax())],
             "p_class_a": float(probs[i, idx_a]),
             "p_class_b": float(probs[i, idx_b]),
@@ -102,6 +104,7 @@ def _build_stats(
     n_pareto: int,
     runtime: float,
     categories: tuple[str, ...],
+    cache_stats: dict[str, int],
 ) -> dict[str, Any]:
     """Build stats metadata dict (pure)."""
     return {
@@ -118,6 +121,8 @@ def _build_stats(
         "text_dim": manipulator.text_dim,
         "categories": list(categories),
         "n_pareto": n_pareto,
+        "cache_hits": cache_stats["hits"],
+        "cache_misses": cache_stats["misses"],
         # Reproducibility metadata
         "model_id": config.sut.model_id,
         "max_logprob_gap": config.seeds.max_logprob_gap,
@@ -205,16 +210,35 @@ class VLMBoundaryTester(SMOO):
     def test(self, seeds: Sequence[SeedTriple]) -> None:
         """Run boundary testing for all seeds.
 
-        :param seeds: Sequence of ``(image, class_a, class_b)`` triples.
+        Applies the optional ``config.seeds.filter_indices`` post-generation
+        filter so that targeted re-runs (e.g. Exp-05 Phase A single-seed
+        deep probes) use the same indexing as the unfiltered pool — a
+        filtered seed at original position 0 still reports as
+        ``seed_idx=0`` in output naming.
+
+        :param seeds: Sequence of ``(image, class_a, class_b)`` triples,
+            as emitted by :func:`generate_seeds`.
         """
+        # Local import avoids a circular dependency between tester and
+        # pdq.runner at module load time.
+        from src.pdq.runner import _apply_seed_filter
+
+        indexed_seeds = _apply_seed_filter(
+            list(seeds), self._config.seeds.filter_indices,
+        )
+
+        if not indexed_seeds:
+            logger.warning("No seeds after filter — nothing to test.")
+            return
+
         n_gens = self._config.generations
         pbar = tqdm(total=n_gens, unit="gen")
 
-        for seed_idx, seed in enumerate(seeds):
+        for pos, (seed_idx, seed) in enumerate(indexed_seeds):
             pbar.reset()
             pbar.set_description(
-                f"[{seed_idx + 1}/{len(seeds)}] "
-                f"{seed.class_a} vs {seed.class_b}"
+                f"[{pos + 1}/{len(indexed_seeds)}] "
+                f"seed_{seed_idx} {seed.class_a} vs {seed.class_b}"
             )
             self._run_seed(seed_idx, seed, pbar)
             self._optimizer.reset()
@@ -236,9 +260,26 @@ class VLMBoundaryTester(SMOO):
 
         # Build pair-specific prompt suffix (only the two target classes).
         # Categories stay out of the mutable text — appended after mutation.
+        # NOTE: The prompt suffix is deliberately pair-constrained even though
+        # the SUT now scores against the FULL N-category set. This keeps the
+        # decision-boundary semantics intact ("Answer with A or B") while the
+        # scorer still produces an N-dim log-prob vector for post-hoc analysis
+        # (entropy, concentration, tree metrics, etc.). The non-pair classes
+        # will typically receive low probability — that is expected and
+        # diagnostically useful.
         pair = (seed.class_a, seed.class_b)
         answer_suffix = self._config.answer_format.format(
             categories=", ".join(pair),
+        )
+
+        # Score the full category list and locate the pair indices once per
+        # seed. The pair indices become ``target_classes`` downstream so that
+        # TargetedBalance / Concentration pick out the correct entries of the
+        # N-dim log-prob vector (v2 schema — see trace.parquet docs).
+        full_categories = tuple(self._config.categories)
+        pair_indices = (
+            full_categories.index(seed.class_a),
+            full_categories.index(seed.class_b),
         )
 
         # 1. Prepare manipulator with just the question prompt.
@@ -249,8 +290,10 @@ class VLMBoundaryTester(SMOO):
         # 2. Re-configure optimizer for this seed's genotype dimensions.
         self._optimizer.update_gene_bounds(self._manipulator.gene_bounds)
 
-        # 3. Target class indices are (0, 1) for a pair.
-        target_classes = (0, 1)
+        # 3. Target class indices — actual positions of the pair in the full
+        #    category list (replaces the old hard-coded (0, 1), which was only
+        #    correct when SMOO scored against just the pair).
+        target_classes = pair_indices
 
         # 4. Compute VQGAN-reconstructed baseline (fair comparison for
         #    MatrixDistance — both origin and perturbed go through VQGAN).
@@ -269,7 +312,7 @@ class VLMBoundaryTester(SMOO):
 
             gen_traces = self._run_generation(
                 seed_idx, gen, target_classes, origin_tensor,
-                pair, answer_suffix,
+                full_categories, answer_suffix,
             )
             trace_rows.extend(gen_traces)
 
@@ -316,7 +359,8 @@ class VLMBoundaryTester(SMOO):
         runtime = time() - start_time
         self._save_seed_results(
             seed_idx, seed, trace_rows, convergence_rows,
-            pair, answer_suffix, runtime,
+            full_categories, pair, target_classes,
+            answer_suffix, runtime,
         )
 
     # ------------------------------------------------------------------
@@ -346,12 +390,17 @@ class VLMBoundaryTester(SMOO):
         # -- SUT evaluation -----------------------------------------------
         # Append answer options AFTER text mutation so categories are
         # never exposed to the text optimizer.
-        logits = torch.stack([
-            self._sut.process_input(
-                img, text=txt + answer_suffix, categories=categories,
+        logits_list: list[Tensor] = []
+        cache_hits: list[bool] = []
+        for img, txt in zip(images, texts):
+            logits_list.append(
+                self._sut.process_input(
+                    img, text=txt + answer_suffix, categories=categories,
+                )
             )
-            for img, txt in zip(images, texts)
-        ])
+            cache_hits.append(self._sut.last_call_cached)
+
+        logits = torch.stack(logits_list)
 
         # -- Tensor conversion for MatrixDistance -------------------------
         perturbed_batch = torch.stack(
@@ -385,7 +434,7 @@ class VLMBoundaryTester(SMOO):
 
         # -- Build trace rows ---------------------------------------------
         return _build_trace_rows(
-            seed_idx, gen, genotypes, logits, texts,
+            seed_idx, gen, genotypes, logits, texts, cache_hits,
             batched_results, fitness,
             target_classes, categories,
         )
@@ -449,6 +498,7 @@ class VLMBoundaryTester(SMOO):
             seed_idx, seed, self._config, self._manipulator,
             len(self._optimizer.best_candidates),
             runtime, categories,
+            cache_stats=self._sut.cache_stats,
         )
         with open(run_dir / "stats.json", "w") as f:
             json.dump(stats, f, indent=2)
