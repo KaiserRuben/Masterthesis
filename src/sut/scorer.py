@@ -230,7 +230,16 @@ class VLMScorer(ABC):
                 scored.append((lbl, float("-inf"), float("-inf"), 0))
                 continue
 
-            total_lp = F.log_softmax(last_logits, dim=-1)[label_ids[0]].item()
+            # FP32 upcast before log_softmax — the model runs in FP16 by
+            # default and FP16 log_softmax on near-saturated logits bottoms
+            # out at ~1e-4 precision, which is visible as a numerical floor
+            # in downstream boundary-distance metrics (see Exp-05 Phase A
+            # SMOO run: TgtBal plateau at 5.3e-5 matched the FP16 floor).
+            # Upcast costs a handful of extra reads per scoring call and
+            # lifts precision to FP32's ~1e-7 relative resolution.
+            total_lp = F.log_softmax(
+                last_logits.float(), dim=-1,
+            )[label_ids[0]].item()
 
             if n_tokens > 1:
                 with torch.no_grad():
@@ -239,7 +248,9 @@ class VLMScorer(ABC):
                         past_key_values=prefix_kvs,
                     )
                 for i in range(n_tokens - 1):
-                    lp = F.log_softmax(cont_out.logits[0, i, :], dim=-1)
+                    lp = F.log_softmax(
+                        cont_out.logits[0, i, :].float(), dim=-1,
+                    )
                     total_lp += lp[label_ids[i + 1]].item()
 
             norm_lp = total_lp / n_tokens
