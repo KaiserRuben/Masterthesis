@@ -40,7 +40,7 @@ from src.tester import generate_seeds
 from src.tester.vlm_boundary_tester import _build_context_meta
 
 from .archive import append_archive_row_stage2
-from .artifacts import SeedLogger
+from .artifacts import PDQ_SCHEMA_VERSION, SeedLogger
 from .config import (
     PDQExperimentConfig,
     config_to_dict,
@@ -417,7 +417,12 @@ class PDQRunner:
         sl.save_anchor_prompt(full_anchor_prompt)
 
         # 6. Write JSON metadata.
-        sl.write_config_json(config_to_dict(cfg))
+        # Stamp the schema version on config.json for redundancy with
+        # the per-parquet file-level marker — a reader that only sees
+        # config.json can still determine the layout.
+        cfg_dict = config_to_dict(cfg)
+        cfg_dict["schema_version"] = PDQ_SCHEMA_VERSION
+        sl.write_config_json(cfg_dict)
         sl.write_context_json(_build_context_meta(manipulator))
 
         if cfg.reproducibility.dump_rng_state:
@@ -635,6 +640,7 @@ class PDQRunner:
             wall_time_s=time() - t_start,
             git_hash=_git_hash() if cfg.reproducibility.dump_git_hash else None,
             env=_env_dict() if cfg.reproducibility.dump_env else None,
+            cache_stats=adapter.cache_stats,
         )
         sl.write_stats_json(stats)
 
@@ -764,9 +770,21 @@ def _build_stats(
     wall_time_s: float,
     git_hash: str | None,
     env: dict[str, str] | None,
+    cache_stats: dict[str, int] | None = None,
 ) -> dict[str, Any]:
-    """Build the per-seed stats dict for ``stats.json``."""
+    """Build the per-seed stats dict for ``stats.json``.
+
+    Includes the ``schema_version`` marker (see
+    :data:`~src.pdq.artifacts.PDQ_SCHEMA_VERSION`) plus the full
+    category list so that downstream readers can recover the
+    index→class_name mapping for every N-dim ``logprobs`` column in
+    ``sut_calls.parquet`` / ``archive.parquet`` from a single file.
+
+    :param cache_stats: Optional ``{"hits", "misses"}`` aggregate
+        (forwarded from the underlying ``VLMSUT.cache_stats``).
+    """
     return {
+        "schema_version": PDQ_SCHEMA_VERSION,
         "pipeline": "pdq",
         "seed_idx": seed_idx,
         "class_a": seed.class_a,
@@ -774,6 +792,8 @@ def _build_stats(
         "label_anchor": label_anchor,
         "anchor_call_id": anchor_call_id,
         "anchor_logprobs": anchor_logprobs,
+        "categories": list(cfg.categories),
+        "n_categories_total": len(cfg.categories),
         "n_img_genes": manipulator.image_dim,
         "n_txt_genes": manipulator.text_dim,
         "genotype_dim": manipulator.genotype_dim,
@@ -785,6 +805,8 @@ def _build_stats(
         "n_stage2_sut_calls": n_stage2_sut_calls,
         "wall_time_s": wall_time_s,
         "phase": "stage2",
+        "cache_hits": (cache_stats or {}).get("hits"),
+        "cache_misses": (cache_stats or {}).get("misses"),
         "git_hash": git_hash,
         "env": env,
     }

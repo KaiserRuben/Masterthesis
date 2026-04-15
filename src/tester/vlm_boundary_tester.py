@@ -24,11 +24,14 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from time import time
 from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 import torch
 import torch.nn.functional as F
 from numpy.typing import NDArray
@@ -36,6 +39,16 @@ from PIL import Image
 from smoo import SMOO
 from torch import Tensor
 from tqdm import tqdm
+
+# Trace / convergence / stats schema version. Bump whenever the
+# on-disk layout of trace.parquet, convergence.parquet, or stats.json
+# changes in a way that a naive reader can detect:
+#   v1 — logprobs is length-2 (target pair only), no cache_hit column,
+#        categories in stats.json are the pair.
+#   v2 — logprobs is length-N (full category list), cache_hit per-row,
+#        categories in stats.json are the full N-category list, and
+#        target_classes records the pair positions in the full list.
+SMOO_SCHEMA_VERSION = 2
 
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import CriterionCollection
@@ -71,9 +84,37 @@ def _build_trace_rows(
     target_classes: tuple[int, int],
     categories: tuple[str, ...],
 ) -> list[dict[str, Any]]:
-    """Build per-individual trace rows (pure — no side effects)."""
-    probs = F.softmax(logits, dim=-1)
+    """Build per-individual trace rows (pure — no side effects).
+
+    Three representations of the per-individual SUT state are stored:
+
+    * ``logprobs`` — length-N length-normalized log-prob vector as
+      returned by the scorer. The raw, canonical source; everything
+      else is derivable from it. Full FP32 precision.
+    * ``probs`` — length-N softmax of ``logprobs``, the full N-class
+      probability distribution. Convenience for post-hoc analyses that
+      want to work in probability space (entropy, KL, top-k, trees).
+    * ``p_class_a`` / ``p_class_b`` — pair-conditional probabilities
+      (2-class softmax over just the target pair). These sum to 1 per
+      row and preserve the historical 2-class semantics that existing
+      viz code in ``analysis/viz_*`` relies on. Prefer ``probs`` in new
+      code.
+
+    All three are redundant in information content but serve different
+    ergonomic niches; storage is ~N floats per row, negligible.
+    """
     idx_a, idx_b = target_classes
+
+    # Full N-class distribution.
+    probs = F.softmax(logits, dim=-1)
+
+    # Pair-conditional 2-class softmax for backward-compatible
+    # p_class_a / p_class_b columns. Computed from raw logits (not
+    # re-normalised from `probs`) so the pair-conditional semantics is
+    # exact regardless of how much N-class mass sits on other classes.
+    pair_lp = logits[:, [idx_a, idx_b]]
+    pair_probs = F.softmax(pair_lp, dim=-1)
+
     fitness_names = list(batched_results.keys())
     return [
         {
@@ -82,11 +123,12 @@ def _build_trace_rows(
             "individual": i,
             "genotype": genotypes[i].tolist(),
             "logprobs": logits[i].tolist(),
+            "probs": probs[i].tolist(),
             "decoded_text": texts[i],
             "cache_hit": cache_hits[i],
             "predicted_class": categories[int(logits[i].argmax())],
-            "p_class_a": float(probs[i, idx_a]),
-            "p_class_b": float(probs[i, idx_b]),
+            "p_class_a": float(pair_probs[i, 0]),
+            "p_class_b": float(pair_probs[i, 1]),
             **{
                 f"fitness_{name}": float(batched_fitness[j][i])
                 for j, name in enumerate(fitness_names)
@@ -103,11 +145,26 @@ def _build_stats(
     manipulator: VLMManipulator,
     n_pareto: int,
     runtime: float,
-    categories: tuple[str, ...],
+    full_categories: tuple[str, ...],
+    pair: tuple[str, str],
+    target_classes: tuple[int, int],
     cache_stats: dict[str, int],
 ) -> dict[str, Any]:
-    """Build stats metadata dict (pure)."""
+    """Build stats metadata dict (pure).
+
+    The ``categories`` field is the FULL N-category list the SUT scored
+    against (v2 schema). The ``pair`` / ``target_classes`` fields record
+    which two entries in that list are the seed's target pair — readers
+    can recover ``class_a`` / ``class_b`` positions in the N-dim
+    ``logprobs`` column without any external lookup.
+
+    :param full_categories: Full category list scored by the SUT.
+    :param pair: ``(class_a, class_b)`` labels.
+    :param target_classes: Positions of ``pair`` inside ``full_categories``.
+    :param cache_stats: Aggregate ``{"hits", "misses"}`` counts at save time.
+    """
     return {
+        "schema_version": SMOO_SCHEMA_VERSION,
         "seed_idx": seed_idx,
         "class_a": seed.class_a,
         "class_b": seed.class_b,
@@ -119,7 +176,12 @@ def _build_stats(
         "gene_bounds": manipulator.gene_bounds.tolist(),
         "image_dim": manipulator.image_dim,
         "text_dim": manipulator.text_dim,
-        "categories": list(categories),
+        # v2: full N-category list the SUT scored against. Readers use
+        # this to recover the class-name → logprob-index mapping.
+        "categories": list(full_categories),
+        "pair": list(pair),
+        "target_classes": list(target_classes),
+        "n_categories_total": len(full_categories),
         "n_pareto": n_pareto,
         "cache_hits": cache_stats["hits"],
         "cache_misses": cache_stats["misses"],
@@ -136,6 +198,29 @@ def _build_stats(
         "text_n_candidates": config.text.n_candidates,
         "device": config.device,
     }
+
+
+def _write_parquet_with_metadata(
+    df: pd.DataFrame,
+    path: Path,
+    metadata: dict[bytes, bytes],
+) -> None:
+    """Write a DataFrame to parquet with file-level key/value metadata.
+
+    Uses pyarrow directly (not ``DataFrame.to_parquet``) because the
+    latter does not expose the metadata slot on the top-level schema.
+    Any existing pandas metadata the round-trip would otherwise generate
+    is preserved by merging with our extras.
+
+    :param df: DataFrame to write.
+    :param path: Destination parquet path.
+    :param metadata: File-level metadata (bytes keys + bytes values).
+    """
+    table = pa.Table.from_pandas(df, preserve_index=False)
+    existing = dict(table.schema.metadata or {})
+    existing.update(metadata)
+    table = table.replace_schema_metadata(existing)
+    pq.write_table(table, path)
 
 
 def _build_context_meta(manipulator: VLMManipulator) -> dict[str, Any]:
@@ -449,24 +534,66 @@ class VLMBoundaryTester(SMOO):
         seed: SeedTriple,
         trace_rows: list[dict[str, Any]],
         convergence_rows: list[dict[str, Any]],
-        categories: tuple[str, ...],
+        full_categories: tuple[str, ...],
+        pair: tuple[str, str],
+        target_classes: tuple[int, int],
         answer_suffix: str,
         runtime: float,
     ) -> None:
+        """Persist trace / convergence / pareto / stats / context.
+
+        The signature is v2 — previous (pre-refactor) code passed only
+        the target pair as ``categories``; now the FULL N-category list
+        (``full_categories``) is written to ``stats.json`` so downstream
+        readers can recover the index→class mapping for the N-dim
+        ``logprobs`` column. The pair / target_classes args are also
+        persisted so the pair positions are recoverable from a single
+        file (stats.json) without any external lookup.
+
+        :param seed_idx: 0-based seed index.
+        :param seed: The seed triple.
+        :param trace_rows: List of per-individual trace dicts.
+        :param convergence_rows: List of per-generation convergence dicts.
+        :param full_categories: Full N-category list the SUT scored
+            against — canonical for the ``logprobs`` column index map.
+        :param pair: ``(class_a, class_b)`` labels (used for human-
+            readable logging and the pareto full_prompt string).
+        :param target_classes: Positions of ``pair`` inside
+            ``full_categories``; kept on the signature for symmetry and
+            passed through to ``_build_stats``.
+        :param answer_suffix: Pair-constrained answer format suffix.
+        :param runtime: Wall-clock seconds spent on this seed.
+        """
         run_dir = (
             self._config.save_dir
             / f"{self._config.name}_seed_{seed_idx}_{int(time())}"
         )
         run_dir.mkdir(parents=True, exist_ok=True)
 
+        # -- Schema metadata embedded into every parquet ------------------
+        # Both trace.parquet and convergence.parquet are stamped with the
+        # same file-level metadata so a reader can determine the layout
+        # without looking at stats.json. stats.json mirrors the version
+        # marker for JSON-only consumers.
+        parquet_metadata: dict[bytes, bytes] = {
+            b"schema_version": str(SMOO_SCHEMA_VERSION).encode(),
+            b"pipeline": b"smoo",
+            b"categories": json.dumps(list(full_categories)).encode(),
+            b"pair": json.dumps(list(pair)).encode(),
+            b"target_classes": json.dumps(list(target_classes)).encode(),
+        }
+
         # -- Trace parquet ------------------------------------------------
-        pd.DataFrame(trace_rows).to_parquet(
-            run_dir / "trace.parquet", index=False,
+        _write_parquet_with_metadata(
+            pd.DataFrame(trace_rows), run_dir / "trace.parquet",
+            parquet_metadata,
         )
 
         # -- Convergence parquet ------------------------------------------
-        pd.DataFrame(convergence_rows).to_parquet(
-            run_dir / "convergence.parquet", index=False,
+        _write_parquet_with_metadata(
+            pd.DataFrame(convergence_rows),
+            run_dir / "convergence.parquet",
+            parquet_metadata,
         )
 
         # -- Pareto-optimal candidates ------------------------------------
@@ -497,7 +624,7 @@ class VLMBoundaryTester(SMOO):
         stats = _build_stats(
             seed_idx, seed, self._config, self._manipulator,
             len(self._optimizer.best_candidates),
-            runtime, categories,
+            runtime, full_categories, pair, target_classes,
             cache_stats=self._sut.cache_stats,
         )
         with open(run_dir / "stats.json", "w") as f:

@@ -8,6 +8,16 @@ group to the file, providing crash-safe persistence.
 Column schemas are defined as module-level constants so callers can
 produce correctly-typed rows without guessing field names.
 
+Schema version
+--------------
+PDQ parquet files are stamped with a ``schema_version`` key in the
+file-level metadata (see :data:`PDQ_SCHEMA_VERSION`).  Version 2
+corresponds to the trace-complete N-dim logprob refactor: the
+``logprobs`` column in ``sut_calls.parquet`` and the ``logprobs_*``
+columns in ``archive.parquet`` already held full N-category vectors in
+v1, so the PDQ schema is stable across the bump — v2 only adds the
+version marker for cross-pipeline parity with SMOO.
+
 Validity classes (``archive.parquet`` ``validity`` column)
 ----------------------------------------------------------
 Every archived flip is assigned a two-letter validity code:
@@ -41,6 +51,16 @@ import pyarrow.parquet as pq
 from PIL import Image
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Schema version
+# ---------------------------------------------------------------------------
+
+# Bumped on the trace-complete refactor (April 2026). All PDQ parquet
+# files written by :class:`SeedLogger` carry this value in their
+# file-level metadata under the key ``b"schema_version"``.
+PDQ_SCHEMA_VERSION = 2
 
 # ---------------------------------------------------------------------------
 # Parquet column-name constants
@@ -130,9 +150,16 @@ class ParquetBuffer:
     be schema-compatible.  The underlying :class:`pyarrow.parquet.ParquetWriter`
     is kept open between flushes so row groups accumulate in a single file.
 
+    File-level key/value metadata (e.g. ``schema_version``) may be
+    supplied via ``file_metadata``; it is stamped into the first
+    :class:`pyarrow.parquet.ParquetWriter` that the buffer opens so it
+    persists across row groups.
+
     :param path: Output parquet file path.
     :param compression: Parquet compression codec (e.g. ``"zstd"``).
     :param flush_interval: Flush after this many :meth:`append` calls.
+    :param file_metadata: Optional bytes→bytes mapping stamped into the
+        parquet file-level schema metadata.
     """
 
     def __init__(
@@ -140,6 +167,7 @@ class ParquetBuffer:
         path: Path,
         compression: str = "zstd",
         flush_interval: int = 100,
+        file_metadata: dict[bytes, bytes] | None = None,
     ) -> None:
         self._path = path
         self._compression = compression
@@ -147,6 +175,7 @@ class ParquetBuffer:
         self._buf: list[dict[str, Any]] = []
         self._writer: pq.ParquetWriter | None = None
         self._total_rows: int = 0
+        self._file_metadata: dict[bytes, bytes] | None = file_metadata
 
     def append(self, row: dict[str, Any]) -> None:
         """Append one row.  Triggers a flush when buffer is full.
@@ -170,6 +199,13 @@ class ParquetBuffer:
         if not self._buf:
             return
         table = pa.Table.from_pylist(self._buf)
+        # Stamp file-level metadata on the table schema before opening
+        # the writer — ParquetWriter captures the schema (including its
+        # metadata) on construction and re-uses it for every row group.
+        if self._file_metadata:
+            existing = dict(table.schema.metadata or {})
+            existing.update(self._file_metadata)
+            table = table.replace_schema_metadata(existing)
         if self._writer is None:
             self._writer = pq.ParquetWriter(
                 str(self._path),
@@ -220,9 +256,16 @@ class SeedLogger:
             sl.append_sut_call(record)
             ...
 
+    Every parquet file produced by this logger carries file-level
+    metadata with a ``schema_version`` key (see
+    :data:`PDQ_SCHEMA_VERSION`) plus any extra key/value pairs supplied
+    via ``extra_file_metadata``.
+
     :param seed_dir: Seed output directory (created on construction).
     :param compression: Parquet compression codec.
     :param flush_interval: Parquet flush cadence (rows).
+    :param extra_file_metadata: Optional additional bytes→bytes pairs
+        stamped into every parquet file's file-level metadata.
     """
 
     def __init__(
@@ -230,17 +273,27 @@ class SeedLogger:
         seed_dir: Path,
         compression: str = "zstd",
         flush_interval: int = 100,
+        extra_file_metadata: dict[bytes, bytes] | None = None,
     ) -> None:
         self._dir = seed_dir
         self._dir.mkdir(parents=True, exist_ok=True)
         (self._dir / "flips").mkdir(exist_ok=True)
 
         self._compression = compression
+        base_meta: dict[bytes, bytes] = {
+            b"schema_version": str(PDQ_SCHEMA_VERSION).encode(),
+            b"pipeline": b"pdq",
+        }
+        if extra_file_metadata:
+            base_meta.update(extra_file_metadata)
+        self._file_metadata = base_meta
+
         self._bufs: dict[str, ParquetBuffer] = {
             fname: ParquetBuffer(
                 seed_dir / fname,
                 compression=compression,
                 flush_interval=flush_interval,
+                file_metadata=self._file_metadata,
             )
             for fname in ALL_PARQUET_FILES
         }
@@ -258,17 +311,24 @@ class SeedLogger:
         created.  Each stub is overwritten the first time the buffer flushes
         real rows (the ParquetWriter appends row groups to the same path).
 
-        Uses pandas (not the ParquetBuffer) so the file is created even
-        before any rows arrive.
+        Uses pyarrow directly (not pandas) so the schema metadata
+        (``schema_version`` etc.) is stamped onto the stub as well —
+        ``DataFrame.to_parquet`` does not expose the metadata slot.
         """
         for fname, columns in ALL_PARQUET_FILES.items():
             path = self._dir / fname
             if not path.exists():
-                pd.DataFrame(columns=columns).to_parquet(
-                    path,
-                    engine="pyarrow",
-                    compression=self._compression,
-                    index=False,
+                # Zero-row pandas frame → arrow table → add metadata →
+                # write. We rely on pandas for dtype inference on empty
+                # columns because pyarrow.Table.from_pylist([]) produces
+                # a schemaless table.
+                df = pd.DataFrame(columns=columns)
+                table = pa.Table.from_pandas(df, preserve_index=False)
+                existing = dict(table.schema.metadata or {})
+                existing.update(self._file_metadata)
+                table = table.replace_schema_metadata(existing)
+                pq.write_table(
+                    table, str(path), compression=self._compression,
                 )
 
     # -- context manager -------------------------------------------------

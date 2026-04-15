@@ -176,3 +176,13 @@ class SUTAdapter:
     def wall_time_cumulative(self) -> float:
         """Total wall time spent in SUT calls so far (seconds)."""
         return self._wall_cumulative
+
+    @property
+    def cache_stats(self) -> dict[str, int]:
+        """Cumulative cache hit/miss counts from the underlying VLMSUT.
+
+        Forwarded verbatim so per-seed ``stats.json`` can report the
+        same aggregate as the SMOO tester without duplicating the
+        counter logic.
+        """
+        return dict(self._sut.cache_stats)
