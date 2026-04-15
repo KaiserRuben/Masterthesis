@@ -13,7 +13,7 @@
 #   python experiments/run_pdq_test.py configs/pdq_v2_deep.yaml
 
 device: mps                              # override with --device cuda
-n_categories: 50
+n_categories: 15
 
 sut:
   load_in_8bit: false                    # set true for 24GB GPUs (4090)
@@ -33,7 +33,7 @@ cache_dirs:
   - /Volumes/SanDisk/Cache/imagenet
 
 seeds:
-  n_per_class: 2
+  n_per_class: 5
   max_logprob_gap: 2.0                   # same filter — same seeds
 
 # ===========================================================================
