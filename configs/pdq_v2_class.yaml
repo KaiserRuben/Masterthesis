@@ -1,18 +1,3 @@
-# PDQ v2 — Strategy rebalance
-#
-# Changes from pdq_overnight:
-#   - sparse_small REMOVED (0/347 flips across all runs)
-#   - modality_text weight 0.05 → 0.20 (finds tightest boundaries, d_i=4–22)
-#   - dense_uniform 0.25 → 0.30
-#   - bituniform_density 0.10 → 0.15
-#   - Everything else unchanged — same seeds, same Stage 2, directly comparable
-#
-# Expected: more near-boundary discoveries from modality_text,
-#           higher overall flip rate from better weight allocation.
-#
-# Usage:
-#   python experiments/run_pdq_test.py configs/pdq_v2_strategies.yaml
-
 device: mps
 n_categories: 10
 
@@ -35,7 +20,7 @@ cache_dirs:
 
 seeds:
   n_per_class: 100
-  max_logprob_gap: 2.0                   # same filter — same seeds as overnight
+  max_logprob_gap: 3.0                   # same filter — same seeds as overnight
 
 # ===========================================================================
 # Stage 1 — Rebalanced strategies (no sparse_small)
@@ -43,7 +28,7 @@ seeds:
 
 stage1:
   budget_sut_calls: 150
-  max_flips_per_seed: 30
+  max_flips_per_seed: 1000000           # uncapped for cross-class run — uncensored flips/seed
   max_distinct_targets: 10
   strategies:
     - name: dense_uniform

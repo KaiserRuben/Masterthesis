@@ -1,0 +1,53 @@
+# VLM Boundary Test — cross-class data run (smoo analog of pdq_v2_class)
+#
+# Mirrors configs/pdq_v2_class.yaml: same 10 categories, 100 seeds per class,
+# so per-class statistics (tightness, modality split, target histograms,
+# strategy mix) can be computed from the smoo pipeline alongside the PDQ run.
+#
+# NOT budget-matched to PDQ (smoo uses an evolutionary optimizer, PDQ uses
+# structured local search). The point is per-class mass on both pipelines,
+# not call-for-call comparison.
+#
+# Usage:
+#   python experiments/run_boundary_test.py configs/boundary_v2_class.yaml
+
+# ===========================================================================
+# Shared
+# ===========================================================================
+
+device: mps
+n_categories: 10                          # first 10 ImageNet labels — same as pdq_v2_class
+
+# ===========================================================================
+# Experiment
+# ===========================================================================
+
+name: boundary_v2_class
+save_dir: runs
+
+generations: 20
+pop_size: 50
+
+# ===========================================================================
+# Cache
+# ===========================================================================
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+# ===========================================================================
+# SUT
+# ===========================================================================
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  load_in_8bit: false
+
+# ===========================================================================
+# Seeds — class-balanced, same filter as pdq_v2_class
+# ===========================================================================
+
+seeds:
+  n_per_class: 100
+  max_logprob_gap: 3.0
