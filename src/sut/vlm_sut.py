@@ -75,6 +75,7 @@ class VLMSUT(SUT):
         self._redis = _connect_redis(self._config.sut.redis_url)
         self._cache_hits = 0
         self._cache_misses = 0
+        self._last_call_cached = False
 
     # ------------------------------------------------------------------
     # SUT interface
@@ -113,9 +114,11 @@ class VLMSUT(SUT):
             cached = self._redis.get(key)
             if cached is not None:
                 self._cache_hits += 1
+                self._last_call_cached = True
                 return torch.tensor(json.loads(cached), dtype=torch.float32)
             self._cache_misses += 1
 
+        self._last_call_cached = False
         result = self._scorer.score_categories_tensor(image, prompt, cats)
 
         # --- cache store ---
@@ -145,8 +148,13 @@ class VLMSUT(SUT):
 
     @property
     def cache_stats(self) -> dict[str, int]:
-        """Return cache hit/miss counts."""
+        """Return cumulative cache hit/miss counts."""
         return {"hits": self._cache_hits, "misses": self._cache_misses}
+
+    @property
+    def last_call_cached(self) -> bool:
+        """Whether the most recent ``process_input`` call was served from cache."""
+        return self._last_call_cached
 
 
 # -----------------------------------------------------------------------

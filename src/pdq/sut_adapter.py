@@ -51,7 +51,7 @@ class SUTAdapter:
     - monotonic ``call_id``
     - ``stage`` tag (``"anchor"``, ``"stage1"``, ``"stage2"``)
     - wall time (per-call and cumulative)
-    - cache-hit flag (detected by comparing VLMSUT's internal counters)
+    - cache-hit flag (read from ``VLMSUT.last_call_cached``)
     - logprobs, top-1/top-2 labels, logprob gap
 
     Records are buffered internally and drained via :meth:`pop_records`.
@@ -94,9 +94,6 @@ class SUTAdapter:
         call_id = self._call_counter
         self._call_counter += 1
 
-        # Detect cache hit by comparing VLMSUT's internal counter before/after.
-        hits_before = getattr(self._sut, "cache_stats", {}).get("hits", 0)
-
         t0 = time()
         logprobs: Tensor = self._sut.process_input(
             image, text=text, categories=categories,
@@ -105,7 +102,7 @@ class SUTAdapter:
 
         self._wall_cumulative += wall_time
 
-        cache_hit = getattr(self._sut, "cache_stats", {}).get("hits", 0) > hits_before
+        cache_hit = self._sut.last_call_cached
         if not cache_hit:
             self._miss_counter += 1
 
