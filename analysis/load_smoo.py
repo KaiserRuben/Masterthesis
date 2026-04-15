@@ -8,15 +8,199 @@ Each SMOO run directory contains per-seed folders with:
 This loader produces two DataFrames:
 - trace_df: all evaluated individuals (generation × pop_size rows)
 - pareto_df: Pareto-front solutions with genotype-level metrics
+
+Schema versions
+---------------
+Two on-disk layouts are supported transparently:
+
+- **v1** (pre-refactor): ``trace.parquet`` has a ``logprobs`` column of
+  length 2, no ``cache_hit`` column, and ``stats.json`` stores only the
+  pair under ``categories``. Files have no file-level metadata marker.
+- **v2** (trace-complete): ``trace.parquet`` has a length-N
+  ``logprobs`` column (full category list scored by the SUT) and a
+  ``cache_hit`` column per row; ``stats.json`` stores the full N-list
+  as ``categories`` plus ``pair`` / ``target_classes`` positions.
+  Parquet files are stamped with ``schema_version=2`` in their
+  file-level metadata.
+
+:func:`load_trace` returns the DataFrame plus a dict of detected
+metadata (``schema_version``, ``categories``, ``pair``,
+``target_classes``). A v1 trace is exposed as-is (length-2
+``logprobs``) together with the categories from the adjacent
+``stats.json`` so downstream code can always map indices to class
+names without ``git checkout``.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
+
+
+# ---------------------------------------------------------------------------
+# Schema-version detection + unified trace loader
+# ---------------------------------------------------------------------------
+
+def _read_parquet_metadata(path: Path) -> dict[str, str]:
+    """Read file-level key/value metadata from a parquet file.
+
+    Returns a plain ``{str: str}`` dict (keys/values decoded from UTF-8).
+    Missing or unreadable metadata yields an empty dict — the caller
+    falls back to content inspection.
+    """
+    try:
+        raw = pq.read_schema(path).metadata or {}
+    except Exception:  # noqa: BLE001 — metadata is best-effort
+        return {}
+    out: dict[str, str] = {}
+    for k, v in raw.items():
+        try:
+            out[k.decode("utf-8")] = v.decode("utf-8")
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
+def detect_schema_version(trace_path: Path) -> int:
+    """Detect the on-disk schema version of a SMOO ``trace.parquet``.
+
+    Preferred path: look at file-level metadata (``schema_version``
+    written by the v2 writer). Fallback: read the first row and
+    inspect its ``logprobs`` length — a length-2 value is v1, anything
+    else is assumed v2 (v1 only supported pairs).
+
+    :param trace_path: Path to ``trace.parquet``.
+    :returns: ``1`` or ``2``.
+    """
+    meta = _read_parquet_metadata(trace_path)
+    raw = meta.get("schema_version")
+    if raw is not None:
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+
+    # Fallback: content sniff. v1 always wrote length-2 logprobs.
+    try:
+        head = pd.read_parquet(trace_path).head(1)
+        if "logprobs" in head.columns and len(head):
+            n = len(head.iloc[0]["logprobs"])
+            return 1 if n == 2 else 2
+    except Exception:  # noqa: BLE001
+        pass
+    return 1
+
+
+def load_trace(
+    trace_path: Path | str,
+    stats_path: Path | str | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Load a SMOO trace parquet of either schema version.
+
+    v1 traces have ``logprobs`` of length 2 (target pair only) and no
+    ``cache_hit`` column. v2 traces have length-N logprobs plus
+    ``cache_hit``. The returned metadata dict always includes
+    ``schema_version``, ``categories`` (list of class names), and
+    ``pair``/``target_classes`` — values are reconstructed from
+    ``stats.json`` if not present in the parquet metadata (v1 path).
+
+    :param trace_path: Path to ``trace.parquet``.
+    :param stats_path: Optional path to the adjacent ``stats.json``.
+        Defaults to ``<parent>/stats.json``.
+    :returns: ``(trace_df, meta)``. Caller owns both; no normalisation
+        is applied to ``logprobs`` — v1 stays length-2, v2 stays
+        length-N. ``meta['categories']`` is the canonical index→class
+        mapping for the ``logprobs`` column in either version.
+    """
+    trace_path = Path(trace_path)
+    if stats_path is None:
+        stats_path = trace_path.parent / "stats.json"
+    else:
+        stats_path = Path(stats_path)
+
+    df = pd.read_parquet(trace_path)
+    file_meta = _read_parquet_metadata(trace_path)
+
+    # Load stats.json for fallback category recovery (v1 writers did
+    # not stamp the parquet; v2 writers do, but we still read stats so
+    # the returned meta is consistent across versions).
+    stats: dict[str, Any] = {}
+    if stats_path.exists():
+        try:
+            with open(stats_path) as f:
+                stats = json.load(f)
+        except Exception:  # noqa: BLE001
+            stats = {}
+
+    # Version resolution: stats > parquet metadata > content sniff.
+    version: int
+    if "schema_version" in stats:
+        version = int(stats["schema_version"])
+    elif "schema_version" in file_meta:
+        try:
+            version = int(file_meta["schema_version"])
+        except ValueError:
+            version = detect_schema_version(trace_path)
+    else:
+        version = detect_schema_version(trace_path)
+
+    # Category recovery. Parquet metadata is preferred (v2); otherwise
+    # fall back to stats.json. For v1 stats.json contains only the
+    # pair, which is also the canonical index map for length-2
+    # logprobs.
+    categories: list[str] = []
+    raw_cats = file_meta.get("categories")
+    if raw_cats:
+        try:
+            categories = list(json.loads(raw_cats))
+        except Exception:  # noqa: BLE001
+            categories = []
+    if not categories:
+        categories = list(stats.get("categories") or [])
+
+    pair: list[str] = []
+    raw_pair = file_meta.get("pair")
+    if raw_pair:
+        try:
+            pair = list(json.loads(raw_pair))
+        except Exception:  # noqa: BLE001
+            pair = []
+    if not pair:
+        pair = list(stats.get("pair") or [])
+    if not pair and "class_a" in stats and "class_b" in stats:
+        pair = [stats["class_a"], stats["class_b"]]
+
+    target_classes: list[int] = []
+    raw_tc = file_meta.get("target_classes")
+    if raw_tc:
+        try:
+            target_classes = list(json.loads(raw_tc))
+        except Exception:  # noqa: BLE001
+            target_classes = []
+    if not target_classes and stats.get("target_classes"):
+        target_classes = list(stats["target_classes"])
+    if not target_classes and pair and categories:
+        try:
+            target_classes = [categories.index(p) for p in pair]
+        except ValueError:
+            # v1 fallback: pair IS the full categories, so positions
+            # are (0, 1).
+            target_classes = [0, 1]
+
+    meta: dict[str, Any] = {
+        "schema_version": version,
+        "categories": categories,
+        "pair": pair,
+        "target_classes": target_classes,
+        "trace_path": trace_path,
+        "stats_path": stats_path,
+    }
+    return df, meta
 
 
 # ---------------------------------------------------------------------------
@@ -26,12 +210,17 @@ import pandas as pd
 def load_seed(seed_dir: Path) -> dict:
     """Load one SMOO seed directory.
 
-    Returns dict with keys: stats, trace, pareto_solutions.
+    Returns dict with keys ``stats``, ``trace``, ``pareto`` and
+    ``meta`` (the unified metadata from :func:`load_trace`). The
+    ``trace`` value is the raw DataFrame — v1 files still expose a
+    length-2 ``logprobs`` column, v2 files expose the full N-dim
+    column. ``meta['categories']`` is always populated with the
+    canonical index→class mapping for that trace's ``logprobs``.
     """
     with open(seed_dir / "stats.json") as f:
         stats = json.load(f)
 
-    trace = pd.read_parquet(seed_dir / "trace.parquet")
+    trace, meta = load_trace(seed_dir / "trace.parquet", seed_dir / "stats.json")
 
     # Load all pareto_N.json
     pareto_files = sorted(
@@ -45,7 +234,12 @@ def load_seed(seed_dir: Path) -> dict:
         sol["pareto_idx"] = int(pf.stem.split("_")[1])
         pareto_solutions.append(sol)
 
-    return {"stats": stats, "trace": trace, "pareto": pareto_solutions}
+    return {
+        "stats": stats,
+        "trace": trace,
+        "pareto": pareto_solutions,
+        "meta": meta,
+    }
 
 
 # ---------------------------------------------------------------------------

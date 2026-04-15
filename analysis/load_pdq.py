@@ -5,10 +5,30 @@ Each PDQ run directory contains per-seed folders with:
 - candidates.parquet: all Stage 1 candidates
 - stage1_flips.parquet: discovered flips
 - stage2_trajectories.parquet: minimisation steps
+- sut_calls.parquet: every SUT invocation (with N-dim logprobs)
 - stats.json: seed metadata
+- config.json: full experiment config
 
 Multiple runs (timestamps) may share the same seed index.
 This loader selects only the LATEST run per seed index.
+
+Schema versions
+---------------
+PDQ always stored N-dim logprobs in its parquet files, so the v1→v2
+bump is a marker-only change:
+
+- **v1** (pre-refactor): no ``schema_version`` marker anywhere; the
+  full category list lives in ``config.json['categories']``.
+- **v2** (trace-complete): parquet files stamped with
+  ``schema_version=2`` in file-level metadata; ``config.json`` and
+  ``stats.json`` both carry ``schema_version``, and ``stats.json``
+  now also includes a ``categories`` field for parity with the SMOO
+  side.
+
+:func:`load_archive` and :func:`load_sut_calls` transparently handle
+both versions and always return the canonical categories alongside
+the DataFrame so a single file is enough to decode the N-dim
+``logprobs_*`` columns.
 """
 
 from __future__ import annotations
@@ -16,8 +36,199 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
+
+
+# ---------------------------------------------------------------------------
+# Schema-version detection + unified loaders
+# ---------------------------------------------------------------------------
+
+def _read_parquet_metadata(path: Path) -> dict[str, str]:
+    """Read file-level key/value metadata from a parquet file.
+
+    Returns a ``{str: str}`` dict; any decoding issues yield an empty
+    dict so callers fall back to the adjacent ``config.json``.
+    """
+    try:
+        raw = pq.read_schema(path).metadata or {}
+    except Exception:  # noqa: BLE001
+        return {}
+    out: dict[str, str] = {}
+    for k, v in raw.items():
+        try:
+            out[k.decode("utf-8")] = v.decode("utf-8")
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
+def _load_categories(
+    parquet_path: Path,
+    stats: dict[str, Any] | None,
+    config: dict[str, Any] | None,
+) -> list[str]:
+    """Recover the category list for a PDQ parquet.
+
+    Lookup order:
+    1. parquet file metadata key ``categories`` (v2)
+    2. ``stats.json['categories']`` (v2)
+    3. ``config.json['categories']`` (both v1 and v2)
+    """
+    meta = _read_parquet_metadata(parquet_path)
+    raw = meta.get("categories")
+    if raw:
+        try:
+            return list(json.loads(raw))
+        except Exception:  # noqa: BLE001
+            pass
+    if stats and stats.get("categories"):
+        return list(stats["categories"])
+    if config and config.get("categories"):
+        return list(config["categories"])
+    return []
+
+
+def detect_schema_version(parquet_path: Path) -> int:
+    """Detect the on-disk schema version of a PDQ parquet.
+
+    v1 had no marker; v2 stamps ``schema_version`` in file-level
+    metadata. Absence → assume v1.
+    """
+    raw = _read_parquet_metadata(parquet_path).get("schema_version")
+    if raw is None:
+        return 1
+    try:
+        return int(raw)
+    except ValueError:
+        return 1
+
+
+def load_archive(
+    archive_path: Path | str,
+    stats_path: Path | str | None = None,
+    config_path: Path | str | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Load a PDQ ``archive.parquet`` of either schema version.
+
+    The DataFrame is returned as-is — no column normalisation. The
+    metadata dict always includes ``schema_version``, ``categories``
+    (index→class mapping for the N-dim ``logprobs_*`` columns), and
+    the two source-file paths so the caller can re-read anything
+    extra.
+
+    :param archive_path: Path to ``archive.parquet``.
+    :param stats_path: Optional; defaults to ``<parent>/stats.json``.
+    :param config_path: Optional; defaults to ``<parent>/config.json``.
+    :returns: ``(archive_df, meta)``.
+    """
+    archive_path = Path(archive_path)
+    parent = archive_path.parent
+    if stats_path is None:
+        stats_path = parent / "stats.json"
+    else:
+        stats_path = Path(stats_path)
+    if config_path is None:
+        config_path = parent / "config.json"
+    else:
+        config_path = Path(config_path)
+
+    df = pd.read_parquet(archive_path)
+
+    stats: dict[str, Any] = {}
+    if stats_path.exists():
+        try:
+            with open(stats_path) as f:
+                stats = json.load(f)
+        except Exception:  # noqa: BLE001
+            stats = {}
+    config: dict[str, Any] = {}
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except Exception:  # noqa: BLE001
+            config = {}
+
+    # Version resolution: stats.json > config.json > parquet metadata.
+    version: int
+    if "schema_version" in stats:
+        version = int(stats["schema_version"])
+    elif "schema_version" in config:
+        version = int(config["schema_version"])
+    else:
+        version = detect_schema_version(archive_path)
+
+    categories = _load_categories(archive_path, stats, config)
+
+    meta: dict[str, Any] = {
+        "schema_version": version,
+        "categories": categories,
+        "archive_path": archive_path,
+        "stats_path": stats_path,
+        "config_path": config_path,
+    }
+    return df, meta
+
+
+def load_sut_calls(
+    sut_calls_path: Path | str,
+    stats_path: Path | str | None = None,
+    config_path: Path | str | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Load a PDQ ``sut_calls.parquet`` of either schema version.
+
+    Parallel of :func:`load_archive`; returns the raw DataFrame plus
+    the canonical category list recovered from the first available
+    source.
+    """
+    sut_calls_path = Path(sut_calls_path)
+    parent = sut_calls_path.parent
+    if stats_path is None:
+        stats_path = parent / "stats.json"
+    else:
+        stats_path = Path(stats_path)
+    if config_path is None:
+        config_path = parent / "config.json"
+    else:
+        config_path = Path(config_path)
+
+    df = pd.read_parquet(sut_calls_path)
+    stats: dict[str, Any] = {}
+    if stats_path.exists():
+        try:
+            with open(stats_path) as f:
+                stats = json.load(f)
+        except Exception:  # noqa: BLE001
+            stats = {}
+    config: dict[str, Any] = {}
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except Exception:  # noqa: BLE001
+            config = {}
+
+    version: int
+    if "schema_version" in stats:
+        version = int(stats["schema_version"])
+    elif "schema_version" in config:
+        version = int(config["schema_version"])
+    else:
+        version = detect_schema_version(sut_calls_path)
+
+    categories = _load_categories(sut_calls_path, stats, config)
+
+    meta: dict[str, Any] = {
+        "schema_version": version,
+        "categories": categories,
+        "sut_calls_path": sut_calls_path,
+        "stats_path": stats_path,
+        "config_path": config_path,
+    }
+    return df, meta
 
 
 # ---------------------------------------------------------------------------
