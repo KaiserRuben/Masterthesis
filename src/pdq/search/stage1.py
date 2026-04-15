@@ -19,6 +19,7 @@ import logging
 from typing import Callable, Iterator
 
 import numpy as np
+from tqdm import tqdm
 
 from ..config import EarlyStopConfig, StrategyConfig
 from .base import Candidate, ScoredCandidate, score_candidate
@@ -347,6 +348,14 @@ def run_stage1(
     n_flips = 0
     distinct_targets: set[str] = set()
 
+    pbar = tqdm(
+        total=budget,
+        desc=f"  S1 seed_{seed_idx:04d}",
+        unit="call",
+        leave=False,
+        position=1,
+    )
+
     for s_cfg, s_budget in zip(strategies, strategy_budgets):
         if total_calls >= budget:
             break
@@ -378,6 +387,7 @@ def run_stage1(
             )
             results.append(sc)
             total_calls += 1
+            pbar.update(1)
 
             if sc.flipped:
                 n_flips += 1
@@ -388,19 +398,30 @@ def run_stage1(
                     s_cfg.name, sc.candidate_id, sc.label, sc.d_i, sc.pdq_score,
                 )
 
+            # -- Live metrics ---------------------------------------------
+            acc_rate = n_flips / total_calls
+            pbar.set_postfix({
+                "flips": n_flips,
+                "targets": len(distinct_targets),
+                "acc": f"{acc_rate:.1%}",
+                "last": sc.label[:10],
+            })
+
             # -- Early stopping -------------------------------------------
             if total_calls >= early_stop_cfg.min_calls_before_stop:
                 if early_stop_cfg.on_flips_complete and n_flips >= max_flips:
-                    logger.info("Stage1 early stop: max_flips=%d reached", max_flips)
+                    logger.debug("Stage1 early stop: max_flips=%d reached", max_flips)
+                    pbar.close()
                     return results
                 if (
                     early_stop_cfg.on_targets_complete
                     and len(distinct_targets) >= max_distinct_targets
                 ):
-                    logger.info(
+                    logger.debug(
                         "Stage1 early stop: max_distinct_targets=%d reached",
                         max_distinct_targets,
                     )
+                    pbar.close()
                     return results
 
         logger.debug(
@@ -408,4 +429,5 @@ def run_stage1(
             s_cfg.name, total_calls, n_flips,
         )
 
+    pbar.close()
     return results

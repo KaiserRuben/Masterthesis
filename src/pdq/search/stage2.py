@@ -41,6 +41,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple
 
 import numpy as np
+from tqdm import tqdm
 
 from ..config import Stage2Config
 
@@ -122,12 +123,36 @@ def _ordered_nonzero(g: np.ndarray, order: str) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
+def _update_pbar(
+    pbar: tqdm | None,
+    pass_name: str,
+    rank_sum: int,
+    sparsity: int,
+    trajectory: list[dict[str, Any]],
+) -> None:
+    if not pbar:
+        return
+    # Compute 50-step accept rate.
+    recent = trajectory[-50:]
+    acc_rate = (
+        sum(1 for s in recent if s.get("accepted")) / len(recent) if recent else 0.0
+    )
+    pbar.set_postfix({
+        "pass": pass_name,
+        "rs": rank_sum,
+        "sp": sparsity,
+        "acc50": f"{acc_rate:.1%}",
+    })
+    pbar.update(1)
+
+
 def greedy_zeroing(
     flipped_geno: np.ndarray,
     flip_check_fn: Callable[[np.ndarray], CheckResult],
     budget: int,
     order: str = "by_gene_value_desc",
     full_sweep_only: bool = True,  # noqa: ARG001 — kept for config parity
+    pbar: tqdm | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
     """Greedy zeroing pass: try setting each non-zero gene to 0.
 
@@ -145,6 +170,7 @@ def greedy_zeroing(
     :param order: Gene traversal order.
     :param full_sweep_only: Unused; retained for API consistency with
         ``ZeroPassConfig``.
+    :param pbar: Optional tqdm bar to update.
     :returns: ``(best_geno, trajectory)``.
     """
     g = flipped_geno.copy()
@@ -192,6 +218,8 @@ def greedy_zeroing(
             "sparsity_after": cur_sparsity,
         })
 
+        _update_pbar(pbar, "zero", cur_rank_sum, cur_sparsity, trajectory)
+
         logger.debug(
             "Pass A step %d: gene=%d  %d→0  accepted=%s  rank_sum=%d",
             step_num, i, old_val, accepted, cur_rank_sum,
@@ -211,6 +239,7 @@ def rank_reduction(
     budget: int,
     order: str = "by_gene_value_desc",
     step_size: int = 1,
+    pbar: tqdm | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
     """Rank-reduction pass: decrement each non-zero gene by *step_size*.
 
@@ -226,6 +255,7 @@ def rank_reduction(
     :param budget: Maximum SUT calls for this pass.
     :param order: Gene traversal order.
     :param step_size: Decrement per attempt (``RankPassConfig.step``).
+    :param pbar: Optional tqdm bar to update.
     :returns: ``(best_geno, trajectory)``.
     """
     g = flipped_geno.copy()
@@ -279,6 +309,8 @@ def rank_reduction(
             })
             step_num += 1
 
+            _update_pbar(pbar, "rank", cur_rank_sum, cur_sparsity, trajectory)
+
             if not accepted:
                 break  # Gene is as low as it can go; try next gene
 
@@ -297,6 +329,7 @@ def random_subset(
     rng: np.random.Generator,
     subset_sizes: tuple[int, ...] = (2, 3, 5),
     n_trials_per_size: int = 20,
+    pbar: tqdm | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
     """Random-subset zeroing pass: zero random groups of non-zero genes.
 
@@ -313,6 +346,7 @@ def random_subset(
         ``RandomSubsetPassConfig.subset_sizes``).
     :param n_trials_per_size: Trials per size (from
         ``RandomSubsetPassConfig.n_trials_per_size``).
+    :param pbar: Optional tqdm bar to update.
     :returns: ``(best_geno, trajectory)``.
     """
     g = flipped_geno.copy()
@@ -365,6 +399,10 @@ def random_subset(
             })
             step_num += 1
 
+            _update_pbar(
+                pbar, "subset", cur_rank_sum, cur_sparsity, trajectory
+            )
+
     return g, trajectory
 
 
@@ -382,6 +420,8 @@ def minimise_flip(
     cfg: Stage2Config,
     input_distance_fn: Callable[[np.ndarray, np.ndarray], float],
     stage1_flip_label: str = "",
+    seed_idx: int = 0,
+    flip_id: int = 0,
 ) -> Stage2Result:
     """Run Stage-2 minimisation passes A → B → C on a Stage-1 flip.
 
@@ -402,6 +442,8 @@ def minimise_flip(
         for the minimised genotype.
     :param stage1_flip_label: The Stage-1 flip label (used as fallback when
         no Stage-2 step was accepted).
+    :param seed_idx: 0-based seed index for logging.
+    :param flip_id: 0-based flip index within the seed.
     :returns: :class:`Stage2Result` with the minimised genotype, d_i_min,
         call count, per-pass trajectories, stop reason, and final label.
     """
@@ -457,12 +499,23 @@ def minimise_flip(
     trajectory_per_pass: dict[str, list[dict[str, Any]]] = {}
     stopped_reason = "all_passes_complete"
 
+    pbar = tqdm(
+        total=budget_total,
+        desc=f"  S2 seed_{seed_idx:04d} flip_{flip_id}",
+        unit="call",
+        leave=False,
+        position=1,
+    )
+
     if cfg.passes.zero.enabled and remaining > 0:
         b = min(pass_budgets["zero"], remaining)
         g, traj = greedy_zeroing(
-            g, sut_check_fn, budget=b,
+            g,
+            sut_check_fn,
+            budget=b,
             order=cfg.passes.zero.order,
             full_sweep_only=cfg.passes.zero.full_sweep_only,
+            pbar=pbar,
         )
         trajectory_per_pass["zero"] = traj
         used = len(traj)
@@ -482,9 +535,12 @@ def minimise_flip(
             b = min(pass_budgets["rank"], remaining)
             g_before_sweep = g.copy()
             g, traj = rank_reduction(
-                g, sut_check_fn, budget=b,
+                g,
+                sut_check_fn,
+                budget=b,
                 order=cfg.passes.rank.order,
                 step_size=cfg.passes.rank.step,
+                pbar=pbar,
             )
             rank_traj.extend(traj)
             used = len(traj)
@@ -501,9 +557,13 @@ def minimise_flip(
     if cfg.passes.random_subset.enabled and remaining > 0:
         b = min(pass_budgets.get("random_subset", remaining), remaining)
         g, traj = random_subset(
-            g, sut_check_fn, budget=b, rng=rng,
+            g,
+            sut_check_fn,
+            budget=b,
+            rng=rng,
             subset_sizes=cfg.passes.random_subset.subset_sizes,
             n_trials_per_size=cfg.passes.random_subset.n_trials_per_size,
+            pbar=pbar,
         )
         trajectory_per_pass["random_subset"] = traj
         used = len(traj)
@@ -514,6 +574,8 @@ def minimise_flip(
             used, int(np.sum(g)), int(np.count_nonzero(g)),
         )
 
+    pbar.close()
+
     if remaining <= 0 and stopped_reason == "all_passes_complete":
         stopped_reason = "budget_exhausted"
 
@@ -521,7 +583,7 @@ def minimise_flip(
     d_i_min = input_distance_fn(g, anchor_geno)
     final_label = _last_accepted_label(trajectory_per_pass, stage1_flip_label)
 
-    logger.info(
+    logger.debug(
         "Stage2 flip minimised: anchor=%s  d_i %s→%.1f  calls=%d  reason=%s",
         anchor_label,
         "?" if total_calls == 0 else str(int(input_distance_fn(flipped_geno, anchor_geno))),

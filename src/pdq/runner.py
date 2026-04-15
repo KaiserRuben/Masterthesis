@@ -84,6 +84,47 @@ class _FlipRecord:
 
 
 # ---------------------------------------------------------------------------
+# Seed filter helper (reused by SMOO tester via src.tester)
+# ---------------------------------------------------------------------------
+
+
+def _apply_seed_filter(
+    seeds: list[SeedTriple],
+    filter_indices: tuple[int, ...],
+) -> list[tuple[int, SeedTriple]]:
+    """Apply an optional index filter to a generated seed pool.
+
+    Preserves original 0-based indices so that output directories and
+    ``seed_idx`` metadata stay consistent with an unfiltered run — a
+    filtered seed at original position 32 is still reported as
+    ``seed_0032``. Raises :class:`ValueError` on out-of-range indices.
+
+    :param seeds: Full generated seed pool (``generate_seeds`` output).
+    :param filter_indices: Indices to keep. Empty tuple → keep all.
+    :returns: List of ``(original_index, seed)`` pairs in index order.
+    :raises ValueError: If any filter index is out of range for the
+        generated pool.
+    """
+    if not filter_indices:
+        return list(enumerate(seeds))
+    filter_set = set(filter_indices)
+    out_of_range = {i for i in filter_set if i < 0 or i >= len(seeds)}
+    if out_of_range:
+        raise ValueError(
+            f"seeds.filter_indices references out-of-range indices "
+            f"{sorted(out_of_range)} for a pool of size {len(seeds)}. "
+            "Either adjust filter_indices or regenerate the seed pool "
+            "with the same n_per_class / max_logprob_gap / n_categories."
+        )
+    kept = [(i, s) for i, s in enumerate(seeds) if i in filter_set]
+    logger.info(
+        "Seed filter active: %d of %d seeds retained (indices %s)",
+        len(kept), len(seeds), sorted(filter_set),
+    )
+    return kept
+
+
+# ---------------------------------------------------------------------------
 # Config shim: PDQExperimentConfig → ExperimentConfig
 # ---------------------------------------------------------------------------
 
@@ -231,10 +272,14 @@ class PDQRunner:
             logger.warning("No seeds passed filters — nothing to test.")
             return
 
+        # Apply post-generation seed filter (preserves original indices so
+        # `seed_0032` in a filtered run matches `seed_0032` in the full run).
+        indexed_seeds = _apply_seed_filter(seeds, cfg.seeds.filter_indices)
+
         logger.info(
             "%d seed(s) to test (PDQ pipeline, %d strategies, "
             "stage1_budget=%d)",
-            len(seeds),
+            len(indexed_seeds),
             len(cfg.stage1.strategies),
             cfg.stage1.budget_sut_calls,
         )
@@ -245,10 +290,11 @@ class PDQRunner:
         # -- Deterministic RNG -------------------------------------------
         rng = np.random.default_rng(cfg.reproducibility.seed_int)
 
-        pbar = tqdm(seeds, unit="seed", desc="PDQ")
-        for seed_idx, seed in enumerate(pbar):
+        pbar = tqdm(indexed_seeds, unit="seed", desc="PDQ")
+        for pos, (seed_idx, seed) in enumerate(pbar):
             pbar.set_description(
-                f"[{seed_idx + 1}/{len(seeds)}] {seed.class_a}"
+                f"[{pos + 1}/{len(indexed_seeds)}] "
+                f"seed_{seed_idx:04d} {seed.class_a}"
             )
             self._run_seed(
                 seed_idx=seed_idx,
@@ -256,6 +302,7 @@ class PDQRunner:
                 manipulator=manipulator,
                 adapter=adapter,
                 rng=rng,
+                pbar=pbar,
             )
 
         pbar.close()
@@ -276,6 +323,7 @@ class PDQRunner:
         manipulator: VLMManipulator,
         adapter: SUTAdapter,
         rng: np.random.Generator,
+        pbar: tqdm,
     ) -> None:
         """Run one seed: anchor + Phase-1 skeleton artifacts.
 
@@ -284,6 +332,7 @@ class PDQRunner:
         :param manipulator: Prepared VLMManipulator (will be re-prepared here).
         :param adapter: SUT adapter (shared across seeds, state accumulates).
         :param rng: Seeded random number generator.
+        :param pbar: Parent tqdm bar.
         """
         cfg = self._cfg
         t_seed_start = time()
@@ -305,14 +354,11 @@ class PDQRunner:
                 rng=rng,
                 sl=sl,
                 t_start=t_seed_start,
+                pbar=pbar,
             )
 
-        logger.info(
-            "Seed %d done (%.1fs) → %s",
-            seed_idx,
-            time() - t_seed_start,
-            seed_dir,
-        )
+        # Clear postfix for next seed
+        pbar.set_postfix({})
 
     def _run_seed_inner(
         self,
@@ -323,12 +369,15 @@ class PDQRunner:
         rng: np.random.Generator,
         sl: SeedLogger,
         t_start: float,
+        pbar: tqdm,
     ) -> None:
         cfg = self._cfg
         categories = cfg.categories
         answer_suffix = cfg.answer_format.format(
             categories=", ".join(categories),
         )
+
+        pbar.set_postfix({"stage": "prep"})
 
         # 1. Prepare manipulator for this seed.
         manipulator.prepare(seed.image, cfg.prompt_template)
@@ -355,10 +404,7 @@ class PDQRunner:
         )
         label_anchor = categories[int(anchor_logprobs.argmax().item())]
 
-        logger.info(
-            "Seed %d  anchor=%s (class_a=%s, class_b=%s)",
-            seed_idx, label_anchor, seed.class_a, seed.class_b,
-        )
+        pbar.set_postfix({"stage": "S1", "anchor": label_anchor})
 
         # 4. Flush anchor SUT call record.
         sl.append_sut_calls(adapter.pop_records())
@@ -487,10 +533,12 @@ class PDQRunner:
         sl.append_sut_calls(adapter.pop_records())
         sl.flush_all()
 
-        logger.info(
-            "Seed %d  Stage1 done: %d candidates, %d flips, %d distinct targets",
-            seed_idx, len(scored), n_flips, len(seen_targets),
-        )
+        pbar.set_postfix({
+            "stage": "S2",
+            "anchor": label_anchor,
+            "S1_flips": n_flips,
+            "S1_targets": len(seen_targets),
+        })
 
         # -- Stage 2 — minimisation ------------------------------------------
         # SUT check closure for Stage 2: renders a genotype, calls the SUT,
@@ -523,6 +571,8 @@ class PDQRunner:
                 cfg=cfg.stage2,
                 input_distance_fn=input_dist_fn,
                 stage1_flip_label=fr.sc.label,
+                seed_idx=seed_idx,
+                flip_id=fr.flip_id,
             )
             n_stage2_calls += result.sut_calls_used
             n_vv += 1
@@ -561,10 +611,12 @@ class PDQRunner:
         sl.append_sut_calls(adapter.pop_records())
         sl.flush_all()
 
-        logger.info(
-            "Seed %d  Stage2 done: %d flips minimised, %d SUT calls",
-            seed_idx, n_vv, n_stage2_calls,
-        )
+        pbar.set_postfix({
+            "anchor": label_anchor,
+            "S1_flips": n_flips,
+            "S2_flips": n_vv,
+            "time": f"{time() - t_start:.1f}s",
+        })
 
         # -- Stats JSON (final with Stage-2 summary) -------------------------
         stats = _build_stats(

@@ -60,10 +60,27 @@ class SUTConfig:
 
 @dataclass(frozen=True)
 class SeedConfig:
-    """Seed generation parameters."""
+    """Seed selection parameters.
+
+    Generation knobs (:attr:`n_per_class`, :attr:`max_logprob_gap`) control
+    which ImageNet samples become seed candidates; the post-generation
+    filter :attr:`filter_indices` narrows that pool down to a specific
+    subset for targeted re-runs (e.g. Exp-05 Phase A, single-seed deep
+    probes). Filter indices are interpreted against the generated order
+    and *preserved* in output naming, so ``seed_0032`` stays ``seed_0032``
+    even when it is the only seed that runs.
+
+    :param n_per_class: ImageNet images sampled per category.
+    :param max_logprob_gap: Max log-prob gap ``gt - other`` for a pair
+        to be kept (smaller → closer to boundary).
+    :param filter_indices: If non-empty, only seeds whose 0-based index
+        in the generated pool is listed here are run. An empty tuple
+        (default) means no filtering.
+    """
 
     n_per_class: int = 5
     max_logprob_gap: float = 2.0
+    filter_indices: tuple[int, ...] = ()
 
 
 # ---------------------------------------------------------------------------
