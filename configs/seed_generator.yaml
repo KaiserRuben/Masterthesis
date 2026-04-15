@@ -1,20 +1,6 @@
-# VLM Boundary Test — Experiment Configuration
-#
-# Maps 1:1 to ExperimentConfig in src/config.py.
-# Only uncomment values you want to override — everything else uses
-# the dataclass defaults.
-#
-# Usage:
-#   python experiments/run_boundary_test.py configs/boundary_test.yaml
-#   python experiments/run_boundary_test.py configs/boundary_test.yaml --device cuda
-
-# ===========================================================================
-# Shared
-# ===========================================================================
-
 device: mps                             # cpu | cuda | mps
 
-# categories:                           # Labels the VLM chooses from
+#categories:                           # Labels the VLM chooses from
 #   - macaw
 #   - peacock
 #   - flamingo
@@ -30,7 +16,7 @@ device: mps                             # cpu | cuda | mps
 #   - castle
 #   - mosque
 #   - palace
-# n_categories: 50                      # Use first N ImageNet labels (ignores categories list)
+n_categories: 500                      # Use first N ImageNet labels (ignores categories list)
 
 # prompt_template: "What is the main subject in this image?"
 # answer_format: " Answer with exactly one of these options: {categories}."
@@ -39,8 +25,8 @@ device: mps                             # cpu | cuda | mps
 # Experiment
 # ===========================================================================
 
-# name: vlm_boundary                    # Used in result directory names
-save_dir: runs                          # Root directory for results
+name: seed_qwen4B_default                    # Used in result directory names
+save_dir: runs/seeds/                          # Root directory for results
 # generations: 100                      # Optimizer generations per seed
 # pop_size: 50                          # Population size
 
@@ -52,14 +38,13 @@ save_dir: runs                          # Root directory for results
 
 cache_dirs:
   - ~/.cache/imagenet                   # local (primary)
-  - /Volumes/SanDisk/Cache/imagenet     # external drive (skipped when not mounted)
 
 # ===========================================================================
 # SUT (Vision-Language Model)
 # ===========================================================================
 
-# sut:
-#   model_id: Qwen/Qwen3.5-9B          # HuggingFace model identifier
+sut:
+   model_id: Qwen/Qwen3.5-4B          # HuggingFace model identifier
 #   enable_thinking: false              # Allow model thinking trace
 #   max_thinking_tokens: 2000           # Token budget for thinking
 #   max_pixels: null                    # Pixel cap (null = scorer default)
