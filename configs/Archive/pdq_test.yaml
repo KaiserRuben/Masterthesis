@@ -5,8 +5,8 @@
 # the dataclass defaults.
 #
 # Usage:
-#   python experiments/run_pdq_test.py configs/pdq_test.yaml
-#   python experiments/run_pdq_test.py configs/pdq_test.yaml --device cuda
+#   python experiments/runners/run_pdq_test.py configs/pdq_test.yaml
+#   python experiments/runners/run_pdq_test.py configs/pdq_test.yaml --device cuda
 
 # ===========================================================================
 # Shared

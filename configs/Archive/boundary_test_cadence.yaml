@@ -10,7 +10,7 @@
 #   ~13 min/seed → 20 seeds ≈ $7, 50 seeds ≈ $17 | actual ~$19 for this config
 #
 # Usage:
-#   python experiments/run_boundary_test.py configs/boundary_test_cadence.yaml
+#   python experiments/runners/run_boundary_test.py configs/boundary_test_cadence.yaml
 
 # ===========================================================================
 # Shared
@@ -30,7 +30,7 @@ seeds:
 # Experiment
 # ===========================================================================
 
-save_dir: runs/03_cadence
+save_dir: runs/Archive/Exp-01-SMOO-Pipeline-Validation/03_cadence
 
 # ===========================================================================
 # Cache (ImageNet images)

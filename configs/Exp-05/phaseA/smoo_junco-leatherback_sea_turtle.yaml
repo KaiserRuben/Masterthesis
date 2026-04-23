@@ -78,13 +78,13 @@
 # ────────────────────────────────────────────────────────────────────────
 #
 # Usage:
-#   python experiments/run_boundary_test.py \
-#     configs/EXP-05/phaseA/smoo_junco-leatherback_sea_turtle.yaml
+#   python experiments/runners/run_boundary_test.py \
+#     configs/Exp-05/phaseA/smoo_junco-leatherback_sea_turtle.yaml
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 name: exp05_phaseA_smoo_junco-leatherback_sea_turtle
-save_dir: runs/exp05/phaseA
+save_dir: runs/Exp-05/phaseA
 
 generations: 200
 pop_size: 30

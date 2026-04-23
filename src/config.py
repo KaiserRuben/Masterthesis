@@ -5,7 +5,7 @@ Components receive the top-level :class:`ExperimentConfig` (or a nested
 sub-config) so that shared values like *device* and *categories* are
 never duplicated.
 
-The YAML template (``configs/boundary_test.yaml``) maps 1:1 to this
+The YAML template (``configs/templates/evolutionary_template.yaml``) maps 1:1 to this
 structure: any omitted key falls back to the dataclass default defined
 below.
 

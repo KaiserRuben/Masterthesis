@@ -79,8 +79,8 @@
 # captures v2_gap flip 5 and its ~4 neighbours.
 #
 # Usage:
-#   python experiments/run_pdq_test.py \
-#     configs/EXP-05/phaseA/pdq_stingray-electric_ray.yaml
+#   python experiments/runners/run_pdq_test.py \
+#     configs/Exp-05/phaseA/pdq_stingray-electric_ray.yaml
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -89,7 +89,7 @@
 # ───────────────────────────────────────────────────────────────────────────
 
 name: exp05_phaseA_pdq_stingray-electric_ray
-save_dir: runs/exp05/phaseA
+save_dir: runs/Exp-05/phaseA
 
 
 # ───────────────────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@
 # Usage:
 #   mkdir -p logs
 #   nohup /Users/kaiser/miniconda3/envs/uni/bin/python \
-#       experiments/run_pdq_test.py configs/pdq_overnight.yaml \
+#       experiments/runners/run_pdq_test.py configs/pdq_overnight.yaml \
 #       > logs/pdq_overnight.log 2>&1 &
 #   echo "PID $!" > logs/pdq_overnight.pid
 #

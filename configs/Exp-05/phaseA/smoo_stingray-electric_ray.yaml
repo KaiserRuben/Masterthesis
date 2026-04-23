@@ -1,79 +1,90 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # Exp-05 Phase A — SMOO Convergence Floor, extended single-seed probe
-# Pair: great white shark → tiger shark
+# Pair: stingray → electric ray   (close, fish intra-cluster)
 # ═══════════════════════════════════════════════════════════════════════════
-#
-# STATUS:  REFERENCE — FP16 numerical floor limitation documented.
 #
 # Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
-# Sibling runs:  smoo_junco-chickadee.yaml
-#                smoo_newt-fire_salamander.yaml
+# Cross-pipeline: pdq_stingray-electric_ray.yaml  (same seed, same image,
+#                 identical filter_indices via seed-aligned pool config)
+# Siblings:      smoo_junco-chickadee.yaml                  (close, bird)
+#                smoo_junco-leatherback_sea_turtle.yaml     (far cross-cluster)
+# Reference:     smoo_great_white_shark-tiger_shark.yaml    (FP16 archived
+#                run — NOT comparable numerically, different regime)
 #
 # ────────────────────────────────────────────────────────────────────────
-# Why this run is kept in the config tree
+# Research question (Phase A, SMOO side, post-refactor)
 # ────────────────────────────────────────────────────────────────────────
-# This was the first SMOO Phase A run under MPS/4B, completed 2026-04-15
-# (~3 h wall time). The resulting trajectory showed:
+# With the FP16→FP32 scorer fix and the trace-complete N-dim logprob
+# refactor (schema v2), and with TgtBal rewritten as the direct log-prob
+# gap ``|lp_A - lp_B|`` (no softmax, no tanh saturation), does SMOO's
+# Proximity-Boden now drop below the ~1e-4 FP16 plateau observed in the
+# archived reference run? And does the Mapping-Boden (Pareto front
+# growth / hypervolume) decouple from the Proximity-Boden as the
+# definition predicts?
 #
-#   - pareto_min_TgtBal plateau at 5.3e-5 for 74 generations (gen 125..199)
-#   - Pareto front growing from 46 → 57 individuals in the same window
-#   - pareto_min_MatrixDistance_fro still falling at gen 199 (0.069 → 0.066)
-#
-# The 5.3e-5 plateau was initially read as strong Proximity-Boden evidence.
-# Post-run precision review (see Diary 2026-04-15 "Numerical floor
-# diagnosis") revealed the plateau matches the FP16 `log_softmax` relative
-# precision in src/sut/scorer.py:233,242 — i.e. the measurement itself
-# saturates at that resolution. The run does NOT provide tight proximity-
-# floor evidence below ~1e-4; it provides evidence of reaching the measure-
-# ment's resolution limit, which is weaker.
-#
-# The Mapping-Boden observations (Pareto front still growing, MatrixDistance
-# still falling) are NOT affected by the FP16 issue — those objectives live
-# in FP32 image/text space, not in the scorer's FP16 logprob path. Those
-# parts of the run are still informative.
+# Expected outcomes on this pair:
+#   - New TgtBal metric: unbounded, linear near boundary, full FP32
+#     reach (~1e-7 resolution). Plateau values will NOT be comparable
+#     to the archived run's 5.3e-5 (different quantity).
+#   - On a close fish intra-cluster pair, SMOO should reach the log-prob
+#     gap floor within ~50-100 gens and stabilise for the remaining budget.
+#   - Pareto front should still grow after the Proximity-Boden is hit
+#     (Mapping-Boden evidence) — this decoupling is the central
+#     empirical claim of Exp-05 Phase A.
 #
 # ────────────────────────────────────────────────────────────────────────
-# How this config differs from the two sibling configs
+# Cross-pipeline seed alignment
 # ────────────────────────────────────────────────────────────────────────
-#   sut.model_id:            same (Qwen3.5-4B)
-#   scorer precision:        FP16 log_softmax (Post-fix scorer uses FP32 —
-#                            sibling runs are on the fixed scorer)
-#   generations:             200 (same as siblings)
-#   filter_indices:          [0] under the current SMOO seed pool on MPS
-#                            this happens to be `great_white_shark →
-#                            tiger_shark`; do NOT change — the point is to
-#                            keep this run re-runnable for regression.
+# Seed-generation parameters below are byte-identical to the PDQ sibling:
 #
-# If you re-run this config AFTER the trace-complete refactor and the
-# FP32 scorer fix land, the resulting TgtBal trajectory will have ~1e-7
-# resolution instead of ~1e-4. The re-run becomes directly comparable to
-# the two sibling runs on the same pair character, and the regression
-# against the original run will make the numerical-floor correction
-# visible.
+#   n_categories=50, n_per_class=3, max_logprob_gap=3.5
+#   sut.model_id=Qwen/Qwen3.5-4B, device=mps
+#   cache_dirs identical
+#
+# Consequence: the pool produced by generate_seeds() is the same pool
+# PDQ sees, in the same order, with the same stingray image at index 40.
+# filter_indices=[40] therefore picks the same physical (image, class_a,
+# class_b) triple in both pipelines. Phase-A cross-pipeline comparison
+# on this pair is a seed-by-seed comparison, not a pair-by-pair one.
+#
+# Note: max_logprob_gap=3.5 is wider than 03_cadence's 1.0, so SMOO
+# starts further from the boundary on initial genotypes. With 4× the
+# 03_cadence generation budget (200 vs 50) there is ample runway for the
+# GA to converge despite the harder starting condition.
 #
 # ────────────────────────────────────────────────────────────────────────
-# Usage
+# Estimated cost on MPS / Qwen3.5-4B
 # ────────────────────────────────────────────────────────────────────────
-#   python experiments/run_boundary_test.py \
-#     configs/EXP-05/phaseA/smoo_great_white_shark-tiger_shark.yaml
+#   200 gen × 30 pop = 6000 SUT calls
+#   N-class scoring (N=50) costs ~2-3× per-call versus the old 2-class
+#   regime, so wall-time is roughly 4-6 h per seed.
+#
+# Usage:
+#   python experiments/runners/run_boundary_test.py \
+#     configs/Exp-05/phaseA/smoo_stingray-electric_ray.yaml
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-name: exp05_phaseA_smoo_great_white_shark-tiger_shark
-save_dir: runs/exp05/phaseA
+# ───────────────────────────────────────────────────────────────────────────
+# Run identity
+# ───────────────────────────────────────────────────────────────────────────
+
+name: exp05_phaseA_smoo_stingray-electric_ray
+save_dir: runs/Exp-05/phaseA
 
 
 # ───────────────────────────────────────────────────────────────────────────
-# Optimizer budget — 4× the 03_cadence default (50) to observe the
-# Mapping-Boden (HV plateau) separately from the Proximity-Boden.
+# Optimizer budget
 # ───────────────────────────────────────────────────────────────────────────
+# 4× 03_cadence (50 → 200) to give the Mapping-Boden (HV plateau) room to
+# separate from the Proximity-Boden (TgtBal plateau).
 
 generations: 200
 pop_size: 30
 
 
 # ───────────────────────────────────────────────────────────────────────────
-# System under test
+# System under test — matches PDQ sibling exactly
 # ───────────────────────────────────────────────────────────────────────────
 
 device: mps
@@ -92,14 +103,14 @@ cache_dirs:
 
 
 # ───────────────────────────────────────────────────────────────────────────
-# Seed selection — n_categories=50, n_per_class=3, tight gap=1.0 so that
-# seed 0 of the resulting pool is the first close-boundary pair under 4B.
-# On the original run that happened to be great white shark → tiger shark.
+# Seed selection — aligned with PDQ sibling (same pool, same indices)
 # ───────────────────────────────────────────────────────────────────────────
 
 n_categories: 50
 
 seeds:
   n_per_class: 3
-  max_logprob_gap: 1.0
-  filter_indices: [0]                      # first seed; historically GWS→tiger
+  max_logprob_gap: 3.5                     # aligned w/ PDQ (was 1.0 in
+                                           # archived GWS→tiger run)
+  filter_indices: [40]                     # first stingray → electric ray
+                                           # (verified against PDQ pool dump)

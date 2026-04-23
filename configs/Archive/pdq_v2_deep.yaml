@@ -1,27 +1,26 @@
-# PDQ v2 — Strategy rebalance
+# PDQ v2 — Deep minimisation + strategy rebalance
 #
 # Changes from pdq_overnight:
-#   - sparse_small REMOVED (0/347 flips across all runs)
-#   - modality_text weight 0.05 → 0.20 (finds tightest boundaries, d_i=4–22)
-#   - dense_uniform 0.25 → 0.30
-#   - bituniform_density 0.10 → 0.15
-#   - Everything else unchanged — same seeds, same Stage 2, directly comparable
+#   - Same strategy rebalance as pdq_v2_strategies
+#   - Stage 2 budget: 150 → 300 (zero pass still at 84% accept at 150)
+#   - Rank pass disabled — zero pass gets full budget
+#     (rank pass used 50% of budget for 5% of reduction)
 #
-# Expected: more near-boundary discoveries from modality_text,
-#           higher overall flip rate from better weight allocation.
+# Expected: significantly deeper minimisation (d_i reduction > 70%),
+#           test where zero-pass accept rate actually drops off.
 #
 # Usage:
-#   python experiments/run_pdq_test.py configs/pdq_v2_strategies.yaml
+#   python experiments/runners/run_pdq_test.py configs/pdq_v2_deep.yaml
 
-device: mps
+device: mps                              # override with --device cuda
 n_categories: 15
 
-name: pdq_v2_strategies
-save_dir: runs
-
 sut:
-    load_in_8bit: false
-    model_id: Qwen/Qwen3.5-4B
+  load_in_8bit: false                    # set true for 24GB GPUs (4090)
+  model_id: Qwen/Qwen3.5-4B
+
+name: pdq_v2_deep
+save_dir: runs
 
 reproducibility:
   seed_int: 42
@@ -34,27 +33,27 @@ cache_dirs:
   - /Volumes/SanDisk/Cache/imagenet
 
 seeds:
-  n_per_class: 2
-  max_logprob_gap: 2.0                   # same filter — same seeds as overnight
+  n_per_class: 5
+  max_logprob_gap: 2.0                   # same filter — same seeds
 
 # ===========================================================================
-# Stage 1 — Rebalanced strategies (no sparse_small)
+# Stage 1 — Same rebalance as v2_strategies
 # ===========================================================================
 
 stage1:
   budget_sut_calls: 150
   max_flips_per_seed: 30
-  max_distinct_targets: 10
+  max_distinct_targets: 50
   strategies:
     - name: dense_uniform
-      weight: 0.30                       # was 0.25 — workhorse, most absolute flips
+      weight: 0.30
     - name: bituniform_density
-      weight: 0.15                       # was 0.10 — highest flip rate (21%)
+      weight: 0.15
     - name: modality_text
-      weight: 0.20                       # was 0.05 — 4× more budget, d_i=14 hotspot
+      weight: 0.20
       density: 1.0
     - name: sparsity_sweep
-      weight: 0.15                       # was 0.20
+      weight: 0.15
       densities: [0.2, 0.4, 0.6, 0.8, 1.0]
     - name: modality_image
       weight: 0.10
@@ -62,14 +61,13 @@ stage1:
     - name: max_rank
       weight: 0.10
       subset_fractions: [0.1, 0.25, 0.5, 1.0]
-    # sparse_small: REMOVED — 0 flips in 347 candidates
 
 # ===========================================================================
-# Stage 2 — Unchanged from overnight (150 calls/flip)
+# Stage 2 — Deep: 300 calls, zero pass only
 # ===========================================================================
 
 stage2:
-  budget_sut_calls_per_flip: 150
+  budget_sut_calls_per_flip: 500
   flip_preserve_policy: any_non_anchor
   passes:
     zero:
@@ -77,10 +75,7 @@ stage2:
       order: by_gene_value_desc
       full_sweep_only: true
     rank:
-      enabled: true
-      order: by_gene_value_desc
-      max_sweeps: 10
-      step: 1
+      enabled: false                     # disabled — 50% budget for 5% reduction
     random_subset:
       enabled: false
 

@@ -70,13 +70,13 @@
 # ────────────────────────────────────────────────────────────────────────
 #
 # Usage:
-#   python experiments/run_boundary_test.py \
-#     configs/EXP-05/phaseA/smoo_junco-chickadee.yaml
+#   python experiments/runners/run_boundary_test.py \
+#     configs/Exp-05/phaseA/smoo_junco-chickadee.yaml
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 name: exp05_phaseA_smoo_junco-chickadee
-save_dir: runs/exp05/phaseA
+save_dir: runs/Exp-05/phaseA
 
 generations: 200
 pop_size: 30

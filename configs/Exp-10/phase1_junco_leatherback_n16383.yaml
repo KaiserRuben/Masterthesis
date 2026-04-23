@@ -37,7 +37,6 @@ image:
   knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
 
 optimizer:
-  method: M0
   sampling:
     mode: sparse
     p_active: 0.03

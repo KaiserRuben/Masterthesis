@@ -5,8 +5,8 @@
 # the dataclass defaults.
 #
 # Usage:
-#   python experiments/run_boundary_test.py configs/boundary_test.yaml
-#   python experiments/run_boundary_test.py configs/boundary_test.yaml --device cuda
+#   python experiments/runners/run_boundary_test.py configs/boundary_test.yaml
+#   python experiments/runners/run_boundary_test.py configs/boundary_test.yaml --device cuda
 
 # ===========================================================================
 # Shared

@@ -9,7 +9,7 @@
 # not call-for-call comparison.
 #
 # Usage:
-#   python experiments/run_boundary_test.py configs/boundary_v2_class.yaml
+#   python experiments/runners/run_boundary_test.py configs/boundary_v2_class.yaml
 
 # ===========================================================================
 # Shared

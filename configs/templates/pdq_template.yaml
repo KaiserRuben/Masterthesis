@@ -32,7 +32,7 @@
 # Usage:
 #   cp configs/pdq_template.yaml configs/pdq_<experiment>.yaml
 #   # Edit the EXPERIMENT VARIABLES section. Leave METHODOLOGY alone.
-#   python experiments/run_pdq_test.py configs/pdq_<experiment>.yaml
+#   python experiments/runners/run_pdq_test.py configs/pdq_<experiment>.yaml
 #
 # ═══════════════════════════════════════════════════════════════════════════
 
