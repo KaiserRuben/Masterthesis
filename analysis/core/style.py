@@ -4,7 +4,7 @@ Ensures SMOO and PDQ plots are visually comparable:
 same palette, same axis conventions, same figure sizing.
 
 Usage:
-    from analysis.style import apply_style, COLORS, save_fig
+    from analysis.core.style import apply_style, COLORS, save_fig
 """
 
 from __future__ import annotations

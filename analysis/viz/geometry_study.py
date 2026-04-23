@@ -5,7 +5,7 @@ Produces 6 content-rich figures covering the geometry of both SMOO and
 PDQ spaces for the Phase-A convergence-floor experiment.
 
 Usage:
-    python -m analysis.viz_exp05
+    python -m analysis.viz.geometry_study
 """
 from __future__ import annotations
 
@@ -20,19 +20,19 @@ import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from analysis.style import (
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from analysis.core.style import (
     OBJECTIVE, OBJ_LABELS, PASS, PIPELINE, STRATEGY,
     apply_style, anchor_color, save_fig, subplot_label,
 )
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 OUT = ROOT / "slides" / "aug26" / "exp05"
 OUT.mkdir(parents=True, exist_ok=True)
 
-SMOO_DIR = ROOT / "runs/exp05/phaseA_cadence/exp05_phaseA_smoo_junco-chickadee_seed_83_1776343606"
-PDQ_REPAIR = ROOT / "runs/exp05/phaseA_cadence_repaired"
-PDQ_ORIG = ROOT / "runs/exp05/phaseA_cadence/exp05_phaseA_pdq_stingray-electric_ray/seed_0040_1776343567"
+SMOO_DIR = ROOT / "runs/Exp-05/phaseA_cadence/exp05_phaseA_smoo_junco-chickadee_seed_83_1776343606"
+PDQ_REPAIR = ROOT / "runs/Exp-05/phaseA_cadence_repaired"
+PDQ_ORIG = ROOT / "runs/Exp-05/phaseA_cadence/exp05_phaseA_pdq_stingray-electric_ray/seed_0040_1776343567"
 
 # ── data load ────────────────────────────────────────────────────────────
 

@@ -22,11 +22,11 @@ import pandas as pd
 from matplotlib.colors import LogNorm
 from scipy.cluster.hierarchy import dendrogram, linkage
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.load_pdq import load_run as load_pdq_run
-from analysis.load_smoo import load_all_runs as load_smoo_runs
-from analysis.style import (
+from analysis.core.load_pdq import load_run as load_pdq_run
+from analysis.core.load_smoo import load_all_runs as load_smoo_runs
+from analysis.core.style import (
     ANCHOR,
     PIPELINE,
     STRATEGY,
@@ -37,7 +37,7 @@ from analysis.style import (
     subplot_label,
 )
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 
 
 # ---------------------------------------------------------------------------

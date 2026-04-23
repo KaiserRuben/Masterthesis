@@ -6,10 +6,10 @@ and produces every applicable figure. Output goes to
 ``<run_dir>/figures/`` by default.
 
 Usage:
-    python -m analysis.generate                         # newest run
-    python -m analysis.generate runs/pdq_overnight      # specific run
-    python -m analysis.generate --all                   # every run
-    python -m analysis.generate --list                  # show available runs
+    python -m analysis.core.generate                         # newest run
+    python -m analysis.core.generate runs/Exp-02      # specific run
+    python -m analysis.core.generate --all                   # every run
+    python -m analysis.core.generate --list                  # show available runs
 """
 
 from __future__ import annotations
@@ -26,11 +26,11 @@ import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.style import apply_style
+from analysis.core.style import apply_style
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -155,16 +155,16 @@ def load_seed_meta(seed_dir: Path, pipeline: str) -> dict | None:
 
 def generate_smoo(run_dir: Path, out: Path) -> list[Path]:
     """Generate all SMOO figures for a run."""
-    from analysis.load_smoo import load_run
-    from analysis.viz_smoo import (
+    from analysis.core.load_smoo import load_run
+    from analysis.viz.smoo import (
         fig_convergence, fig_pareto_front, fig_flip_rate,
         fig_pareto_quality, fig_cross_run,
     )
-    from analysis.viz_g_surface import (
+    from analysis.viz.g_surface import (
         _load_smoo_surface_data, fig_g_surface,
         fig_smoo_surface_evolution, fig_contour_grid,
     )
-    from analysis.viz_boundary import (
+    from analysis.viz.boundary import (
         _load_smoo_traces, fig_smoo_boundary_evolution,
         fig_smoo_convergence_to_boundary, fig_smoo_density_evolution,
     )
@@ -237,20 +237,20 @@ def generate_smoo(run_dir: Path, out: Path) -> list[Path]:
 
 def generate_pdq(run_dir: Path, out: Path) -> list[Path]:
     """Generate all PDQ figures for a run."""
-    from analysis.load_pdq import load_run as load_pdq_run
-    from analysis.viz_pdq import (
+    from analysis.core.load_pdq import load_run as load_pdq_run
+    from analysis.viz.pdq import (
         fig_strategy, fig_minimisation, fig_landscape,
         fig_per_seed, fig_pass_efficiency,
     )
-    from analysis.viz_topology import (
+    from analysis.viz.topology import (
         _load_pdq_genotypes, _load_smoo_genotypes,
         fig_gene_heatmap_pdq, fig_genotype_clustering,
         fig_rank_profiles,
     )
-    from analysis.viz_g_surface import (
+    from analysis.viz.g_surface import (
         _load_pdq_surface_data, fig_g_surface, fig_contour_grid,
     )
-    from analysis.viz_boundary import (
+    from analysis.viz.boundary import (
         _load_pdq_boundary_data,
         fig_pdq_boundary_points,
     )
@@ -343,10 +343,10 @@ def main() -> None:
         description="Generate all visualizations for a run.",
         epilog=(
             "Examples:\n"
-            "  python -m analysis.generate                    # newest run\n"
-            "  python -m analysis.generate runs/pdq_overnight # specific run\n"
-            "  python -m analysis.generate --all              # every run\n"
-            "  python -m analysis.generate --list             # show runs\n"
+            "  python -m analysis.core.generate                    # newest run\n"
+            "  python -m analysis.core.generate runs/Exp-02 # specific run\n"
+            "  python -m analysis.core.generate --all              # every run\n"
+            "  python -m analysis.core.generate --list             # show runs\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

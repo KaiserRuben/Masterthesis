@@ -7,7 +7,7 @@ Focused on the three research questions:
   3. Where can we early-stop to save budget?
 
 Usage:
-    python -m analysis.viz_exp05_convergence
+    python -m analysis.viz.convergence_study
 """
 from __future__ import annotations
 
@@ -20,17 +20,17 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from analysis.style import (
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from analysis.core.style import (
     OBJECTIVE, OBJ_LABELS, PASS, PIPELINE,
     apply_style, save_fig, subplot_label,
 )
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 OUT = ROOT / "slides" / "aug26" / "exp05"
 
-SMOO_DIR = ROOT / "runs/exp05/phaseA_cadence/exp05_phaseA_smoo_junco-chickadee_seed_83_1776343606"
-PDQ_REPAIR = ROOT / "runs/exp05/phaseA_cadence_repaired"
+SMOO_DIR = ROOT / "runs/Exp-05/phaseA_cadence/exp05_phaseA_smoo_junco-chickadee_seed_83_1776343606"
+PDQ_REPAIR = ROOT / "runs/Exp-05/phaseA_cadence_repaired"
 
 FLIP_COLORS = ["#4C72B0", "#55A868", "#C44E52", "#8172B3"]
 

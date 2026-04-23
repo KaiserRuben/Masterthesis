@@ -46,23 +46,7 @@ import pyarrow.parquet as pq
 # Schema-version detection + unified loaders
 # ---------------------------------------------------------------------------
 
-def _read_parquet_metadata(path: Path) -> dict[str, str]:
-    """Read file-level key/value metadata from a parquet file.
-
-    Returns a ``{str: str}`` dict; any decoding issues yield an empty
-    dict so callers fall back to the adjacent ``config.json``.
-    """
-    try:
-        raw = pq.read_schema(path).metadata or {}
-    except Exception:  # noqa: BLE001
-        return {}
-    out: dict[str, str] = {}
-    for k, v in raw.items():
-        try:
-            out[k.decode("utf-8")] = v.decode("utf-8")
-        except Exception:  # noqa: BLE001
-            pass
-    return out
+from analysis.core.parquet_utils import read_parquet_metadata as _read_parquet_metadata
 
 
 def _load_categories(
@@ -235,7 +219,7 @@ def load_sut_calls(
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _latest_seeds(run_dir: Path) -> list[Path]:
+def latest_seeds(run_dir: Path) -> list[Path]:
     """Select only the latest timestamp per seed index.
 
     Seed dirs follow: seed_NNNN_TIMESTAMP. If multiple timestamps
@@ -257,7 +241,7 @@ def _latest_seeds(run_dir: Path) -> list[Path]:
     return [path for _, path in sorted(by_idx.values(), key=lambda x: x[0])]
 
 
-def _safe_read_parquet(path: Path) -> pd.DataFrame | None:
+def safe_read_parquet(path: Path) -> pd.DataFrame | None:
     """Read parquet, return None on any error (e.g. corrupted footer)."""
     try:
         return pd.read_parquet(path)
@@ -285,10 +269,10 @@ def load_seed(seed_dir: Path) -> dict | None:
 
     return {
         "stats": stats,
-        "archive": _safe_read_parquet(seed_dir / "archive.parquet"),
-        "candidates": _safe_read_parquet(seed_dir / "candidates.parquet"),
-        "stage1_flips": _safe_read_parquet(seed_dir / "stage1_flips.parquet"),
-        "stage2_traj": _safe_read_parquet(seed_dir / "stage2_trajectories.parquet"),
+        "archive": safe_read_parquet(seed_dir / "archive.parquet"),
+        "candidates": safe_read_parquet(seed_dir / "candidates.parquet"),
+        "stage1_flips": safe_read_parquet(seed_dir / "stage1_flips.parquet"),
+        "stage2_traj": safe_read_parquet(seed_dir / "stage2_trajectories.parquet"),
         "seed_dir": seed_dir,
     }
 
@@ -307,7 +291,7 @@ def load_run(run_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, p
         stage2_df: all Stage 2 trajectory steps
     """
     run_dir = Path(run_dir)
-    seed_dirs = _latest_seeds(run_dir)
+    seed_dirs = latest_seeds(run_dir)
 
     stats_rows = []
     archive_frames = []

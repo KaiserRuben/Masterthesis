@@ -23,10 +23,10 @@ import numpy as np
 import pandas as pd
 from matplotlib.collections import LineCollection
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.load_pdq import _latest_seeds, _safe_read_parquet
-from analysis.style import (
+from analysis.core.load_pdq import latest_seeds, safe_read_parquet
+from analysis.core.style import (
     ANCHOR,
     PIPELINE,
     apply_style,
@@ -36,7 +36,7 @@ from analysis.style import (
     subplot_label,
 )
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ def _load_smoo_traces(run_dir: Path) -> list[dict]:
 def _load_pdq_boundary_data(run_dir: Path) -> list[dict]:
     """Load PDQ archive + SUT call data with logprobs for boundary plotting."""
     seeds = []
-    for sd in _latest_seeds(run_dir):
+    for sd in latest_seeds(run_dir):
         stats_path = sd / "stats.json"
         if not stats_path.exists():
             continue
@@ -79,7 +79,7 @@ def _load_pdq_boundary_data(run_dir: Path) -> list[dict]:
         except (json.JSONDecodeError, ValueError):
             continue
 
-        archive = _safe_read_parquet(sd / "archive.parquet")
+        archive = safe_read_parquet(sd / "archive.parquet")
         if archive is None or archive.empty:
             continue
 
@@ -544,7 +544,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.list:
-        from analysis.resolve import list_classes
+        from analysis.core.resolve import list_classes
         list_classes(RUNS_DIR)
         return
 

@@ -16,10 +16,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.load_pdq import load_run
-from analysis.style import (
+from analysis.core.load_pdq import load_run
+from analysis.core.style import (
     ANCHOR,
     PASS,
     PIPELINE,
@@ -31,7 +31,7 @@ from analysis.style import (
     subplot_label,
 )
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 PDQ_RUN = RUNS_DIR / "pdq_overnight"
 
 

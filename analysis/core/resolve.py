@@ -1,7 +1,7 @@
 """Resolve class names to seed directories across all runs.
 
 Usage:
-    from analysis.resolve import find_seeds
+    from analysis.core.resolve import find_seeds
 
     # Find all seeds where class_a contains "brambling"
     find_seeds(runs_dir, class_a="brambling")

@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.load_smoo import load_all_runs
-from analysis.style import (
+from analysis.core.load_smoo import load_all_runs
+from analysis.core.style import (
     ANCHOR,
     OBJECTIVE,
     OBJ_LABELS,
@@ -32,7 +32,7 @@ from analysis.style import (
     subplot_label,
 )
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 
 
 # ---------------------------------------------------------------------------

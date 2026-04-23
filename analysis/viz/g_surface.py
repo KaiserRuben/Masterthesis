@@ -20,11 +20,11 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import griddata
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.style import PIPELINE, apply_style, asset_dir, save_fig, subplot_label
+from analysis.core.style import PIPELINE, apply_style, asset_dir, save_fig, subplot_label
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +365,7 @@ def _resolve_datasets(
     classes: list[str],
 ) -> tuple[list[tuple[dict, str, str]], list[tuple[dict, str, str]]]:
     """Resolve class names to loaded datasets for both pipelines."""
-    from analysis.resolve import find_seeds
+    from analysis.core.resolve import find_seeds
 
     smoo_datasets = []
     pdq_datasets = []
@@ -421,7 +421,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.list:
-        from analysis.resolve import list_classes
+        from analysis.core.resolve import list_classes
         list_classes(RUNS_DIR)
         return
 

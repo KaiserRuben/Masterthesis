@@ -20,9 +20,9 @@ import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from analysis.style import (
+from analysis.core.style import (
     PIPELINE,
     apply_style,
     anchor_color,
@@ -31,7 +31,7 @@ from analysis.style import (
     subplot_label,
 )
 
-RUNS_DIR = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIR = Path(__file__).resolve().parent.parent.parent / "runs"
 
 
 # ---------------------------------------------------------------------------
@@ -507,7 +507,7 @@ def fig_modality_sensitivity(out: Path) -> Path:
         if len(vals) > 0:
             strat_data.append(vals)
             strat_labels.append(s.replace("_", "\n"))
-            from analysis.style import STRATEGY
+            from analysis.core.style import STRATEGY
             strat_colors.append(STRATEGY.get(s, "#999"))
 
     bp = ax1.boxplot(strat_data, tick_labels=strat_labels, patch_artist=True, widths=0.6)
@@ -691,7 +691,7 @@ DEFAULT_CLASSES = ["brambling", "goldfish", "stingray", "junco"]
 
 def _resolve_seeds(classes: list[str]) -> tuple[list[Path], list[Path]]:
     """Resolve class names to SMOO and PDQ seed directories."""
-    from analysis.resolve import find_seeds
+    from analysis.core.resolve import find_seeds
 
     smoo_dirs: list[Path] = []
     pdq_dirs: list[Path] = []
@@ -737,7 +737,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.list:
-        from analysis.resolve import list_classes
+        from analysis.core.resolve import list_classes
         list_classes(RUNS_DIR)
         return
 

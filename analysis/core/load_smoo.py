@@ -46,24 +46,7 @@ import pyarrow.parquet as pq
 # Schema-version detection + unified trace loader
 # ---------------------------------------------------------------------------
 
-def _read_parquet_metadata(path: Path) -> dict[str, str]:
-    """Read file-level key/value metadata from a parquet file.
-
-    Returns a plain ``{str: str}`` dict (keys/values decoded from UTF-8).
-    Missing or unreadable metadata yields an empty dict — the caller
-    falls back to content inspection.
-    """
-    try:
-        raw = pq.read_schema(path).metadata or {}
-    except Exception:  # noqa: BLE001 — metadata is best-effort
-        return {}
-    out: dict[str, str] = {}
-    for k, v in raw.items():
-        try:
-            out[k.decode("utf-8")] = v.decode("utf-8")
-        except Exception:  # noqa: BLE001
-            pass
-    return out
+from analysis.core.parquet_utils import read_parquet_metadata as _read_parquet_metadata
 
 
 def detect_schema_version(trace_path: Path) -> int:

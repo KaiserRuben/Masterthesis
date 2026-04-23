@@ -34,10 +34,10 @@ from matplotlib.patches import Rectangle
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from analysis.style import apply_style, save_fig, subplot_label  # noqa: E402
+from analysis.core.style import apply_style, save_fig, subplot_label  # noqa: E402
 
 OUT = ROOT / "slides" / "aug26" / "two_weeks"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -71,19 +71,19 @@ PAIR_BUCKETS: Dict[str, str] = {
 }
 
 RUNS_PHASE1: Dict[str, Path] = {
-    "shark":             ROOT / "runs/exp10/exp10_phase1_shark_n16383_seed_5_1776620110",
-    "junco_chickadee":   ROOT / "runs/exp10/exp10_phase1_junco_chickadee_n16383_seed_83_1776635727",
-    "junco_leatherback": ROOT / "runs/exp10/exp10_phase1_junco_leatherback_n16383_seed_85_1776642955",
-    "stingray_eray":     ROOT / "runs/exp10/exp10_phase1_stingray_eray_n16383_seed_40_1776649829",
+    "shark":             ROOT / "runs/Exp-10/exp10_phase1_shark_n16383_seed_5_1776620110",
+    "junco_chickadee":   ROOT / "runs/Exp-10/exp10_phase1_junco_chickadee_n16383_seed_83_1776635727",
+    "junco_leatherback": ROOT / "runs/Exp-10/exp10_phase1_junco_leatherback_n16383_seed_85_1776642955",
+    "stingray_eray":     ROOT / "runs/Exp-10/exp10_phase1_stingray_eray_n16383_seed_40_1776649829",
 }
 RUNS_EXP09: Dict[str, Path] = {
-    "shark":             ROOT / "runs/exp09/exp09_M0_n16383_shark_seed_5_1776512034",
-    "junco_chickadee":   ROOT / "runs/exp09/exp09_M0_n16383_junco_chickadee_seed_83_1776533531",
-    "junco_leatherback": ROOT / "runs/exp09/exp09_M0_n16383_junco_leatherback_seed_85_1776540489",
-    "stingray_eray":     ROOT / "runs/exp09/exp09_M0_n16383_stingray_eray_seed_40_1776547325",
+    "shark":             ROOT / "runs/Exp-09/exp09_M0_n16383_shark_seed_5_1776512034",
+    "junco_chickadee":   ROOT / "runs/Exp-09/exp09_M0_n16383_junco_chickadee_seed_83_1776533531",
+    "junco_leatherback": ROOT / "runs/Exp-09/exp09_M0_n16383_junco_leatherback_seed_85_1776540489",
+    "stingray_eray":     ROOT / "runs/Exp-09/exp09_M0_n16383_stingray_eray_seed_40_1776547325",
 }
-RUN_EXP05_SHARK = ROOT / "runs/exp05/phaseA_mps/exp05_smoo_phaseA_seed_0_1776278110"
-PDQ_GAP_DIR = ROOT / "runs/pdq_v2_gap"
+RUN_EXP05_SHARK = ROOT / "runs/Exp-05/phaseA_mps/exp05_smoo_phaseA_seed_0_1776278110"
+PDQ_GAP_DIR = ROOT / "runs/Exp-04"
 
 N_TEXT_GENES = 3  # appended after image genes in every genotype
 
@@ -97,39 +97,12 @@ def load_run(run_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame, int]:
     return trace, conv, image_dim
 
 
-def genotype_matrix(trace: pd.DataFrame, image_dim: int) -> np.ndarray:
-    mat = np.stack(trace["genotype"].to_list()).astype(np.int64)
-    return mat[:, :image_dim]
-
-
-def n_active_per_row(img_geno: np.ndarray) -> np.ndarray:
-    return (img_geno != 0).sum(axis=1).astype(np.int64)
-
-
-def pareto_front_2d(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    order = np.argsort(x, kind="mergesort")
-    keep, best_y = [], np.inf
-    for i in order:
-        if y[i] < best_y - 1e-12:
-            keep.append(i)
-            best_y = y[i]
-    return np.asarray(keep, dtype=np.int64)
-
-
-def hypervolume_2d(px: np.ndarray, py: np.ndarray, ref_x: float, ref_y: float) -> float:
-    if len(px) == 0:
-        return 0.0
-    order = np.argsort(px)
-    px, py = px[order], py[order]
-    valid = (px < ref_x) & (py < ref_y)
-    px, py = px[valid], py[valid]
-    if len(px) == 0:
-        return 0.0
-    hv = 0.0
-    for i in range(len(px)):
-        next_x = px[i + 1] if i + 1 < len(px) else ref_x
-        hv += (next_x - px[i]) * (ref_y - py[i])
-    return float(hv)
+from analysis.core.metrics import (
+    genotype_matrix,
+    n_active_per_row,
+    pareto_front_2d,
+    hypervolume_2d,
+)
 
 
 def lighten(color: str, amount: float = 0.5) -> Tuple[float, float, float]:
@@ -363,7 +336,7 @@ def fig1_pipeline_depth() -> Path:
 # ═══════════════════════════════════════════════════════════════════════════
 
 def fig2_manual_taxonomy() -> Path:
-    tax = pd.read_parquet(ROOT / "runs/taxonomy/category_taxonomy.parquet")
+    tax = pd.read_parquet(ROOT / "runs/preprocessing/taxonomy/category_taxonomy.parquet")
     # Re-root classes with a missing L2 into their L1 (bump the hierarchy up
     # one level). 6 classes with no L1 either get labelled '(uncategorized)'.
     def _L2(row):
