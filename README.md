@@ -10,14 +10,15 @@ Search-based boundary testing for Vision-Language Models. Finds minimal input pe
 
 **SUT** scores the manipulated input via teacher-forced log-prob decoding against all category labels.
 
-**Optimizer** (AGE-MOEA-2) minimises four objectives simultaneously:
+**Optimizer** (AGE-MOEA-2) minimises three objectives simultaneously:
 
 | Objective | Measures |
 |-----------|----------|
 | MatrixDistance | Pixel distance to reconstructed baseline |
 | TextReplacementDistance | Cosine distance of replaced words |
 | TargetedBalance | \|P(A) − P(B)\| → 0 at boundary |
-| ArchiveSparsity | Genotype diversity across archive |
+
+**Init distribution** (`src/optimizer/sparse_sampling.py`) — `uniform` (historical default, PyMoo `IntegerRandomSampling`) or `sparse` (Phase-1, Bernoulli-gated zero-anchor + geometric depth). Sparse init is recommended for full-codebook runs (n=16383): without a sparsity prior, uniform init makes zero a non-privileged gene value, preventing the optimizer from reaching the `(L0, TgtBal)` sparse-near-boundary corner.
 
 ## Run
 

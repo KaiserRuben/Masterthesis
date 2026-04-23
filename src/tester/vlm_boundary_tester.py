@@ -4,9 +4,11 @@ Wires together :class:`VLMManipulator`, :class:`VLMSUT`,
 :class:`DiscretePymooOptimizer`, and 4 objectives into a
 multi-objective evolutionary search loop.
 
-All 4 objectives (MatrixDistance, TextReplacementDistance,
-TargetedBalance, Concentration) are batched and run through a
-:class:`CriterionCollection`.
+The 3 live objectives (MatrixDistance, TextReplacementDistance,
+TargetedBalance) are batched and run through a
+:class:`CriterionCollection`. ArchiveSparsity and Concentration were
+explored in earlier iterations but are not part of the live objective
+set — see module note below for ArchiveSparsity's structural conflict.
 
 Each seed triple ``(image, class_A, class_B)`` is tested independently:
 the manipulator prepares image + text contexts, the optimizer evolves
@@ -53,6 +55,8 @@ SMOO_SCHEMA_VERSION = 2
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import CriterionCollection
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
+from src.optimizer.early_stop import EarlyStopChecker, EarlyStopConfig, EarlyStopTrigger
+from src.optimizer.sparse_sampling import SparseSampling
 
 from src.config import ExperimentConfig, SeedTriple
 
@@ -145,22 +149,26 @@ def _build_stats(
     manipulator: VLMManipulator,
     n_pareto: int,
     runtime: float,
-    full_categories: tuple[str, ...],
+    scored_categories: tuple[str, ...],
     pair: tuple[str, str],
     target_classes: tuple[int, int],
     cache_stats: dict[str, int],
 ) -> dict[str, Any]:
     """Build stats metadata dict (pure).
 
-    The ``categories`` field is the FULL N-category list the SUT scored
-    against (v2 schema). The ``pair`` / ``target_classes`` fields record
-    which two entries in that list are the seed's target pair — readers
-    can recover ``class_a`` / ``class_b`` positions in the N-dim
-    ``logprobs`` column without any external lookup.
+    The ``categories`` field records the category list the SUT actually
+    scored against — length 2 in pair-only mode (default), length N in
+    ``score_full_categories`` mode. The ``pair`` / ``target_classes``
+    fields record which two entries are the target pair, so readers can
+    recover ``class_a`` / ``class_b`` positions in the ``logprobs``
+    column without any external lookup.
 
-    :param full_categories: Full category list scored by the SUT.
+    :param scored_categories: The actually-scored category list
+        (canonical index map for the ``logprobs`` column).
     :param pair: ``(class_a, class_b)`` labels.
-    :param target_classes: Positions of ``pair`` inside ``full_categories``.
+    :param target_classes: Positions of ``pair`` inside
+        ``scored_categories``. ``(0, 1)`` in pair-only mode; the pair
+        positions in the full list in N-class mode.
     :param cache_stats: Aggregate ``{"hits", "misses"}`` counts at save time.
     """
     return {
@@ -176,12 +184,20 @@ def _build_stats(
         "gene_bounds": manipulator.gene_bounds.tolist(),
         "image_dim": manipulator.image_dim,
         "text_dim": manipulator.text_dim,
-        # v2: full N-category list the SUT scored against. Readers use
-        # this to recover the class-name → logprob-index mapping.
-        "categories": list(full_categories),
+        # Actually-scored category list. Length-2 when
+        # score_full_categories is False (default), length-N when True.
+        # Readers use this to map logprob-column indices back to class
+        # names, regardless of scope.
+        "categories": list(scored_categories),
         "pair": list(pair),
         "target_classes": list(target_classes),
-        "n_categories_total": len(full_categories),
+        "n_categories_scored": len(scored_categories),
+        # Full category list from the config (ignoring scoring scope) —
+        # useful for downstream analyses that need to know the universe
+        # of classes even in pair-only runs.
+        "categories_universe": list(config.categories),
+        "n_categories_universe": len(config.categories),
+        "score_full_categories": config.score_full_categories,
         "n_pareto": n_pareto,
         "cache_hits": cache_stats["hits"],
         "cache_misses": cache_stats["misses"],
@@ -221,6 +237,48 @@ def _write_parquet_with_metadata(
     existing.update(metadata)
     table = table.replace_schema_metadata(existing)
     pq.write_table(table, path)
+
+
+def _append_rows(
+    writer: pq.ParquetWriter | None,
+    path: Path,
+    rows: list[dict[str, Any]],
+    metadata: dict[bytes, bytes],
+) -> pq.ParquetWriter:
+    """Append rows to a streaming parquet file, creating the writer lazily.
+
+    The ParquetWriter needs a concrete schema at construction time, so
+    it is created on the first batch (when the first row dict is
+    available and pandas/pyarrow can infer column types). Subsequent
+    calls reuse the open writer. File-level metadata is stamped onto
+    the schema at creation; it is NOT updated on later appends (parquet
+    does not support retroactive schema metadata mutation — the first
+    batch's metadata is final).
+
+    :param writer: Existing ParquetWriter, or ``None`` to create one on
+        this call.
+    :param path: Destination parquet path. Only used on creation.
+    :param rows: Row dicts to append. Must all share the same schema
+        as the already-open writer (or, on first call, must be
+        representative of the whole run's schema).
+    :param metadata: File-level metadata. Only used on creation.
+    :returns: The ParquetWriter (new or unchanged). Caller stores it
+        for the next call and closes it when done.
+    """
+    df = pd.DataFrame(rows)
+    table = pa.Table.from_pandas(df, preserve_index=False)
+
+    if writer is None:
+        existing = dict(table.schema.metadata or {})
+        existing.update(metadata)
+        schema = table.schema.with_metadata(existing)
+        writer = pq.ParquetWriter(path, schema, compression="zstd")
+        # Re-stamp the batch so its schema matches the writer's (pyarrow
+        # will otherwise complain that the metadata differs).
+        table = table.replace_schema_metadata(existing)
+
+    writer.write_table(table)
+    return writer
 
 
 def _build_context_meta(manipulator: VLMManipulator) -> dict[str, Any]:
@@ -343,109 +401,217 @@ class VLMBoundaryTester(SMOO):
     ) -> None:
         start_time = time()
 
-        # Build pair-specific prompt suffix (only the two target classes).
-        # Categories stay out of the mutable text — appended after mutation.
-        # NOTE: The prompt suffix is deliberately pair-constrained even though
-        # the SUT now scores against the FULL N-category set. This keeps the
-        # decision-boundary semantics intact ("Answer with A or B") while the
-        # scorer still produces an N-dim log-prob vector for post-hoc analysis
-        # (entropy, concentration, tree metrics, etc.). The non-pair classes
-        # will typically receive low probability — that is expected and
-        # diagnostically useful.
+        # Prompt suffix always pair-constrained — the VLM sees "Answer with
+        # A or B" regardless of how many categories the SUT scores against.
         pair = (seed.class_a, seed.class_b)
         answer_suffix = self._config.answer_format.format(
             categories=", ".join(pair),
         )
-
-        # Score the full category list and locate the pair indices once per
-        # seed. The pair indices become ``target_classes`` downstream so that
-        # TargetedBalance / Concentration pick out the correct entries of the
-        # N-dim log-prob vector (v2 schema — see trace.parquet docs).
         full_categories = tuple(self._config.categories)
-        pair_indices = (
-            full_categories.index(seed.class_a),
-            full_categories.index(seed.class_b),
-        )
+
+        # ---- Scoring-scope: pair (default) vs. full N-class ----------------
+        # Controlled by ExperimentConfig.score_full_categories (default False).
+        # Pair-only is ~25× cheaper per call on N=50 and is the right choice
+        # unless a downstream post-hoc analysis explicitly needs the full
+        # N-dim log-prob vector at every individual (tree distances,
+        # cross-class entropy, etc.). When True, ``target_classes`` becomes
+        # the pair's position in the full list so TargetedBalance still
+        # reads the right two entries.
+        if self._config.score_full_categories:
+            scored_categories = full_categories
+            target_classes = (
+                full_categories.index(seed.class_a),
+                full_categories.index(seed.class_b),
+            )
+        else:
+            scored_categories = pair
+            target_classes = (0, 1)
 
         # 1. Prepare manipulator with just the question prompt.
         self._manipulator.prepare(
             seed.image, self._config.prompt_template,
         )
 
-        # 2. Re-configure optimizer for this seed's genotype dimensions.
+        # 2. Install per-seed init sampler. Only relevant when the
+        #    OptimizerConfig selected a non-uniform sampling mode; the
+        #    default "uniform" path leaves algo_params untouched and
+        #    inherits PyMoo's IntegerRandomSampling from the optimizer.
+        sampling_cfg = self._config.optimizer.sampling
+        if sampling_cfg.mode == "sparse":
+            self._optimizer.set_sampling(
+                SparseSampling(
+                    text_dim=self._manipulator.text_dim,
+                    p_active=sampling_cfg.p_active,
+                    geometric_rate=sampling_cfg.geometric_rate,
+                    zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
+                    uniform_fallback_fraction=sampling_cfg.uniform_fallback_fraction,
+                )
+            )
+        elif sampling_cfg.mode != "uniform":
+            raise ValueError(
+                f"Unknown sampling mode {sampling_cfg.mode!r}; "
+                f"expected 'uniform' or 'sparse'"
+            )
+
+        # 3. Re-configure optimizer for this seed's genotype dimensions.
         self._optimizer.update_gene_bounds(self._manipulator.gene_bounds)
 
-        # 3. Target class indices — actual positions of the pair in the full
-        #    category list (replaces the old hard-coded (0, 1), which was only
-        #    correct when SMOO scored against just the pair).
-        target_classes = pair_indices
-
-        # 4. Compute VQGAN-reconstructed baseline (fair comparison for
-        #    MatrixDistance — both origin and perturbed go through VQGAN).
+        # 4. VQGAN-reconstructed baseline for MatrixDistance.
         zero_geno = self._manipulator.zero_genotype().reshape(1, -1)
         baseline_imgs, _ = self._manipulator.manipulate(
             candidates=None, weights=zero_geno,
         )
         origin_tensor = _pil_to_tensor(baseline_imgs[0])
 
-        # 5. Generation loop.
-        trace_rows: list[dict[str, Any]] = []
-        convergence_rows: list[dict[str, Any]] = []
+        # 5. Output directory created up-front so incremental writers can
+        #    target it. Previously created at end-of-seed by _save_seed_results.
+        run_dir = (
+            self._config.save_dir
+            / f"{self._config.name}_seed_{seed_idx}_{int(start_time)}"
+        )
+        run_dir.mkdir(parents=True, exist_ok=True)
 
-        for gen in range(self._config.generations):
-            gen_start = time()
+        # File-level metadata stamped onto every parquet this seed produces.
+        parquet_metadata: dict[bytes, bytes] = {
+            b"schema_version": str(SMOO_SCHEMA_VERSION).encode(),
+            b"pipeline": b"smoo",
+            b"categories": json.dumps(list(scored_categories)).encode(),
+            b"pair": json.dumps(list(pair)).encode(),
+            b"target_classes": json.dumps(list(target_classes)).encode(),
+        }
 
-            gen_traces = self._run_generation(
-                seed_idx, gen, target_classes, origin_tensor,
-                full_categories, answer_suffix,
+        # 6. Early-stop checker. OR-combines four triggers (flip /
+        #    plateau-HV / no-improvement-since-seed / hard-cap). Disabled
+        #    when ``optimizer.early_stop.enable`` is False — falls back
+        #    to the hard cap at ``config.generations``.
+        early_cfg = self._config.optimizer.early_stop
+        early_stop_checker: EarlyStopChecker | None = None
+        if early_cfg.enable:
+            early_stop_checker = EarlyStopChecker(
+                EarlyStopConfig(
+                    epsilon_margin=early_cfg.epsilon_margin,
+                    plateau_patience=early_cfg.plateau_patience,
+                    no_improvement_warmup=early_cfg.no_improvement_warmup,
+                    hypervolume_reference=early_cfg.hypervolume_reference,
+                    max_generations=self._config.generations,
+                )
             )
-            trace_rows.extend(gen_traces)
+        early_stop_trigger: EarlyStopTrigger | None = None
 
-            # -- Convergence stats from Pareto front ----------------------
-            pareto = self._optimizer.best_candidates
-            pareto_fitness = np.array([c.fitness for c in pareto])
-            obj_names = list(self._objectives.results.keys())
+        # 7. Generation loop with incremental flushing. Every generation's
+        #    trace rows and convergence row are written to disk immediately
+        #    via ParquetWriter, so a crash mid-run loses at most one gen
+        #    instead of the entire seed. Memory stays bounded regardless
+        #    of ``config.generations``.
+        trace_writer: pq.ParquetWriter | None = None
+        conv_writer: pq.ParquetWriter | None = None
 
-            conv_row: dict[str, Any] = {
-                "generation": gen,
-                "n_pareto": len(pareto),
-                "wall_time": time() - gen_start,
-            }
-            for j, name in enumerate(obj_names):
-                conv_row[f"pareto_min_{name}"] = float(pareto_fitness[:, j].min())
-                conv_row[f"pareto_mean_{name}"] = float(pareto_fitness[:, j].mean())
+        try:
+            for gen in range(self._config.generations):
+                gen_start = time()
 
-            # Population stats from this generation's traces.
-            pop_fitness = {name: [] for name in obj_names}
-            for row in gen_traces:
+                gen_traces = self._run_generation(
+                    seed_idx, gen, target_classes, origin_tensor,
+                    scored_categories, answer_suffix,
+                )
+
+                # -- Flush trace rows for this generation -----------------
+                if gen_traces:
+                    trace_writer = _append_rows(
+                        trace_writer,
+                        run_dir / "trace.parquet",
+                        gen_traces,
+                        parquet_metadata,
+                    )
+
+                # -- Convergence row from Pareto front --------------------
+                pareto = self._optimizer.best_candidates
+                pareto_fitness = np.array([c.fitness for c in pareto])
+                obj_names = list(self._objectives.results.keys())
+
+                conv_row: dict[str, Any] = {
+                    "generation": gen,
+                    "n_pareto": len(pareto),
+                    "wall_time": time() - gen_start,
+                }
+                for j, name in enumerate(obj_names):
+                    conv_row[f"pareto_min_{name}"] = float(
+                        pareto_fitness[:, j].min()
+                    )
+                    conv_row[f"pareto_mean_{name}"] = float(
+                        pareto_fitness[:, j].mean()
+                    )
+
+                # Population stats from this generation's traces.
+                pop_fitness = {name: [] for name in obj_names}
+                for row in gen_traces:
+                    for name in obj_names:
+                        pop_fitness[name].append(row[f"fitness_{name}"])
                 for name in obj_names:
-                    pop_fitness[name].append(row[f"fitness_{name}"])
-            for name in obj_names:
-                vals = np.array(pop_fitness[name])
-                conv_row[f"pop_min_{name}"] = float(vals.min())
-                conv_row[f"pop_mean_{name}"] = float(vals.mean())
+                    vals = np.array(pop_fitness[name])
+                    conv_row[f"pop_min_{name}"] = float(vals.min())
+                    conv_row[f"pop_mean_{name}"] = float(vals.mean())
 
-            convergence_rows.append(conv_row)
+                conv_writer = _append_rows(
+                    conv_writer,
+                    run_dir / "convergence.parquet",
+                    [conv_row],
+                    parquet_metadata,
+                )
 
-            # -- Progress bar with convergence info -----------------------
-            best_bal = conv_row.get("pareto_min_TgtBal")
-            postfix: dict[str, Any] = {"pareto": len(pareto)}
-            if best_bal is not None:
-                postfix["bal"] = f"{best_bal:.3f}"
-            for name in obj_names:
-                if name != "TgtBal":
-                    short = name.replace("MatrixDistance_", "img_")
-                    postfix[short] = f"{conv_row[f'pareto_min_{name}']:.3f}"
-            postfix["t"] = f"{time() - gen_start:.0f}s"
-            pbar.set_postfix(postfix)
-            pbar.update(1)
+                # -- Progress bar with convergence info -------------------
+                best_bal = conv_row.get("pareto_min_TgtBal")
+                postfix: dict[str, Any] = {"pareto": len(pareto)}
+                if best_bal is not None:
+                    postfix["bal"] = f"{best_bal:.3f}"
+                for name in obj_names:
+                    if name != "TgtBal":
+                        short = name.replace("MatrixDistance_", "img_")
+                        postfix[short] = (
+                            f"{conv_row[f'pareto_min_{name}']:.3f}"
+                        )
+                postfix["t"] = f"{time() - gen_start:.0f}s"
+                pbar.set_postfix(postfix)
+                pbar.update(1)
 
-        # 6. Save everything.
+                # -- Early-stop check. Fires after the current gen is
+                #    fully written, so the trace / convergence parquet
+                #    always matches what the optimizer actually saw.
+                if early_stop_checker is not None:
+                    try:
+                        tgtbal_col_idx = obj_names.index("TgtBal")
+                    except ValueError:
+                        tgtbal_col_idx = None
+                    if tgtbal_col_idx is not None:
+                        trig = early_stop_checker.update(
+                            generation=gen,
+                            pareto_fitness=pareto_fitness,
+                            tgtbal_index=tgtbal_col_idx,
+                        )
+                        if trig is not None and trig.trigger != "hard_cap":
+                            logger.info(
+                                "[seed %d] early stop at gen %d: %s (%s)",
+                                seed_idx, gen, trig.trigger, trig.details,
+                            )
+                            early_stop_trigger = trig
+                            break
+        finally:
+            # Close writers even on exception so partial parquets are
+            # still readable after a mid-run Ctrl-C or kill.
+            if trace_writer is not None:
+                trace_writer.close()
+            if conv_writer is not None:
+                conv_writer.close()
+
+        # 8. Finalize — write non-streaming artefacts (stats, pareto
+        #    images, context, origin image) now that trace / convergence
+        #    are on disk.
         runtime = time() - start_time
-        self._save_seed_results(
-            seed_idx, seed, trace_rows, convergence_rows,
-            full_categories, pair, target_classes,
+        self._finalize_seed_output(
+            seed_idx, seed, run_dir,
+            scored_categories, pair, target_classes,
             answer_suffix, runtime,
+            early_stop=early_stop_trigger,
         )
 
     # ------------------------------------------------------------------
@@ -460,8 +626,15 @@ class VLMBoundaryTester(SMOO):
         origin_tensor: Tensor,
         categories: tuple[str, ...],
         answer_suffix: str,
+        sut_progress_desc: str | None = None,
     ) -> list[dict[str, Any]]:
         """Evaluate one generation and advance the optimizer.
+
+        :param sut_progress_desc: If not None, renders an inner tqdm bar
+            around the SUT calls with this description. Used by the
+            screening runner for stages with hundreds of individuals
+            per "generation"; default behaviour (silent inner loop)
+            is preserved for the baseline tester.
 
         Returns a list of trace-row dicts (one per individual).
         """
@@ -477,7 +650,16 @@ class VLMBoundaryTester(SMOO):
         # never exposed to the text optimizer.
         logits_list: list[Tensor] = []
         cache_hits: list[bool] = []
-        for img, txt in zip(images, texts):
+        iterator = zip(images, texts)
+        if sut_progress_desc is not None:
+            iterator = tqdm(
+                iterator,
+                total=len(images),
+                desc=sut_progress_desc,
+                unit="call",
+                leave=False,
+            )
+        for img, txt in iterator:
             logits_list.append(
                 self._sut.process_input(
                     img, text=txt + answer_suffix, categories=categories,
@@ -528,74 +710,44 @@ class VLMBoundaryTester(SMOO):
     # Result saving
     # ------------------------------------------------------------------
 
-    def _save_seed_results(
+    def _finalize_seed_output(
         self,
         seed_idx: int,
         seed: SeedTriple,
-        trace_rows: list[dict[str, Any]],
-        convergence_rows: list[dict[str, Any]],
-        full_categories: tuple[str, ...],
+        run_dir: Path,
+        scored_categories: tuple[str, ...],
         pair: tuple[str, str],
         target_classes: tuple[int, int],
         answer_suffix: str,
         runtime: float,
+        early_stop: EarlyStopTrigger | None = None,
     ) -> None:
-        """Persist trace / convergence / pareto / stats / context.
+        """Write non-streaming seed artefacts.
 
-        The signature is v2 — previous (pre-refactor) code passed only
-        the target pair as ``categories``; now the FULL N-category list
-        (``full_categories``) is written to ``stats.json`` so downstream
-        readers can recover the index→class mapping for the N-dim
-        ``logprobs`` column. The pair / target_classes args are also
-        persisted so the pair positions are recoverable from a single
-        file (stats.json) without any external lookup.
+        ``trace.parquet`` and ``convergence.parquet`` are written
+        incrementally during :meth:`_run_seed` via ``_append_rows``; by
+        the time this method is called, both files are already closed
+        on disk. This method only handles the bits that need the whole
+        seed's final state: the Pareto candidate images and JSONs, the
+        origin image, ``stats.json``, and ``context.json``.
 
         :param seed_idx: 0-based seed index.
         :param seed: The seed triple.
-        :param trace_rows: List of per-individual trace dicts.
-        :param convergence_rows: List of per-generation convergence dicts.
-        :param full_categories: Full N-category list the SUT scored
-            against — canonical for the ``logprobs`` column index map.
-        :param pair: ``(class_a, class_b)`` labels (used for human-
-            readable logging and the pareto full_prompt string).
+        :param run_dir: Output directory created at the start of
+            :meth:`_run_seed`.
+        :param scored_categories: The category list the SUT actually
+            scored against during this seed — either the 2-element pair
+            (pair-only scoring, default) or the full N-category list
+            (``config.score_full_categories = True``). This is the
+            canonical index→class mapping for the ``logprobs`` column.
+        :param pair: ``(class_a, class_b)`` labels. Equals
+            *scored_categories* in pair-only mode.
         :param target_classes: Positions of ``pair`` inside
-            ``full_categories``; kept on the signature for symmetry and
-            passed through to ``_build_stats``.
+            *scored_categories*. ``(0, 1)`` in pair-only mode, or the
+            pair indices in the full list in N-class mode.
         :param answer_suffix: Pair-constrained answer format suffix.
         :param runtime: Wall-clock seconds spent on this seed.
         """
-        run_dir = (
-            self._config.save_dir
-            / f"{self._config.name}_seed_{seed_idx}_{int(time())}"
-        )
-        run_dir.mkdir(parents=True, exist_ok=True)
-
-        # -- Schema metadata embedded into every parquet ------------------
-        # Both trace.parquet and convergence.parquet are stamped with the
-        # same file-level metadata so a reader can determine the layout
-        # without looking at stats.json. stats.json mirrors the version
-        # marker for JSON-only consumers.
-        parquet_metadata: dict[bytes, bytes] = {
-            b"schema_version": str(SMOO_SCHEMA_VERSION).encode(),
-            b"pipeline": b"smoo",
-            b"categories": json.dumps(list(full_categories)).encode(),
-            b"pair": json.dumps(list(pair)).encode(),
-            b"target_classes": json.dumps(list(target_classes)).encode(),
-        }
-
-        # -- Trace parquet ------------------------------------------------
-        _write_parquet_with_metadata(
-            pd.DataFrame(trace_rows), run_dir / "trace.parquet",
-            parquet_metadata,
-        )
-
-        # -- Convergence parquet ------------------------------------------
-        _write_parquet_with_metadata(
-            pd.DataFrame(convergence_rows),
-            run_dir / "convergence.parquet",
-            parquet_metadata,
-        )
-
         # -- Pareto-optimal candidates ------------------------------------
         for i, cand in enumerate(self._optimizer.best_candidates):
             genotype = cand.solution.astype(np.int64).reshape(1, -1)
@@ -624,9 +776,15 @@ class VLMBoundaryTester(SMOO):
         stats = _build_stats(
             seed_idx, seed, self._config, self._manipulator,
             len(self._optimizer.best_candidates),
-            runtime, full_categories, pair, target_classes,
+            runtime, scored_categories, pair, target_classes,
             cache_stats=self._sut.cache_stats,
         )
+        if early_stop is not None:
+            stats["early_stop"] = {
+                "trigger": early_stop.trigger,
+                "generation": early_stop.generation,
+                "details": early_stop.details,
+            }
         with open(run_dir / "stats.json", "w") as f:
             json.dump(stats, f, indent=2)
 

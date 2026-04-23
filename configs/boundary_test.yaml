@@ -93,3 +93,40 @@ cache_dirs:
 # seeds:
 #   n_per_class: 5                      # ImageNet images to sample per category
 #   max_logprob_gap: 2.0                   # Max log-prob gap (smaller = closer to boundary)
+
+# ===========================================================================
+# Optimizer (method + init-population sampling + early stopping)
+# ===========================================================================
+#
+# The block below is ACTIVE (not commented) and encodes the Phase-1
+# validated defaults — sparse init plus OR-composed early-stop triggers.
+# To revert to legacy behaviour (uniform random init, hard-cap-only stop),
+# set `sampling.mode: uniform` and `early_stop.enable: false`.
+
+optimizer:
+  method: M0                            # M0 = baseline AGE-MOEA-2. M1..M4 are run_screening.py-only.
+
+  # -- Init sampling. Phase-1 validated defaults (Exp-10, 2026-04-20):
+  #    sparse init gives 134×-252× higher 2D HV on (n_active, TgtBal)
+  #    vs. uniform random across 4 pairs. `mode: uniform` reverts to
+  #    PyMoo's IntegerRandomSampling (historical baseline, no sparsity
+  #    prior — reaches dense-only Pareto fronts).
+  sampling:
+    mode: sparse                        # sparse | uniform
+    p_active: 0.03                      # Bernoulli prob an image gene is active per ind. E[n_active] = image_dim * p_active.
+    geometric_rate: 0.5                 # Rate of truncated geometric depth for active genes. Higher -> shallower depths.
+    zero_anchor_fraction: 0.05          # Fraction of pop with all-zero image block (identity anchor).
+    uniform_fallback_fraction: 0.10     # Fraction with Bernoulli mask × uniform depth. Diversity insurance.
+
+  # -- Early stopping. OR-composed triggers: flip (TgtBal <= dtype-tied
+  #    epsilon) | plateau (no HV gain for `plateau_patience` gens, needs
+  #    `hypervolume_reference`) | no_improvement (min TgtBal never beat
+  #    gen-0 after warmup) | hard_cap (generations cap). Saves ~30-50%
+  #    wall time on saturated runs (e.g. shark Phase-1 converged by
+  #    gen 100, used to run to 199).
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30             # Flip threshold = np.finfo(dtype).tiny + margin.
+    plateau_patience: 30                # Gens of no HV improvement before plateau fires.
+    no_improvement_warmup: 20           # Gens before no-improvement trigger can fire.
+    hypervolume_reference: null         # e.g. [0.5, 1.0, 5.0] for (MatDist, TextDist, TgtBal). null disables plateau trigger only.

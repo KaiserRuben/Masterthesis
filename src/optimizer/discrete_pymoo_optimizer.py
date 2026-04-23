@@ -187,6 +187,51 @@ class DiscretePymooOptimizer(Optimizer):
         self._n_var = len(self._gene_bounds)
         self._init_algorithm()
 
+    def set_sampling(self, sampling: Any) -> None:
+        """Replace the sampling strategy for subsequent population draws.
+
+        Takes effect at the next call to :meth:`update_gene_bounds` (or any
+        other path that triggers ``_init_algorithm``). The sampling object
+        may be any PyMoo-compatible ``Sampling`` instance *or* a
+        pre-generated ``(n, n_var)`` integer matrix.
+
+        :param sampling: New sampling strategy.
+        """
+        self._algo_params = {**self._algo_params, "sampling": sampling}
+
+    def set_initial_population(
+        self,
+        sampling: NDArray,
+        pop_size: int | None = None,
+    ) -> None:
+        """Re-initialize the algorithm with an explicit initial population.
+
+        Used by the EXP-08 screening pipeline to inject fuzzy / precise /
+        Pareto-init seed matrices after gene bounds are known for the
+        current seed. Supersedes any ``sampling`` entry in
+        ``algo_params``; the effective ``pop_size`` becomes
+        ``len(sampling)`` unless explicitly overridden.
+
+        :param sampling: Integer ``(n, n_var)`` array. Each row becomes
+            one individual in the initial population.
+        :param pop_size: Optional override for the algorithm's steady-state
+            pop size. If ``None``, defaults to ``len(sampling)``.
+        """
+        sampling = np.asarray(sampling, dtype=np.int64)
+        if sampling.ndim != 2 or sampling.shape[1] != self._n_var:
+            raise ValueError(
+                f"sampling must have shape (n, {self._n_var}); "
+                f"got {sampling.shape}"
+            )
+        effective_pop = pop_size if pop_size is not None else len(sampling)
+        self._pop_size = effective_pop
+        self._algo_params = {
+            **self._algo_params,
+            "sampling": sampling,
+            "pop_size": effective_pop,
+        }
+        self._init_algorithm()
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
