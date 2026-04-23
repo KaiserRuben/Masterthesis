@@ -1,0 +1,187 @@
+n_pairs: 16
+sampling_config:
+  buckets:
+  - same_L0
+  - same_L1
+  - same_L2
+  - cross
+  d_bins: 2
+  pairs_per_cell: 2
+  seed: 0
+pairs:
+- a: flute
+  b: pan flute
+  bucket: same_L0
+  d_bin: 0
+  d_fasttext: 0.2028
+  L0_a: woodwind
+  L0_b: woodwind
+  L1_a: musical instrument
+  L1_b: musical instrument
+  L2_a: object
+  L2_b: object
+- a: leaf beetle
+  b: dung beetle
+  bucket: same_L0
+  d_bin: 0
+  d_fasttext: 0.2432
+  L0_a: beetle
+  L0_b: beetle
+  L1_a: insect
+  L1_b: insect
+  L2_a: arthropod
+  L2_b: arthropod
+- a: marmot
+  b: guinea pig
+  bucket: same_L0
+  d_bin: 1
+  d_fasttext: 0.5829
+  L0_a: rodent
+  L0_b: rodent
+  L1_a: mammal
+  L1_b: mammal
+  L2_a: null
+  L2_b: null
+- a: stick insect
+  b: lacewing
+  bucket: same_L0
+  d_bin: 1
+  d_fasttext: 0.4597
+  L0_a: insect
+  L0_b: insect
+  L1_a: arthropod
+  L1_b: arthropod
+  L2_a: null
+  L2_b: null
+- a: American robin
+  b: chickadee
+  bucket: same_L1
+  d_bin: 0
+  d_fasttext: 0.4395
+  L0_a: thrush
+  L0_b: tit
+  L1_a: songbird
+  L1_b: songbird
+  L2_a: bird
+  L2_b: bird
+- a: wallaby
+  b: guinea pig
+  bucket: same_L1
+  d_bin: 0
+  d_fasttext: 0.5328
+  L0_a: marsupial
+  L0_b: rodent
+  L1_a: mammal
+  L1_b: mammal
+  L2_a: null
+  L2_b: null
+- a: megalith
+  b: tent
+  bucket: same_L1
+  d_bin: 1
+  d_fasttext: 0.6504
+  L0_a: stone monument
+  L0_b: shelter
+  L1_a: structure
+  L1_b: structure
+  L2_a: object
+  L2_b: object
+- a: feather boa
+  b: pajamas
+  bucket: same_L1
+  d_bin: 1
+  d_fasttext: 0.6317
+  L0_a: accessory
+  L0_b: sleepwear
+  L1_a: clothing
+  L1_b: clothing
+  L2_a: object
+  L2_b: object
+- a: electric fan
+  b: seat belt
+  bucket: same_L2
+  d_bin: 0
+  d_fasttext: 0.5567
+  L0_a: fan
+  L0_b: safety equipment
+  L1_a: appliance
+  L1_b: vehicle part
+  L2_a: object
+  L2_b: object
+- a: hair spray
+  b: traffic sign
+  bucket: same_L2
+  d_bin: 0
+  d_fasttext: 0.5365
+  L0_a: cosmetic
+  L0_b: sign
+  L1_a: personal care
+  L1_b: urban infrastructure
+  L2_a: object
+  L2_b: object
+- a: moped
+  b: sewing machine
+  bucket: same_L2
+  d_bin: 1
+  d_fasttext: 0.6761
+  L0_a: motorcycle
+  L0_b: appliance
+  L1_a: vehicle
+  L1_b: textile equipment
+  L2_a: object
+  L2_b: object
+- a: lotion
+  b: monitor
+  bucket: same_L2
+  d_bin: 1
+  d_fasttext: 0.8127
+  L0_a: cosmetic
+  L0_b: display
+  L1_a: personal care
+  L1_b: electronic device
+  L2_a: object
+  L2_b: object
+- a: pan flute
+  b: horse chestnut seed
+  bucket: cross
+  d_bin: 0
+  d_fasttext: 0.5149
+  L0_a: woodwind
+  L0_b: seed
+  L1_a: musical instrument
+  L1_b: plant part
+  L2_a: object
+  L2_b: plant
+- a: Alaskan Malamute
+  b: pizza
+  bucket: cross
+  d_bin: 0
+  d_fasttext: 0.6407
+  L0_a: sled dog
+  L0_b: baked dish
+  L1_a: working dog
+  L1_b: prepared food
+  L2_a: dog
+  L2_b: food
+- a: gibbon
+  b: airship
+  bucket: cross
+  d_bin: 1
+  d_fasttext: 0.8438
+  L0_a: lesser ape
+  L0_b: aircraft
+  L1_a: primate
+  L1_b: vehicle
+  L2_a: mammal
+  L2_b: object
+- a: cleaver
+  b: radio telescope
+  bucket: cross
+  d_bin: 1
+  d_fasttext: 0.7854
+  L0_a: knife
+  L0_b: telescope
+  L1_a: kitchen tool
+  L1_b: scientific instrument
+  L2_a: object
+  L2_b: structure
