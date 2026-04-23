@@ -2,7 +2,7 @@
 
 For each field in ExperimentConfig (and nested sub-configs):
 1. Creates a YAML dict with ONE non-default value
-2. Calls load_config() from experiments/run_boundary_test.py
+2. Calls load_config() from experiments/runners/run_boundary_test.py
 3. Asserts the resulting ExperimentConfig has the overridden value
 4. Asserts fields NOT overridden still have their defaults
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from experiments.run_boundary_test import load_config
+from experiments.runners.run_boundary_test import load_config
 from src.config import ExperimentConfig
 from src.manipulator.image.types import CandidateStrategy, PatchStrategy
 

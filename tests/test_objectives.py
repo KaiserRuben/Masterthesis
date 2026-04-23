@@ -1,4 +1,4 @@
-"""Tests for TextReplacementDistance, TargetedBalance, and Concentration criteria.
+"""Tests for TextReplacementDistance and TargetedBalance criteria.
 
 All tests use real tensors and arrays with known values -- no mocks.
 """
@@ -9,7 +9,6 @@ import torch
 import torch.nn.functional as F
 
 from src.objectives import (
-    Concentration,
     CriterionCollection,
     TargetedBalance,
     TextReplacementDistance,
@@ -283,122 +282,6 @@ class TestTargetedBalance:
 
 
 # ===========================================================================
-# Concentration
-# ===========================================================================
-
-
-class TestConcentration:
-
-    def test_all_mass_on_target_pair(self):
-        """All mass on target pair -> concentration ~ 0."""
-        logits = torch.full((N_CLASSES,), -100.0)
-        logits[TENCH] = 0.0
-        logits[STINGRAY] = 0.0
-
-        criterion = Concentration()
-        result = criterion.evaluate(
-            logits=logits,
-            target_classes=(TENCH, STINGRAY),
-            batch_dim=None,
-        )
-
-        assert len(result) == 1
-        assert result[0] == pytest.approx(0.0, abs=1e-6)
-
-    def test_all_mass_on_non_target(self):
-        """All probability on non-target class -> concentration ~ 1.0."""
-        logits = torch.full((N_CLASSES,), -100.0)
-        logits[GOLDFISH] = 0.0
-
-        criterion = Concentration()
-        result = criterion.evaluate(
-            logits=logits,
-            target_classes=(TENCH, STINGRAY),
-            batch_dim=None,
-        )
-
-        assert result[0] > 0.99
-
-    def test_uniform_distribution(self):
-        """All classes equal -> concentration = (N-2)/N."""
-        logits = torch.zeros(N_CLASSES)
-        criterion = Concentration()
-        result = criterion.evaluate(
-            logits=logits,
-            target_classes=(TENCH, STINGRAY),
-            batch_dim=None,
-        )
-
-        expected = (N_CLASSES - 2) / N_CLASSES  # 8/10 = 0.8
-        assert result[0] == pytest.approx(expected, abs=1e-6)
-
-    def test_realistic_easy_case(self):
-        """Tench dominant -> almost all mass on tench, low concentration."""
-        criterion = Concentration()
-        result = criterion.evaluate(
-            logits=EASY_LOGITS,
-            target_classes=(TENCH, GOLDFISH),
-            batch_dim=None,
-        )
-
-        probs = _softmax(EASY_LOGITS)
-        outside = probs.sum().item() - probs[TENCH].item() - probs[GOLDFISH].item()
-        assert result[0] == pytest.approx(outside, abs=1e-6)
-        assert result[0] < 0.01
-
-    def test_realistic_hard_case(self):
-        """Near-boundary with leakage to goldfish -> moderate concentration."""
-        criterion = Concentration()
-        result = criterion.evaluate(
-            logits=HARD_LOGITS,
-            target_classes=(STINGRAY, TENCH),
-            batch_dim=None,
-        )
-
-        probs = _softmax(HARD_LOGITS)
-        outside = probs.sum().item() - probs[STINGRAY].item() - probs[TENCH].item()
-        assert result[0] == pytest.approx(outside, abs=1e-6)
-        assert result[0] > 0.1
-
-    def test_probability_sums_to_one(self):
-        """Verify: concentration + P(A) + P(B) ~ 1.0."""
-        criterion = Concentration()
-        result = criterion.evaluate(
-            logits=HARD_LOGITS,
-            target_classes=(STINGRAY, TENCH),
-            batch_dim=None,
-        )
-
-        probs = _softmax(HARD_LOGITS)
-        p_a = probs[STINGRAY].item()
-        p_b = probs[TENCH].item()
-        assert result[0] + p_a + p_b == pytest.approx(1.0, abs=1e-6)
-
-    def test_batched_evaluation(self):
-        """Multiple logit vectors -> list of correct results."""
-        logits = torch.stack([EASY_LOGITS, HARD_LOGITS])
-        criterion = Concentration()
-        results = criterion.evaluate(
-            logits=logits,
-            target_classes=(TENCH, STINGRAY),
-            batch_dim=0,
-        )
-
-        assert isinstance(results, list)
-        assert len(results) == 2
-
-        for i, single_logits in enumerate([EASY_LOGITS, HARD_LOGITS]):
-            probs = _softmax(single_logits)
-            expected = probs.sum().item() - probs[TENCH].item() - probs[STINGRAY].item()
-            assert results[i] == pytest.approx(expected, abs=1e-6)
-
-    def test_criterion_name(self):
-        """Name is Conc."""
-        criterion = Concentration()
-        assert criterion.name == "Conc"
-
-
-# ===========================================================================
 # CriterionCollection integration
 # ===========================================================================
 
@@ -406,15 +289,14 @@ class TestConcentration:
 class TestCriterionInterface:
 
     def test_all_criteria_with_collection(self):
-        """All three criteria work with CriterionCollection.evaluate_all().
+        """Both live criteria work with CriterionCollection.evaluate_all().
 
         Passes all kwargs at once; each criterion picks up its own.
         """
         text_crit = TextReplacementDistance()
         balance_crit = TargetedBalance()
-        conc_crit = Concentration()
 
-        collection = CriterionCollection(text_crit, balance_crit, conc_crit)
+        collection = CriterionCollection(text_crit, balance_crit)
 
         # Shared kwargs — each criterion takes what it needs.
         logits = torch.stack([EASY_LOGITS, HARD_LOGITS])
@@ -431,38 +313,32 @@ class TestCriterionInterface:
         results = collection.results
         assert "TextDist" in results
         assert "TgtBal" in results
-        assert "Conc" in results
 
         # Verify shapes
         assert isinstance(results["TextDist"], list)
         assert len(results["TextDist"]) == 2
         assert isinstance(results["TgtBal"], list)
         assert len(results["TgtBal"]) == 2
-        assert isinstance(results["Conc"], list)
-        assert len(results["Conc"]) == 2
 
     def test_criterion_names(self):
         """Verify .name returns the correct string for each criterion."""
         assert TextReplacementDistance().name == "TextDist"
         assert TargetedBalance().name == "TgtBal"
-        assert Concentration().name == "Conc"
 
     def test_collection_names(self):
-        """CriterionCollection.names returns all three names."""
+        """CriterionCollection.names returns both names."""
         collection = CriterionCollection(
             TextReplacementDistance(),
             TargetedBalance(),
-            Concentration(),
         )
-        assert collection.names == ["TextDist", "TgtBal", "Conc"]
+        assert collection.names == ["TextDist", "TgtBal"]
 
     def test_results_retrieval(self):
         """CriterionCollection.results allows retrieval by criterion name."""
         text_crit = TextReplacementDistance()
         balance_crit = TargetedBalance()
-        conc_crit = Concentration()
 
-        collection = CriterionCollection(text_crit, balance_crit, conc_crit)
+        collection = CriterionCollection(text_crit, balance_crit)
 
         logits = HARD_LOGITS.unsqueeze(0)
         text_genos = np.array([[1, 1]], dtype=np.int64)
@@ -480,12 +356,5 @@ class TestCriterionInterface:
         assert isinstance(text_result, list)
         assert text_result[0] == pytest.approx(0.05 + 0.08)
 
-        # TargetedBalance and Concentration also present
+        # TargetedBalance also present
         assert isinstance(results["TgtBal"], list)
-        assert isinstance(results["Conc"], list)
-
-        # Verify concentration + P(A) + P(B) ~ 1.0
-        probs = _softmax(HARD_LOGITS)
-        p_a = probs[STINGRAY].item()
-        p_b = probs[TENCH].item()
-        assert results["Conc"][0] + p_a + p_b == pytest.approx(1.0, abs=1e-6)

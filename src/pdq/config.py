@@ -1,6 +1,6 @@
 """PDQ experiment configuration.
 
-Maps to ``configs/pdq_test.yaml`` via dacite. All omitted fields fall back
+Maps to ``configs/templates/pdq_template.yaml`` via dacite. All omitted fields fall back
 to dataclass defaults. Strategy, pass, and distance identifiers are plain
 strings validated against runtime registries — no enums.
 

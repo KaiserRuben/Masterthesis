@@ -1,4 +1,4 @@
-"""Tests for VLMBoundaryTester, NormalizedGenomeDistance, and ArchiveSparsity.
+"""Tests for VLMBoundaryTester.
 
 Uses synthetic sub-manipulators and a fake SUT — no real VLM or VQGAN
 models are loaded.  The full optimisation loop runs with tiny parameters
@@ -14,19 +14,16 @@ from PIL import Image
 
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import (
-    ArchiveSparsity,
-    Concentration,
     CriterionCollection,
     MatrixDistance,
-    NormalizedGenomeDistance,
     TargetedBalance,
     TextReplacementDistance,
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 from src.config import ExperimentConfig, SeedTriple
-from src.tester.vlm_boundary_tester import (
+from src.evolutionary.vlm_boundary_tester import (
     VLMBoundaryTester,
-    _pil_to_tensor,
+    pil_to_tensor,
 )
 
 from conftest import (
@@ -73,12 +70,11 @@ def manipulator(embeddings):
 
 @pytest.fixture()
 def objectives():
-    """4 batched objectives."""
+    """3 live batched objectives (MatrixDistance, TextReplacementDistance, TargetedBalance)."""
     return CriterionCollection(
         MatrixDistance(),
         TextReplacementDistance(),
         TargetedBalance(),
-        Concentration(),
     )
 
 
@@ -105,132 +101,25 @@ def seed():
 
 
 # ---------------------------------------------------------------------------
-# TestNormalizedGenomeDistance
-# ---------------------------------------------------------------------------
-
-
-class TestNormalizedGenomeDistance:
-    def test_identical_is_zero(self):
-        g = np.array([5, 10, 15])
-        bounds = np.array([10, 20, 30])
-        metric = NormalizedGenomeDistance(bounds)
-        assert metric.evaluate(images=[g, g.copy()]) == 0.0
-
-    def test_max_distance_is_one(self):
-        bounds = np.array([11, 21])  # max diffs = 10, 20
-        metric = NormalizedGenomeDistance(bounds)
-        a = np.array([0, 0])
-        b = np.array([10, 20])
-        np.testing.assert_allclose(
-            metric.evaluate(images=[a, b]), 1.0, atol=1e-9,
-        )
-
-    def test_intermediate_distance(self):
-        bounds = np.array([11, 11])  # max diffs = 10, 10
-        metric = NormalizedGenomeDistance(bounds)
-        a = np.array([0, 0])
-        b = np.array([5, 5])
-        np.testing.assert_allclose(
-            metric.evaluate(images=[a, b]), 0.5, atol=1e-9,
-        )
-
-    def test_handles_bound_of_one(self):
-        """Gene with bound=1 has max_diff=1 (clamped), avoids div-by-zero."""
-        bounds = np.array([1, 11])
-        metric = NormalizedGenomeDistance(bounds)
-        a = np.array([0, 0])
-        b = np.array([0, 10])
-        assert metric.evaluate(images=[a, b]) == pytest.approx(0.5)
-
-    def test_asymmetric_bounds(self):
-        bounds = np.array([4, 26])  # max diffs = 3, 25
-        metric = NormalizedGenomeDistance(bounds)
-        a = np.array([0, 0])
-        b = np.array([3, 25])
-        np.testing.assert_allclose(
-            metric.evaluate(images=[a, b]), 1.0, atol=1e-9,
-        )
-
-
-# ---------------------------------------------------------------------------
-# TestArchiveSparsityIntegration
-# ---------------------------------------------------------------------------
-
-
-class TestArchiveSparsityIntegration:
-    def test_with_genome_distance_metric(self):
-        bounds = np.array([10, 10, 10])
-        metric = NormalizedGenomeDistance(bounds)
-        sparsity = ArchiveSparsity(metric=metric, regime="min", on_genomes=True)
-
-        target = np.array([5, 5, 5])
-        archive = [np.array([0, 0, 0]), np.array([9, 9, 9])]
-
-        val = sparsity.evaluate(
-            images=[None, None],
-            solution_archive=[],
-            genome_target=target,
-            genome_archive=archive,
-        )
-        # min dist to archive: dist to [9,9,9] = mean(4/9, 4/9, 4/9) ≈ 0.444
-        # sparsity = 1 - 0.444 ≈ 0.556
-        assert 0.0 < val < 1.0
-
-    def test_identical_to_archive_gives_one(self):
-        bounds = np.array([10, 10])
-        metric = NormalizedGenomeDistance(bounds)
-        sparsity = ArchiveSparsity(metric=metric, regime="min", on_genomes=True)
-
-        target = np.array([3, 3])
-        archive = [target.copy()]
-
-        val = sparsity.evaluate(
-            images=[None, None],
-            solution_archive=[],
-            genome_target=target,
-            genome_archive=archive,
-        )
-        # dist = 0, sparsity = 1 - 0 = 1.0 (bad: not diverse)
-        assert val == pytest.approx(1.0)
-
-    def test_far_from_archive_gives_low_value(self):
-        bounds = np.array([11, 11])  # max diff = 10
-        metric = NormalizedGenomeDistance(bounds)
-        sparsity = ArchiveSparsity(metric=metric, regime="min", on_genomes=True)
-
-        target = np.array([10, 10])
-        archive = [np.array([0, 0])]
-
-        val = sparsity.evaluate(
-            images=[None, None],
-            solution_archive=[],
-            genome_target=target,
-            genome_archive=archive,
-        )
-        # dist = 1.0, sparsity = 1 - 1.0 = 0.0 (good: very diverse)
-        assert val == pytest.approx(0.0)
-
-
-# ---------------------------------------------------------------------------
 # TestUtilities
 # ---------------------------------------------------------------------------
 
 
 class TestUtilities:
-    def test_pil_to_tensor_shape(self):
+    def testpil_to_tensor_shape(self):
         img = Image.new("RGB", (16, 8))
-        t = _pil_to_tensor(img)
+        t = pil_to_tensor(img)
         assert t.shape == (3, 8, 16)  # C, H, W
 
-    def test_pil_to_tensor_range(self):
+    def testpil_to_tensor_range(self):
         img = Image.new("RGB", (4, 4), (255, 128, 0))
-        t = _pil_to_tensor(img)
+        t = pil_to_tensor(img)
         assert t.min() >= 0.0
         assert t.max() <= 1.0
 
-    def test_pil_to_tensor_grayscale(self):
+    def testpil_to_tensor_grayscale(self):
         img = Image.new("L", (4, 4))
-        t = _pil_to_tensor(img)
+        t = pil_to_tensor(img)
         assert t.shape == (1, 4, 4)
 
 
@@ -243,7 +132,7 @@ class TestVLMBoundaryTester:
     def _make_tester(self, config, manipulator, objectives):
         optimizer = DiscretePymooOptimizer(
             gene_bounds=np.ones(1, dtype=np.int64) * 2,
-            num_objectives=5,  # 4 batched + 1 sparsity
+            num_objectives=3,
             pop_size=config.pop_size,
         )
         return VLMBoundaryTester(
@@ -288,10 +177,8 @@ class TestVLMBoundaryTester:
         run_dir = next(config.save_dir.iterdir())
         df = pd.read_parquet(run_dir / "trace.parquet")
 
-        # 4 batched + 1 ArchiveSparsity
         fitness_cols = [c for c in df.columns if c.startswith("fitness_")]
-        assert len(fitness_cols) == 5
-        assert "fitness_ArchiveSparsity" in df.columns
+        assert len(fitness_cols) == 3
 
     def test_trace_has_required_columns(
         self, config, manipulator, objectives, seed,

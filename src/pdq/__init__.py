@@ -13,7 +13,7 @@ Key classes:
 
 Entry point::
 
-    python experiments/run_pdq_test.py configs/pdq_test.yaml
+    python experiments/runners/run_pdq_test.py configs/templates/pdq_template.yaml
 """
 
 from .config import PDQExperimentConfig, validate_config, resolve_categories, load_pdq_config

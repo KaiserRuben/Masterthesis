@@ -11,8 +11,8 @@ The module owns an in-process cache keyed by
 resolves several pairs back-to-back only generates the pool once.
 
 A future optimisation could persist the parquet emitted by
-``experiments/generate_class_similarity.py`` and look up pool indices
-directly, skipping the :func:`~src.tester.generate_seeds` call entirely.
+``experiments/preprocessing/generate_class_similarity.py`` and look up pool indices
+directly, skipping the :func:`~src.evolutionary.generate_seeds` call entirely.
 That layer is intentionally not here — this module makes the slow-but-
 correct path robust first.
 """
@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from src.config import ExperimentConfig, SeedTriple
-from src.tester import generate_seeds
+from src.common import generate_seeds
 
 if TYPE_CHECKING:
     from src.data import DataSource
@@ -248,7 +248,7 @@ def resolve_pair(
 ) -> list[int]:
     """Return filter_indices that surface *pair* under the given pool config.
 
-    Generates the seed pool via :func:`src.tester.generate_seeds`,
+    Generates the seed pool via :func:`src.evolutionary.generate_seeds`,
     enumerates seeds whose ``(class_a, class_b)`` match the requested
     pair, and returns the first ``replicates`` 0-based pool indices
     sorted by ``pool_idx`` (stable, reproducible).

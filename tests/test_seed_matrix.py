@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.optimizer.seed_matrix import (
+from src.common.seed_matrix import (
     build_fuzzy_onehot,
     build_pareto_init,
     build_precise_scan,

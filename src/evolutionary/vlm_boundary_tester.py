@@ -1,25 +1,15 @@
 """VLM boundary tester — the main orchestrator.
 
 Wires together :class:`VLMManipulator`, :class:`VLMSUT`,
-:class:`DiscretePymooOptimizer`, and 4 objectives into a
-multi-objective evolutionary search loop.
-
-The 3 live objectives (MatrixDistance, TextReplacementDistance,
-TargetedBalance) are batched and run through a
-:class:`CriterionCollection`. ArchiveSparsity and Concentration were
-explored in earlier iterations but are not part of the live objective
-set — see module note below for ArchiveSparsity's structural conflict.
+:class:`DiscretePymooOptimizer`, and 3 live objectives
+(MatrixDistance, TextReplacementDistance, TargetedBalance) into a
+multi-objective evolutionary search loop. Objectives are batched and
+run through a :class:`CriterionCollection`.
 
 Each seed triple ``(image, class_A, class_B)`` is tested independently:
 the manipulator prepares image + text contexts, the optimizer evolves
 integer genotypes, and every SUT interaction is logged to a Parquet
 trace for offline analysis.
-
-.. note::
-
-   ArchiveSparsity (genotype diversity) was removed — optimal boundary
-   genotypes are sparse (mostly zeros), so diversity pressure drives the
-   optimizer toward non-sparse genotypes that are not boundary solutions.
 """
 
 from __future__ import annotations
@@ -42,16 +32,8 @@ from smoo import SMOO
 from torch import Tensor
 from tqdm import tqdm
 
-# Trace / convergence / stats schema version. Bump whenever the
-# on-disk layout of trace.parquet, convergence.parquet, or stats.json
-# changes in a way that a naive reader can detect:
-#   v1 — logprobs is length-2 (target pair only), no cache_hit column,
-#        categories in stats.json are the pair.
-#   v2 — logprobs is length-N (full category list), cache_hit per-row,
-#        categories in stats.json are the full N-category list, and
-#        target_classes records the pair positions in the full list.
-SMOO_SCHEMA_VERSION = 2
-
+from src.common import apply_seed_filter, build_context_meta
+from src.common.artifacts import EVOLUTIONARY_SCHEMA_VERSION, ParquetBuffer
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import CriterionCollection
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
@@ -68,7 +50,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _pil_to_tensor(img: Image.Image) -> Tensor:
+def pil_to_tensor(img: Image.Image) -> Tensor:
     """Convert a PIL image to a ``(C, H, W)`` float tensor in ``[0, 1]``."""
     arr = np.array(img).astype(np.float32) / 255.0
     if arr.ndim == 2:
@@ -76,7 +58,7 @@ def _pil_to_tensor(img: Image.Image) -> Tensor:
     return torch.from_numpy(arr).permute(2, 0, 1)
 
 
-def _build_trace_rows(
+def build_trace_rows(
     seed_idx: int,
     gen: int,
     genotypes: NDArray,
@@ -142,7 +124,7 @@ def _build_trace_rows(
     ]
 
 
-def _build_stats(
+def build_stats(
     seed_idx: int,
     seed: SeedTriple,
     config: ExperimentConfig,
@@ -172,7 +154,7 @@ def _build_stats(
     :param cache_stats: Aggregate ``{"hits", "misses"}`` counts at save time.
     """
     return {
-        "schema_version": SMOO_SCHEMA_VERSION,
+        "schema_version": EVOLUTIONARY_SCHEMA_VERSION,
         "seed_idx": seed_idx,
         "class_a": seed.class_a,
         "class_b": seed.class_b,
@@ -216,91 +198,6 @@ def _build_stats(
     }
 
 
-def _write_parquet_with_metadata(
-    df: pd.DataFrame,
-    path: Path,
-    metadata: dict[bytes, bytes],
-) -> None:
-    """Write a DataFrame to parquet with file-level key/value metadata.
-
-    Uses pyarrow directly (not ``DataFrame.to_parquet``) because the
-    latter does not expose the metadata slot on the top-level schema.
-    Any existing pandas metadata the round-trip would otherwise generate
-    is preserved by merging with our extras.
-
-    :param df: DataFrame to write.
-    :param path: Destination parquet path.
-    :param metadata: File-level metadata (bytes keys + bytes values).
-    """
-    table = pa.Table.from_pandas(df, preserve_index=False)
-    existing = dict(table.schema.metadata or {})
-    existing.update(metadata)
-    table = table.replace_schema_metadata(existing)
-    pq.write_table(table, path)
-
-
-def _append_rows(
-    writer: pq.ParquetWriter | None,
-    path: Path,
-    rows: list[dict[str, Any]],
-    metadata: dict[bytes, bytes],
-) -> pq.ParquetWriter:
-    """Append rows to a streaming parquet file, creating the writer lazily.
-
-    The ParquetWriter needs a concrete schema at construction time, so
-    it is created on the first batch (when the first row dict is
-    available and pandas/pyarrow can infer column types). Subsequent
-    calls reuse the open writer. File-level metadata is stamped onto
-    the schema at creation; it is NOT updated on later appends (parquet
-    does not support retroactive schema metadata mutation — the first
-    batch's metadata is final).
-
-    :param writer: Existing ParquetWriter, or ``None`` to create one on
-        this call.
-    :param path: Destination parquet path. Only used on creation.
-    :param rows: Row dicts to append. Must all share the same schema
-        as the already-open writer (or, on first call, must be
-        representative of the whole run's schema).
-    :param metadata: File-level metadata. Only used on creation.
-    :returns: The ParquetWriter (new or unchanged). Caller stores it
-        for the next call and closes it when done.
-    """
-    df = pd.DataFrame(rows)
-    table = pa.Table.from_pandas(df, preserve_index=False)
-
-    if writer is None:
-        existing = dict(table.schema.metadata or {})
-        existing.update(metadata)
-        schema = table.schema.with_metadata(existing)
-        writer = pq.ParquetWriter(path, schema, compression="zstd")
-        # Re-stamp the batch so its schema matches the writer's (pyarrow
-        # will otherwise complain that the metadata differs).
-        table = table.replace_schema_metadata(existing)
-
-    writer.write_table(table)
-    return writer
-
-
-def _build_context_meta(manipulator: VLMManipulator) -> dict[str, Any]:
-    """Build context metadata for offline reconstruction (pure).
-
-    Requires ``manipulator.prepare()`` to have been called.
-    """
-    img_sel = manipulator.image_context.selection
-    txt_sel = manipulator.text_context.selection
-    return {
-        "image_patch_positions": img_sel.positions.tolist(),
-        "image_original_codes": img_sel.original_codes.tolist(),
-        "image_candidates": [c.tolist() for c in img_sel.candidates],
-        "text_word_positions": txt_sel.positions.tolist(),
-        "text_original_words": list(txt_sel.original_words),
-        "text_candidates": [list(c) for c in txt_sel.candidates],
-        "text_candidate_distances": [
-            d.tolist() for d in manipulator.text_candidate_distances
-        ],
-    }
-
-
 # ---------------------------------------------------------------------------
 # Tester
 # ---------------------------------------------------------------------------
@@ -314,13 +211,14 @@ class VLMBoundaryTester(SMOO):
         seed → prepare → [ask → manipulate → SUT → objectives → fitness
                           → update] × generations → save
 
-    All 4 objectives are batched and passed via the
+    All 3 live objectives (MatrixDistance, TextReplacementDistance,
+    TargetedBalance) are batched and passed via the
     :class:`CriterionCollection`.
 
     :param sut: The VLM system-under-test.
     :param manipulator: Multi-modal manipulator (image + text).
     :param optimizer: Discrete evolutionary optimizer.
-    :param objectives: Criterion collection (4 batched objectives).
+    :param objectives: Criterion collection (3 batched objectives).
     :param config: Experiment-level settings.
     """
 
@@ -362,11 +260,7 @@ class VLMBoundaryTester(SMOO):
         :param seeds: Sequence of ``(image, class_a, class_b)`` triples,
             as emitted by :func:`generate_seeds`.
         """
-        # Local import avoids a circular dependency between tester and
-        # pdq.runner at module load time.
-        from src.pdq.runner import _apply_seed_filter
-
-        indexed_seeds = _apply_seed_filter(
+        indexed_seeds = apply_seed_filter(
             list(seeds), self._config.seeds.filter_indices,
         )
 
@@ -461,7 +355,7 @@ class VLMBoundaryTester(SMOO):
         baseline_imgs, _ = self._manipulator.manipulate(
             candidates=None, weights=zero_geno,
         )
-        origin_tensor = _pil_to_tensor(baseline_imgs[0])
+        origin_tensor = pil_to_tensor(baseline_imgs[0])
 
         # 5. Output directory created up-front so incremental writers can
         #    target it. Previously created at end-of-seed by _save_seed_results.
@@ -473,7 +367,7 @@ class VLMBoundaryTester(SMOO):
 
         # File-level metadata stamped onto every parquet this seed produces.
         parquet_metadata: dict[bytes, bytes] = {
-            b"schema_version": str(SMOO_SCHEMA_VERSION).encode(),
+            b"schema_version": str(EVOLUTIONARY_SCHEMA_VERSION).encode(),
             b"pipeline": b"smoo",
             b"categories": json.dumps(list(scored_categories)).encode(),
             b"pair": json.dumps(list(pair)).encode(),
@@ -498,13 +392,20 @@ class VLMBoundaryTester(SMOO):
             )
         early_stop_trigger: EarlyStopTrigger | None = None
 
-        # 7. Generation loop with incremental flushing. Every generation's
-        #    trace rows and convergence row are written to disk immediately
-        #    via ParquetWriter, so a crash mid-run loses at most one gen
-        #    instead of the entire seed. Memory stays bounded regardless
-        #    of ``config.generations``.
-        trace_writer: pq.ParquetWriter | None = None
-        conv_writer: pq.ParquetWriter | None = None
+        # 7. Generation loop with incremental flushing. Trace rows flush
+        #    every 100 rows (bounded memory), convergence flushes every
+        #    row (one per gen — crash-safety matters more than row-group
+        #    efficiency for this tiny file).
+        trace_buf = ParquetBuffer(
+            run_dir / "trace.parquet",
+            flush_interval=100,
+            file_metadata=parquet_metadata,
+        )
+        conv_buf = ParquetBuffer(
+            run_dir / "convergence.parquet",
+            flush_interval=1,
+            file_metadata=parquet_metadata,
+        )
 
         try:
             for gen in range(self._config.generations):
@@ -517,12 +418,7 @@ class VLMBoundaryTester(SMOO):
 
                 # -- Flush trace rows for this generation -----------------
                 if gen_traces:
-                    trace_writer = _append_rows(
-                        trace_writer,
-                        run_dir / "trace.parquet",
-                        gen_traces,
-                        parquet_metadata,
-                    )
+                    trace_buf.append_many(gen_traces)
 
                 # -- Convergence row from Pareto front --------------------
                 pareto = self._optimizer.best_candidates
@@ -552,12 +448,7 @@ class VLMBoundaryTester(SMOO):
                     conv_row[f"pop_min_{name}"] = float(vals.min())
                     conv_row[f"pop_mean_{name}"] = float(vals.mean())
 
-                conv_writer = _append_rows(
-                    conv_writer,
-                    run_dir / "convergence.parquet",
-                    [conv_row],
-                    parquet_metadata,
-                )
+                conv_buf.append(conv_row)
 
                 # -- Progress bar with convergence info -------------------
                 best_bal = conv_row.get("pareto_min_TgtBal")
@@ -598,10 +489,8 @@ class VLMBoundaryTester(SMOO):
         finally:
             # Close writers even on exception so partial parquets are
             # still readable after a mid-run Ctrl-C or kill.
-            if trace_writer is not None:
-                trace_writer.close()
-            if conv_writer is not None:
-                conv_writer.close()
+            trace_buf.close()
+            conv_buf.close()
 
         # 8. Finalize — write non-streaming artefacts (stats, pareto
         #    images, context, origin image) now that trace / convergence
@@ -671,11 +560,11 @@ class VLMBoundaryTester(SMOO):
 
         # -- Tensor conversion for MatrixDistance -------------------------
         perturbed_batch = torch.stack(
-            [_pil_to_tensor(img) for img in images]
+            [pil_to_tensor(img) for img in images]
         )
         origin_batch = origin_tensor.unsqueeze(0).expand_as(perturbed_batch)
 
-        # -- Evaluate 4 batched objectives --------------------------------
+        # -- Evaluate 3 batched objectives --------------------------------
         txt_genotypes = genotypes[:, self._manipulator.image_dim :]
 
         self._objectives.evaluate_all(
@@ -700,7 +589,7 @@ class VLMBoundaryTester(SMOO):
         self._optimizer.update()
 
         # -- Build trace rows ---------------------------------------------
-        return _build_trace_rows(
+        return build_trace_rows(
             seed_idx, gen, genotypes, logits, texts, cache_hits,
             batched_results, fitness,
             target_classes, categories,
@@ -725,7 +614,7 @@ class VLMBoundaryTester(SMOO):
         """Write non-streaming seed artefacts.
 
         ``trace.parquet`` and ``convergence.parquet`` are written
-        incrementally during :meth:`_run_seed` via ``_append_rows``; by
+        incrementally during :meth:`_run_seed` via ``ParquetBuffer``; by
         the time this method is called, both files are already closed
         on disk. This method only handles the bits that need the whole
         seed's final state: the Pareto candidate images and JSONs, the
@@ -773,7 +662,7 @@ class VLMBoundaryTester(SMOO):
         seed.image.save(run_dir / "origin.png")
 
         # -- Stats JSON ---------------------------------------------------
-        stats = _build_stats(
+        stats = build_stats(
             seed_idx, seed, self._config, self._manipulator,
             len(self._optimizer.best_candidates),
             runtime, scored_categories, pair, target_classes,
@@ -789,7 +678,7 @@ class VLMBoundaryTester(SMOO):
             json.dump(stats, f, indent=2)
 
         # -- Context metadata (for offline reconstruction) ----------------
-        ctx_meta = _build_context_meta(self._manipulator)
+        ctx_meta = build_context_meta(self._manipulator)
         with open(run_dir / "context.json", "w") as f:
             json.dump(ctx_meta, f, indent=2)
 

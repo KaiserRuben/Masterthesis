@@ -6,9 +6,9 @@ crosses the class boundary is found via three greedy passes (zeroing,
 rank-reduction, random-subset), and the archive row is written with the
 minimised genotype and ``validity="VV"``.
 
-Architecture mirrors ``experiments/run_boundary_test.py``:
+Architecture mirrors ``experiments/runners/run_boundary_test.py``:
 - Parallel component init (SUT, image manipulator, text manipulator)
-- Shared ``generate_seeds()`` from ``src.tester``
+- Shared ``generate_seeds()`` from ``src.evolutionary``
 - Per-seed: prepare → anchor → Stage 1 search → Stage 2 minimisation
   → write artifacts
 """
@@ -35,10 +35,10 @@ from src.config import ExperimentConfig, SeedTriple
 from src.data import ImageNetCache
 from src.manipulator.image.manipulator import ImageManipulator
 from src.manipulator.text.manipulator import TextManipulator
+from src.common import apply_seed_filter, build_context_meta
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.sut import VLMSUT
-from src.tester import generate_seeds
-from src.tester.vlm_boundary_tester import _build_context_meta
+from src.common import generate_seeds
 
 from .archive import append_archive_row_stage2
 from .artifacts import PDQ_SCHEMA_VERSION, SeedLogger
@@ -116,47 +116,6 @@ def _release_gpu_cache(device: str) -> None:
             empty = getattr(torch.mps, "empty_cache", None)
             if callable(empty):
                 empty()
-
-
-# ---------------------------------------------------------------------------
-# Seed filter helper (reused by SMOO tester via src.tester)
-# ---------------------------------------------------------------------------
-
-
-def _apply_seed_filter(
-    seeds: list[SeedTriple],
-    filter_indices: tuple[int, ...],
-) -> list[tuple[int, SeedTriple]]:
-    """Apply an optional index filter to a generated seed pool.
-
-    Preserves original 0-based indices so that output directories and
-    ``seed_idx`` metadata stay consistent with an unfiltered run — a
-    filtered seed at original position 32 is still reported as
-    ``seed_0032``. Raises :class:`ValueError` on out-of-range indices.
-
-    :param seeds: Full generated seed pool (``generate_seeds`` output).
-    :param filter_indices: Indices to keep. Empty tuple → keep all.
-    :returns: List of ``(original_index, seed)`` pairs in index order.
-    :raises ValueError: If any filter index is out of range for the
-        generated pool.
-    """
-    if not filter_indices:
-        return list(enumerate(seeds))
-    filter_set = set(filter_indices)
-    out_of_range = {i for i in filter_set if i < 0 or i >= len(seeds)}
-    if out_of_range:
-        raise ValueError(
-            f"seeds.filter_indices references out-of-range indices "
-            f"{sorted(out_of_range)} for a pool of size {len(seeds)}. "
-            "Either adjust filter_indices or regenerate the seed pool "
-            "with the same n_per_class / max_logprob_gap / n_categories."
-        )
-    kept = [(i, s) for i, s in enumerate(seeds) if i in filter_set]
-    logger.info(
-        "Seed filter active: %d of %d seeds retained (indices %s)",
-        len(kept), len(seeds), sorted(filter_set),
-    )
-    return kept
 
 
 # ---------------------------------------------------------------------------
@@ -320,7 +279,7 @@ class PDQRunner:
 
         # Apply post-generation seed filter (preserves original indices so
         # `seed_0032` in a filtered run matches `seed_0032` in the full run).
-        indexed_seeds = _apply_seed_filter(seeds, cfg.seeds.filter_indices)
+        indexed_seeds = apply_seed_filter(seeds, cfg.seeds.filter_indices)
 
         logger.info(
             "%d seed(s) to test (PDQ pipeline, %d strategies, "
@@ -498,7 +457,7 @@ class PDQRunner:
         cfg_dict = config_to_dict(cfg)
         cfg_dict["schema_version"] = PDQ_SCHEMA_VERSION
         sl.write_config_json(cfg_dict)
-        sl.write_context_json(_build_context_meta(manipulator))
+        sl.write_context_json(build_context_meta(manipulator))
 
         if cfg.reproducibility.dump_rng_state:
             sl.write_rng_state_json(_rng_state_dict(rng))

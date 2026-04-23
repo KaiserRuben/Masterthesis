@@ -1,8 +1,8 @@
-"""Tests for :mod:`src.pair_resolver`.
+"""Tests for :mod:`src.utils.pair_resolver`.
 
 Uses a fake SUT and a fake DataSource (no real VLM or HuggingFace calls).
 The fakes return deterministic samples and logprobs so that
-:func:`src.tester.generate_seeds` emits a predictable, reproducible pool
+:func:`src.evolutionary.generate_seeds` emits a predictable, reproducible pool
 for every test.
 """
 
@@ -14,7 +14,7 @@ from PIL import Image
 
 from src.config import ExperimentConfig, SUTConfig, SeedConfig
 from src.data.imagenet import ImageSample
-from src.pair_resolver import (
+from src.utils.pair_resolver import (
     PairSpec,
     _closest_pairs,
     _levenshtein,

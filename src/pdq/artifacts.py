@@ -50,17 +50,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from PIL import Image
 
+from src.common.artifacts import PDQ_SCHEMA_VERSION, ParquetBuffer
+
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Schema version
-# ---------------------------------------------------------------------------
-
-# Bumped on the trace-complete refactor (April 2026). All PDQ parquet
-# files written by :class:`SeedLogger` carry this value in their
-# file-level metadata under the key ``b"schema_version"``.
-PDQ_SCHEMA_VERSION = 2
 
 # ---------------------------------------------------------------------------
 # Parquet column-name constants
@@ -132,110 +124,6 @@ ALL_PARQUET_FILES: dict[str, list[str]] = {
     "archive.parquet": ARCHIVE_COLUMNS,
     "convergence.parquet": CONVERGENCE_COLUMNS,
 }
-
-
-# ---------------------------------------------------------------------------
-# Parquet buffer (crash-safe incremental writer)
-# ---------------------------------------------------------------------------
-
-
-class ParquetBuffer:
-    """Incremental crash-safe parquet writer.
-
-    Rows are accumulated in memory.  When the buffer reaches
-    ``flush_interval`` entries (or :meth:`close` is called), they are
-    appended to the parquet file as a new row group.
-
-    Schema is inferred from the first batch; subsequent batches must
-    be schema-compatible.  The underlying :class:`pyarrow.parquet.ParquetWriter`
-    is kept open between flushes so row groups accumulate in a single file.
-
-    File-level key/value metadata (e.g. ``schema_version``) may be
-    supplied via ``file_metadata``; it is stamped into the first
-    :class:`pyarrow.parquet.ParquetWriter` that the buffer opens so it
-    persists across row groups.
-
-    :param path: Output parquet file path.
-    :param compression: Parquet compression codec (e.g. ``"zstd"``).
-    :param flush_interval: Flush after this many :meth:`append` calls.
-    :param file_metadata: Optional bytes→bytes mapping stamped into the
-        parquet file-level schema metadata.
-    """
-
-    def __init__(
-        self,
-        path: Path,
-        compression: str = "zstd",
-        flush_interval: int = 100,
-        file_metadata: dict[bytes, bytes] | None = None,
-    ) -> None:
-        self._path = path
-        self._compression = compression
-        self._flush_interval = flush_interval
-        self._buf: list[dict[str, Any]] = []
-        self._writer: pq.ParquetWriter | None = None
-        self._total_rows: int = 0
-        self._file_metadata: dict[bytes, bytes] | None = file_metadata
-
-    def append(self, row: dict[str, Any]) -> None:
-        """Append one row.  Triggers a flush when buffer is full.
-
-        :param row: Dict of column-name → value for this row.
-        """
-        self._buf.append(row)
-        if len(self._buf) >= self._flush_interval:
-            self._flush()
-
-    def append_many(self, rows: list[dict[str, Any]]) -> None:
-        """Append multiple rows, flushing when the buffer fills.
-
-        :param rows: List of row dicts.
-        """
-        for row in rows:
-            self.append(row)
-
-    def _flush(self) -> None:
-        """Write buffered rows as one row group."""
-        if not self._buf:
-            return
-        table = pa.Table.from_pylist(self._buf)
-        # Stamp file-level metadata on the table schema before opening
-        # the writer — ParquetWriter captures the schema (including its
-        # metadata) on construction and re-uses it for every row group.
-        if self._file_metadata:
-            existing = dict(table.schema.metadata or {})
-            existing.update(self._file_metadata)
-            table = table.replace_schema_metadata(existing)
-        if self._writer is None:
-            self._writer = pq.ParquetWriter(
-                str(self._path),
-                table.schema,
-                compression=self._compression,
-            )
-        self._writer.write_table(table)
-        self._total_rows += len(self._buf)
-        self._buf = []
-        logger.debug("Flushed %d rows to %s", self._total_rows, self._path.name)
-
-    def close(self) -> None:
-        """Flush remaining rows and close the writer.
-
-        Safe to call multiple times (idempotent after first call).
-        """
-        self._flush()
-        if self._writer is not None:
-            self._writer.close()
-            self._writer = None
-
-    @property
-    def total_rows(self) -> int:
-        """Total rows written to disk (excludes unflushed buffer)."""
-        return self._total_rows
-
-    @property
-    def buffered_rows(self) -> int:
-        """Rows in memory awaiting next flush."""
-        return len(self._buf)
 
 
 # ---------------------------------------------------------------------------
