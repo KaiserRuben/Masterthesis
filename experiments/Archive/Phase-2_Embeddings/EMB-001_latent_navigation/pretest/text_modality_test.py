@@ -30,7 +30,7 @@ from tqdm import tqdm
 
 # Add tools to path
 sys.path.insert(0, str(Path(__file__).parents[3]))
-from tools.scene.enums import Weather, RoadType, TimeOfDay, TrafficSituation, OcclusionLevel
+from tools.Archive.scene.enums import Weather, RoadType, TimeOfDay, TrafficSituation, OcclusionLevel
 
 # =============================================================================
 # CONFIG

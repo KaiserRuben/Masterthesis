@@ -33,7 +33,7 @@ from PIL import Image
 # Add parent to path for tools access
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from tools.scene.enums import (
+from tools.Archive.scene.enums import (
     Weather, RoadType, TimeOfDay, TrafficSituation, OcclusionLevel,
     DepthComplexity, VisualDegradation, SafetyCriticality, RequiredAction,
 )

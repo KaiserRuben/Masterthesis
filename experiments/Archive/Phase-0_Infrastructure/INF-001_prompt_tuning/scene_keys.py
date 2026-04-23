@@ -11,9 +11,9 @@ For new code, import directly from scene:
 import sys
 from pathlib import Path
 
-# Add tools to path
+# Add tools/Archive to path (scene was moved to tools/Archive/ during the 2026-04 cleanup)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "tools"))
+sys.path.insert(0, str(PROJECT_ROOT / "tools" / "Archive"))
 
 # Re-export everything from the scene package
 from scene import (

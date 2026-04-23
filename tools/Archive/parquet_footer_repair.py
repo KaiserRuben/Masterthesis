@@ -17,9 +17,9 @@ Usage
 -----
 
     python tools/parquet_footer_repair.py \
-        --broken runs/exp05/phaseA_cadence/.../archive.parquet \
-        --template runs/exp05/phaseA_mps/.../archive.parquet \
-        --out runs/exp05/phaseA_cadence/.../archive.repaired.parquet
+        --broken runs/Exp-05/phaseA_cadence/.../archive.parquet \
+        --template runs/Exp-05/phaseA_mps/.../archive.parquet \
+        --out runs/Exp-05/phaseA_cadence/.../archive.repaired.parquet
 
 The template must share the writer's schema (identical columns, dtypes,
 key/value metadata, codec).  A run produced by the same code path on any
