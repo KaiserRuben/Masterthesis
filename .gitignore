@@ -16,6 +16,9 @@ build/
 .venv/
 venv/
 env/
+.pytest_cache/
+.benchmarks/
+.ipynb_checkpoints/
 
 # ML/Data
 *.pt
@@ -26,7 +29,7 @@ env/
 *.npy
 *.npz
 /data/
-archive/data/
+archive_alpamayo_jan2026/data/
 checkpoints/
 outputs/
 wandb/
@@ -38,6 +41,9 @@ wandb/
 .cadence/
 .jbeval/
 .claude/
+
+# Personal symlinks
+runs/obsidian_assets
 
 # Submodules
 tools/alpamayo/
