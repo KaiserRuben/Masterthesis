@@ -1,20 +1,17 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# EXP-08 M4 — Hybrid: M3 pipeline + AGE-MOEA-2 evolution with early stop
+# EXP-08 M2 — FuzzyTwo: Stage 1 at two depths (monotonicity diagnostic)
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# Full three-stage cascade:
-#   Stage 1 — fuzzy screen (two-depth)
-#   Stage 2 — precise scan on awake genes
-#   Stage 3 — AGE-MOEA-2 seeded with Stage-2 Pareto front, early-stop on
-#             OR(flip, plateau_K=30, no-improvement-since-seed, hard-cap).
+# Extends M1 to two fuzzy depths: max_k/2 and max_k - 1. Used as the
+# monotonicity sanity-check: if the awake mask at max_k/2 disagrees
+# materially with the mask at max_k, gene_value → effect is non-monotonic
+# and Stage 2/3 must be relied on for reliable characterisation.
 #
-# Budget: ~700 (M3) + up to 30 pop × 100 gen = 3000 cap in Stage 3, but
-# early-stop typically terminates well before. Empirical target: ~1500
-# calls/seed on reachable pairs.
+# Budget: 2 × n_var + 1 ≈ 450 SUT calls / seed.
 # ═══════════════════════════════════════════════════════════════════════════
 
-name: exp08_M4
-save_dir: runs/exp08
+name: exp08_M2
+save_dir: runs/Exp-08
 
 generations: 1
 pop_size: 30
@@ -35,16 +32,9 @@ seeds:
   max_logprob_gap: 3.5
 
 optimizer:
-  method: M4
-  fuzzy_depths: [12, -1]
-  precise_depths: [1, 3, 6, 9, 12, 15, 18, 21, 25]
+  method: M2
+  fuzzy_depths: [12, -1]       # -1 → max_k - 1 = 24; 12 ≈ max_k/2
   include_zero_in_seed: true
   awake_threshold: mad_outlier
-  evolution_generations: 100
-  early_stop:
-    enable: true
-    epsilon_margin: 1.0e-30
-    plateau_patience: 30
-    no_improvement_warmup: 20
   sampling:
     mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

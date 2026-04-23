@@ -1,16 +1,21 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# EXP-09 M0 — Candidate sweep midpoint (n_candidates = 2500)
+# EXP-09 M0 — Full-codebook candidate range (n_candidates = 16383)
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# 100× the baseline cap. Tests whether the sweet spot is below full codebook
-# and whether deep-but-not-exhaustive candidate ranges already unlock the
-# sparse-deep Pareto corner.
+# Tests the dominant hypothesis: the artificial n_candidates=25 cap on the
+# 16384-codeword f8-16384 VQ-GAN is the primary reason single-patch swaps
+# can't produce large semantic change. Each patch gene can now reach ANY
+# codeword in the codebook, sorted by cosine distance.
 #
-# Only run on shark seed 5 for the sweep; generalization runs use n=16383.
+# KNN precompute already returns the full 16383-length sorted order — only
+# the slice length changes vs. the baseline. knn_cache_path keeps the
+# ~2.15 GB int64 array on disk so all 6 EXP-09 runs share it.
+#
+# Budget: 200 gen × 30 pop = 6000 SUT calls / seed (same as M0 baseline).
 # ═══════════════════════════════════════════════════════════════════════════
 
-name: exp09_M0_n2500
-save_dir: runs/exp09
+name: exp09_M0_n16383
+save_dir: runs/Exp-09
 
 generations: 200
 pop_size: 30
@@ -31,7 +36,7 @@ seeds:
   max_logprob_gap: 3.5
 
 image:
-  n_candidates: 2500
+  n_candidates: 16383
   knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
 
 optimizer:

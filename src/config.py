@@ -145,49 +145,17 @@ class SamplingConfig:
 
 @dataclass(frozen=True)
 class OptimizerConfig:
-    """Optimizer method + adaptive-screening phase configuration.
+    """Optimizer sampling strategy and early-stop configuration.
 
-    Consumed by :mod:`experiments.run_screening`; ignored by the
-    baseline :mod:`experiments.run_boundary_test` runner (M0 keeps
-    using plain random-init AGE-MOEA-2 with ``generations`` /
-    ``pop_size`` from the top-level config).
+    Consumed by :class:`~src.evolutionary.VLMBoundaryTester`. Controls
+    the initial-population sampler (uniform random vs sparse init) and
+    the early-stop triggers that may terminate a seed before the
+    generation budget is exhausted.
 
-    The ``method`` field selects which stages run:
-
-    - ``M0`` — baseline (no screening; existing tester behaviour).
-    - ``M1`` — Stage 1 only (fuzzy screen, one depth).
-    - ``M2`` — Stage 1 with two fuzzy depths.
-    - ``M3`` — Stages 1 + 2 (fuzzy + precise on awake genes).
-    - ``M4`` — Stages 1 + 2 + 3 (precise output seeds evolution).
-
-    :param method: Method ID. See above.
-    :param fuzzy_depths: Depths probed in Stage 1. Sentinel ``-1``
-        resolves to ``gene_bound - 1`` at runtime (per-gene max). M1
-        defaults to ``(-1,)``; M2/M3/M4 default to roughly
-        ``(max_k//2, max_k - 1)``.
-    :param precise_depths: Fine-grained depths for Stage 2. Used by
-        M3 and M4. Default spans the range evenly.
-    :param awake_threshold: How to classify a gene as awake from
-        Stage 1 fitness. Either ``"permutation_shuffle"`` (compare
-        per-gene |Δfitness| to a within-generation column-shuffle
-        null — robust but costs extra compute) or ``"fixed_delta"``
-        (flag genes with |Δfitness| > ``awake_fixed_delta``).
-    :param awake_fixed_delta: Threshold for ``awake_threshold=fixed_delta``.
-    :param evolution_generations: Max generations for Stage 3 evolution
-        (M4). The early-stop triggers may terminate earlier.
-    :param include_zero_in_seed: Prepend the all-zero individual to the
-        Stage-1 seed matrix. Always ``True`` in practice; exposed for
-        ablation.
     :param early_stop: Early-stop configuration.
+    :param sampling: Initial population sampling strategy.
     """
 
-    method: str = "M0"
-    fuzzy_depths: tuple[int, ...] = (-1,)
-    precise_depths: tuple[int, ...] = (1, 3, 6, 9, 12, 15, 18, 21, 25)
-    awake_threshold: str = "mad_outlier"
-    awake_fixed_delta: float = 0.1
-    evolution_generations: int = 100
-    include_zero_in_seed: bool = True
     early_stop: EarlyStopCfg = field(default_factory=EarlyStopCfg)
     sampling: SamplingConfig = field(default_factory=SamplingConfig)
 

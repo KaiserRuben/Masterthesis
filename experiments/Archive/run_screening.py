@@ -10,7 +10,7 @@ Supports five optimization methods via ``config.optimizer.method``:
 - ``M4`` — Stage 1 + Stage 2 + Stage 3 (evolution with early stopping).
 
 Pair resolution: ``--pair NAME`` (repeatable) looks up the pair in the
-live seed pool via :mod:`src.pair_resolver` and writes the resolved
+live seed pool via :mod:`src.utils.pair_resolver` and writes the resolved
 ``filter_indices`` into the config at runtime. ``--replicates N`` picks
 the first N pool indices per pair.
 
@@ -18,11 +18,11 @@ Usage
 -----
 
     # Tier 1 — shark M1 single replicate
-    python experiments/run_screening.py configs/EXP-08/M1.yaml \\
+    python experiments/Archive/run_screening.py configs/Archive/Exp-08/M1.yaml \\
         --pair "great_white_shark->tiger_shark" --replicates 1
 
     # Tier 2 — shark M4 three replicates on MPS
-    python experiments/run_screening.py configs/EXP-08/M4.yaml \\
+    python experiments/Archive/run_screening.py configs/Archive/Exp-08/M4.yaml \\
         --pair shark_gws-ts --replicates 3 --device mps
 """
 
@@ -66,21 +66,20 @@ from src.objectives import (
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 from src.optimizer.early_stop import EarlyStopChecker, EarlyStopConfig
-from src.optimizer.seed_matrix import (
+from src.common.seed_matrix import (
     build_fuzzy_onehot,
     build_pareto_init,
     build_precise_scan,
 )
-from src.pair_resolver import resolve_pair
-from src.pdq.runner import _apply_seed_filter
+from src.common import apply_seed_filter, build_context_meta
+from src.common.artifacts import EVOLUTIONARY_SCHEMA_VERSION
+from src.utils.pair_resolver import resolve_pair
 from src.sut import VLMSUT
-from src.tester import VLMBoundaryTester, generate_seeds
-from src.tester.vlm_boundary_tester import (
-    SMOO_SCHEMA_VERSION,
-    _build_context_meta,
-    _build_stats,
-    _build_trace_rows,
-    _pil_to_tensor,
+from src.evolutionary import VLMBoundaryTester
+from src.common import generate_seeds
+from src.evolutionary.vlm_boundary_tester import (
+    build_stats,
+pil_to_tensor,
 )
 
 logging.basicConfig(
@@ -91,7 +90,6 @@ logging.basicConfig(
 logging.getLogger("src").setLevel(logging.INFO)
 logging.getLogger(__name__).setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 _DACITE_CONFIG = dacite.Config(
     cast=[tuple, frozenset],
@@ -104,16 +102,13 @@ _DACITE_CONFIG = dacite.Config(
     },
 )
 
-
 # ---------------------------------------------------------------------------
 # Config helpers
 # ---------------------------------------------------------------------------
 
-
 def load_config(cfg: dict) -> ExperimentConfig:
     """Hydrate a YAML dict into an :class:`ExperimentConfig`."""
     return dacite.from_dict(ExperimentConfig, cfg, config=_DACITE_CONFIG)
-
 
 def _resolve_depths(
     depths: Sequence[int], gene_bounds: NDArray[np.int64]
@@ -128,11 +123,9 @@ def _resolve_depths(
     max_k = int(gene_bounds.min()) - 1
     return [max_k if d == -1 else int(d) for d in depths]
 
-
 # ---------------------------------------------------------------------------
 # Awake classification
 # ---------------------------------------------------------------------------
-
 
 def _classify_awake(
     seed_matrix: NDArray[np.int64],
@@ -212,11 +205,9 @@ def _classify_awake(
 
     return awake
 
-
 # ---------------------------------------------------------------------------
 # Per-seed stage runner — low-level primitive
 # ---------------------------------------------------------------------------
-
 
 def _run_one_stage(
     *,
@@ -331,11 +322,9 @@ def _run_one_stage(
     )
     return trace_rows, pareto_geno, pareto_fit, n_gens_run
 
-
 # ---------------------------------------------------------------------------
 # Per-seed orchestrator — dispatches stages by method
 # ---------------------------------------------------------------------------
-
 
 def _run_seed_screening(
     tester: VLMBoundaryTester,
@@ -376,7 +365,7 @@ def _run_seed_screening(
     baseline_imgs, _ = tester._manipulator.manipulate(
         candidates=None, weights=zero_geno,
     )
-    origin_tensor = _pil_to_tensor(baseline_imgs[0])
+    origin_tensor = pil_to_tensor(baseline_imgs[0])
 
     run_dir = (
         cfg.save_dir
@@ -385,7 +374,7 @@ def _run_seed_screening(
     run_dir.mkdir(parents=True, exist_ok=True)
 
     parquet_metadata: dict[bytes, bytes] = {
-        b"schema_version": str(SMOO_SCHEMA_VERSION).encode(),
+        b"schema_version": str(EVOLUTIONARY_SCHEMA_VERSION).encode(),
         b"pipeline": b"smoo",
         b"method": method.encode(),
         b"categories": json.dumps(list(scored_categories)).encode(),
@@ -587,11 +576,9 @@ def _run_seed_screening(
         gens_run=gens_run,
     )
 
-
 # ---------------------------------------------------------------------------
 # Finalisation — save pareto, stats, context
 # ---------------------------------------------------------------------------
-
 
 def _finalize_seed(
     tester: VLMBoundaryTester,
@@ -627,7 +614,7 @@ def _finalize_seed(
 
     seed.image.save(run_dir / "origin.png")
 
-    stats = _build_stats(
+    stats = build_stats(
         seed_idx, seed, cfg, tester._manipulator,
         len(pareto_geno), runtime, scored_categories, pair, target_classes,
         cache_stats=tester._sut.cache_stats,
@@ -639,17 +626,15 @@ def _finalize_seed(
     with open(run_dir / "stats.json", "w") as f:
         json.dump(stats, f, indent=2)
 
-    ctx_meta = _build_context_meta(tester._manipulator)
+    ctx_meta = build_context_meta(tester._manipulator)
     with open(run_dir / "context.json", "w") as f:
         json.dump(ctx_meta, f, indent=2)
 
     logger.info(f"  Saved {method} results to {run_dir}")
 
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-
 
 def run_experiment(cfg: dict, pair_names: list[str], replicates: int) -> None:
     """Build components, resolve pairs, dispatch per-method per-seed."""
@@ -732,7 +717,7 @@ def run_experiment(cfg: dict, pair_names: list[str], replicates: int) -> None:
             f"Expected one of M0, M1, M2, M3, M4."
         )
 
-    indexed_seeds = _apply_seed_filter(list(seeds), exp.seeds.filter_indices)
+    indexed_seeds = apply_seed_filter(list(seeds), exp.seeds.filter_indices)
     if not indexed_seeds:
         logger.warning("No seeds after filter — nothing to run.")
         return
@@ -747,7 +732,6 @@ def run_experiment(cfg: dict, pair_names: list[str], replicates: int) -> None:
         )
         _run_seed_screening(tester, seed_idx, seed)
         optimizer.reset()
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -788,7 +772,6 @@ def main() -> None:
 
     run_experiment(cfg, args.pair, args.replicates)
     os._exit(0)
-
 
 if __name__ == "__main__":
     main()

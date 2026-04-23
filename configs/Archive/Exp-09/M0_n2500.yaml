@@ -1,20 +1,19 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# EXP-08 — Adaptive-Resolution Screening, SHARED BASE
+# EXP-09 M0 — Candidate sweep midpoint (n_candidates = 2500)
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# Shared pool / SUT / cache settings for all 5 methods. Each per-method
-# YAML (M0.yaml .. M4.yaml) copies these verbatim and overrides only the
-# `name`, `save_dir`, `optimizer`, and (for M0) `generations` fields.
+# 100× the baseline cap. Tests whether the sweet spot is below full codebook
+# and whether deep-but-not-exhaustive candidate ranges already unlock the
+# sparse-deep Pareto corner.
 #
-# This file is NOT directly used by run_screening.py — it's a reference
-# and copy-paste template only. Duplication is intentional: every config
-# is self-contained and standalone-readable.
-#
-# See the Obsidian spec: [[Exp-08-Adaptive-Resolution-Screening]]
-# and the design diary:   [[2026-04-17-Exp08-Design-Adaptive-Resolution-Screening]]
+# Only run on shark seed 5 for the sweep; generalization runs use n=16383.
 # ═══════════════════════════════════════════════════════════════════════════
 
-save_dir: runs/exp08
+name: exp09_M0_n2500
+save_dir: runs/Exp-09
+
+generations: 200
+pop_size: 30
 
 device: mps
 
@@ -30,4 +29,12 @@ n_categories: 50
 seeds:
   n_per_class: 3
   max_logprob_gap: 3.5
-  # filter_indices populated at runtime by --pair / --replicates CLI
+
+image:
+  n_candidates: 2500
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+optimizer:
+  method: M0
+  sampling:
+    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

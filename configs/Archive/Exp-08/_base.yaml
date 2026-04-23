@@ -1,19 +1,20 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# EXP-08 M3 — FuzzyPrecise: Stage 1 two-depth + Stage 2 precise scan
+# EXP-08 — Adaptive-Resolution Screening, SHARED BASE
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# Pipeline: M2 fuzzy screen → classify awake genes → Stage 2 scans each
-# awake gene across {1, 3, 6, 9, 12, 15, 18, 21, 25} to trace out the
-# per-gene flip-threshold curve. No Stage-3 evolution.
+# Shared pool / SUT / cache settings for all 5 methods. Each per-method
+# YAML (M0.yaml .. M4.yaml) copies these verbatim and overrides only the
+# `name`, `save_dir`, `optimizer`, and (for M0) `generations` fields.
 #
-# Budget: M2 (~450) + M3 (~10% × n_var × 9 depths ≈ 220) ≈ 700 calls.
+# This file is NOT directly used by run_screening.py — it's a reference
+# and copy-paste template only. Duplication is intentional: every config
+# is self-contained and standalone-readable.
+#
+# See the Obsidian spec: [[Exp-08-Adaptive-Resolution-Screening]]
+# and the design diary:   [[2026-04-17-Exp08-Design-Adaptive-Resolution-Screening]]
 # ═══════════════════════════════════════════════════════════════════════════
 
-name: exp08_M3
-save_dir: runs/exp08
-
-generations: 1
-pop_size: 30
+save_dir: runs/Exp-08
 
 device: mps
 
@@ -29,12 +30,4 @@ n_categories: 50
 seeds:
   n_per_class: 3
   max_logprob_gap: 3.5
-
-optimizer:
-  method: M3
-  fuzzy_depths: [12, -1]
-  precise_depths: [1, 3, 6, 9, 12, 15, 18, 21, 25]
-  include_zero_in_seed: true
-  awake_threshold: mad_outlier
-  sampling:
-    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction
+  # filter_indices populated at runtime by --pair / --replicates CLI
