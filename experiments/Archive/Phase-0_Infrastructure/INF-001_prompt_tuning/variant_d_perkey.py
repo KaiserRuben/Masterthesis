@@ -314,7 +314,7 @@ def main():
 
     # Handle --init-config
     if args.init_config:
-        config_path = args.config or Path("../../../../archive/vlm_config.yaml")
+        config_path = args.config or Path("../../../../archive_alpamayo_jan2026/vlm_config.yaml")
         with open(config_path, "w") as f:
             f.write(DEFAULT_CONFIG_TEMPLATE.strip())
         print(f"Created: {config_path}")
