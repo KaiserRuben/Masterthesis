@@ -1,0 +1,37 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-08 M0 — Baseline SMOO (current random-init AGE-MOEA-2)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Delegates to the existing VLMBoundaryTester behaviour. Only needed for
+# fresh M0 runs on pairs where no Exp-05 baseline exists (stingray,
+# junco-leatherback). Shark and junco-chickadee baselines are reused from
+# Exp-05 Phase A.
+#
+# Budget: 200 gen × 30 pop = 6000 SUT calls / seed.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp08_M0
+save_dir: runs/exp08
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+
+optimizer:
+  method: M0
+  sampling:
+    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

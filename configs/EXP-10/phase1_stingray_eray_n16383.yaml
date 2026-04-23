@@ -1,0 +1,47 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-10 Phase 1 generalization — stingray → electric_ray @ n=16383
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Pair type: second reachable fish pair. In Exp-09 n=16383 uniform this pair
+# reached TgtBal=0.0 (trivial due to small init gap ~1.07). Tests whether
+# sparse init reaches the same TgtBal at dramatically lower L0 — the pair's
+# difficulty comes from the small gap, not semantic distance.
+#
+# Direct comparison: exp09_M0_n16383_stingray_eray (same seed, same pair,
+# same budget, only sampling differs).
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp10_phase1_stingray_eray_n16383
+save_dir: runs/exp10
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [40]  # stingray→electric_ray — same index as exp09 run 6
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+optimizer:
+  method: M0
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10

@@ -1,0 +1,40 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-08 M2 — FuzzyTwo: Stage 1 at two depths (monotonicity diagnostic)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Extends M1 to two fuzzy depths: max_k/2 and max_k - 1. Used as the
+# monotonicity sanity-check: if the awake mask at max_k/2 disagrees
+# materially with the mask at max_k, gene_value → effect is non-monotonic
+# and Stage 2/3 must be relied on for reliable characterisation.
+#
+# Budget: 2 × n_var + 1 ≈ 450 SUT calls / seed.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp08_M2
+save_dir: runs/exp08
+
+generations: 1
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+
+optimizer:
+  method: M2
+  fuzzy_depths: [12, -1]       # -1 → max_k - 1 = 24; 12 ≈ max_k/2
+  include_zero_in_seed: true
+  awake_threshold: mad_outlier
+  sampling:
+    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

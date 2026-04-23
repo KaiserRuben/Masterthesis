@@ -1,0 +1,105 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Exp-05 Phase A — SMOO Convergence Floor, extended single-seed probe
+# Pair: great white shark → tiger shark
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# STATUS:  REFERENCE — FP16 numerical floor limitation documented.
+#
+# Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
+# Sibling runs:  smoo_junco-chickadee.yaml
+#                smoo_newt-fire_salamander.yaml
+#
+# ────────────────────────────────────────────────────────────────────────
+# Why this run is kept in the config tree
+# ────────────────────────────────────────────────────────────────────────
+# This was the first SMOO Phase A run under MPS/4B, completed 2026-04-15
+# (~3 h wall time). The resulting trajectory showed:
+#
+#   - pareto_min_TgtBal plateau at 5.3e-5 for 74 generations (gen 125..199)
+#   - Pareto front growing from 46 → 57 individuals in the same window
+#   - pareto_min_MatrixDistance_fro still falling at gen 199 (0.069 → 0.066)
+#
+# The 5.3e-5 plateau was initially read as strong Proximity-Boden evidence.
+# Post-run precision review (see Diary 2026-04-15 "Numerical floor
+# diagnosis") revealed the plateau matches the FP16 `log_softmax` relative
+# precision in src/sut/scorer.py:233,242 — i.e. the measurement itself
+# saturates at that resolution. The run does NOT provide tight proximity-
+# floor evidence below ~1e-4; it provides evidence of reaching the measure-
+# ment's resolution limit, which is weaker.
+#
+# The Mapping-Boden observations (Pareto front still growing, MatrixDistance
+# still falling) are NOT affected by the FP16 issue — those objectives live
+# in FP32 image/text space, not in the scorer's FP16 logprob path. Those
+# parts of the run are still informative.
+#
+# ────────────────────────────────────────────────────────────────────────
+# How this config differs from the two sibling configs
+# ────────────────────────────────────────────────────────────────────────
+#   sut.model_id:            same (Qwen3.5-4B)
+#   scorer precision:        FP16 log_softmax (Post-fix scorer uses FP32 —
+#                            sibling runs are on the fixed scorer)
+#   generations:             200 (same as siblings)
+#   filter_indices:          [0] under the current SMOO seed pool on MPS
+#                            this happens to be `great_white_shark →
+#                            tiger_shark`; do NOT change — the point is to
+#                            keep this run re-runnable for regression.
+#
+# If you re-run this config AFTER the trace-complete refactor and the
+# FP32 scorer fix land, the resulting TgtBal trajectory will have ~1e-7
+# resolution instead of ~1e-4. The re-run becomes directly comparable to
+# the two sibling runs on the same pair character, and the regression
+# against the original run will make the numerical-floor correction
+# visible.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Usage
+# ────────────────────────────────────────────────────────────────────────
+#   python experiments/run_boundary_test.py \
+#     configs/EXP-05/phaseA/smoo_great_white_shark-tiger_shark.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+name: exp05_phaseA_smoo_great_white_shark-tiger_shark
+save_dir: runs/exp05/phaseA
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Optimizer budget — 4× the 03_cadence default (50) to observe the
+# Mapping-Boden (HV plateau) separately from the Proximity-Boden.
+# ───────────────────────────────────────────────────────────────────────────
+
+generations: 200
+pop_size: 30
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# System under test
+# ───────────────────────────────────────────────────────────────────────────
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Cache
+# ───────────────────────────────────────────────────────────────────────────
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Seed selection — n_categories=50, n_per_class=3, tight gap=1.0 so that
+# seed 0 of the resulting pool is the first close-boundary pair under 4B.
+# On the original run that happened to be great white shark → tiger shark.
+# ───────────────────────────────────────────────────────────────────────────
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 1.0
+  filter_indices: [0]                      # first seed; historically GWS→tiger

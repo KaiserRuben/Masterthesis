@@ -1,0 +1,213 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Exp-05 Phase A — PDQ Convergence Floor, deep single-seed probe
+# Pair 1/3: stingray → electric ray
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
+# Sibling runs:  pdq_junco-chickadee.yaml
+#                pdq_newt-fire_salamander.yaml
+# Status:        PDQ methodology ablation — NOT a standard experiment.
+#                Deviates from pdq_template.yaml methodology (Part 2) to
+#                answer whether the Stage-2 floor can be reached cleanly
+#                once per-flip budget and rank pass are both lifted.
+#
+# Research question (Phase A):
+#   For a single pre-selected non-trivial seed, does the deep zero+rank
+#   Stage-2 regime at ~4× the v2_gap budget reveal the PDQ floor? Does the
+#   late-window accept-rate genuinely decay to ~0 before the budget runs
+#   out, or does the trajectory remain budget-limited?
+#
+# ────────────────────────────────────────────────────────────────────────
+# Pair rationale — stingray → electric ray
+# ────────────────────────────────────────────────────────────────────────
+# Baseline evidence from v2_gap (seed 32, zero-only, 500 calls/flip,
+# Qwen3.5-4B/CUDA). Of the 60 flips the seed produced, flip 5 showed the
+# cleanest zero-pass floor decay in the entire v2_gap corpus (1572 flips):
+#
+#   flip 5: stingray → electric ray
+#     sparsity_flipped = 253    →  sparsity_min = 131
+#     rank_sum_flipped = 3387   →  rank_sum_min = 1225
+#     d_i_min          = 1225
+#     accept-rate:  early 0.94  →  mid 0.30  →  final 0.06
+#     strategy: dense_uniform
+#
+# This is the single non-trivial, non-hammerhead↔tiger, non-text-only flip
+# in v2_gap with clean floor-decay evidence within its zero-only budget.
+# Zero-pass hit the floor at 253 calls of 500 → demonstrated headroom.
+#
+# Phase A tests whether adding the rank pass and lifting the budget pushes
+# d_i meaningfully below 1225, and whether the late-window accept-rate in
+# the combined regime saturates to ~0 or keeps ticking.
+#
+# Cluster: fish / elasmobranch (intra-cluster pair).
+# Modality: image-only expected (v2_gap used dense_uniform, not text).
+#
+# ────────────────────────────────────────────────────────────────────────
+# Seed identity — drift from v2_gap
+# ────────────────────────────────────────────────────────────────────────
+# v2_gap ran on device=cuda; Phase A runs on MPS. Logprob float ops differ
+# enough that the seed pool order is not bit-exact. Under the same seed-
+# generation parameters (n_categories=50, n_per_class=3, gap=3.5,
+# seed_int=42), the pool dump on MPS shows stingray → electric ray at
+# indices [40, 43]. We run the first occurrence.
+#
+# Also: the archived configs/Archive/pdq_v2_gap.yaml says n_categories=10,
+# but the actual v2_gap run's config.json (runs/pdq_v2_gap/seed_0032.../
+# config.json) shows n_categories=50. The archived YAML was stale. The
+# value below (50) reproduces the actual v2_gap run.
+#
+# Class pair and trajectory character are what matters, not exact image
+# identity — Phase A is seed-agnostic by design.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Deviations from pdq_template.yaml (Part 2, normally FROZEN — justified
+# here because Exp-05 is *about* methodology)
+# ────────────────────────────────────────────────────────────────────────
+#   stage2.budget_sut_calls_per_flip:  500  →  2000   (4× deeper probe)
+#   stage2.passes.rank.enabled:        false → true   (reveals rank floor)
+#   stage1.max_flips_per_seed:         30  →  10      (fit MPS runtime)
+#
+# ────────────────────────────────────────────────────────────────────────
+# Estimated cost on MPS / Qwen3.5-4B
+# ────────────────────────────────────────────────────────────────────────
+#   stage1:  ≤  150 calls
+#   stage2:  ≤ 10 flips × 2000 calls/flip = 20 000 calls
+#   total:   ≤ 20 150 SUT calls
+#   wall:    ~6–10 h @ 1–2 s/call
+#
+# Reduce max_flips_per_seed to 5 if runtime proves too long — that still
+# captures v2_gap flip 5 and its ~4 neighbours.
+#
+# Usage:
+#   python experiments/run_pdq_test.py \
+#     configs/EXP-05/phaseA/pdq_stingray-electric_ray.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Run identity
+# ───────────────────────────────────────────────────────────────────────────
+
+name: exp05_phaseA_pdq_stingray-electric_ray
+save_dir: runs/exp05/phaseA
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# System under test
+# ───────────────────────────────────────────────────────────────────────────
+
+device: mps
+
+sut:
+  load_in_8bit: false
+  model_id: Qwen/Qwen3.5-4B                # matches v2_gap SUT
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Reproducibility
+# ───────────────────────────────────────────────────────────────────────────
+
+reproducibility:
+  seed_int: 42
+  dump_rng_state: true
+  dump_git_hash: true
+  dump_env: true
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Cache
+# ───────────────────────────────────────────────────────────────────────────
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Seed population — reproduces pdq_v2_gap's config.json so the seed pool
+# ordering matches as closely as possible. filter_indices = [40] is the
+# first stingray → electric ray seed in the MPS pool, verified by a
+# stand-alone pool dump (see Diary / Phase-A prep notes).
+# ───────────────────────────────────────────────────────────────────────────
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [40]                     # first stingray → electric ray
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Stage 1 — matches pdq_v2_gap strategy weights
+# ───────────────────────────────────────────────────────────────────────────
+
+stage1:
+  budget_sut_calls: 150
+  max_flips_per_seed: 10                   # ↓ from 30 to cap runtime
+  max_distinct_targets: 10
+  flip_policy: any_non_anchor
+  strategies:
+    - name: dense_uniform
+      weight: 0.30
+    - name: bituniform_density
+      weight: 0.15
+    - name: modality_text
+      weight: 0.20
+      density: 1.0
+    - name: sparsity_sweep
+      weight: 0.15
+      densities: [0.2, 0.4, 0.6, 0.8, 1.0]
+    - name: modality_image
+      weight: 0.10
+      density: 0.6
+    - name: max_rank
+      weight: 0.10
+      subset_fractions: [0.1, 0.25, 0.5, 1.0]
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Stage 2 — DEEP PROBE: 4× budget + rank pass enabled
+# ───────────────────────────────────────────────────────────────────────────
+# zero+rank combined addresses the second floor regime (rank reduction on
+# load-bearing genes that zero-only cannot touch). random_subset stays off
+# per template — aggressive joint-zeroing would muddy floor diagnostics.
+
+stage2:
+  budget_sut_calls_per_flip: 2000          # ↑ from 500 (v2_gap)
+  flip_preserve_policy: any_non_anchor
+  passes:
+    zero:
+      enabled: true
+      order: by_gene_value_desc
+      full_sweep_only: true
+    rank:
+      enabled: true                        # NEW vs v2_gap
+      order: by_gene_value_desc
+      max_sweeps: 10
+      step: 1
+    random_subset:
+      enabled: false
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Distances — FROZEN (template defaults)
+# ───────────────────────────────────────────────────────────────────────────
+
+distances:
+  d_i_primary: rank_sum
+  d_i_compute_all: true
+  d_o_primary: label_mismatch
+  d_o_compute_all: true
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Logging — trace every call, keep flip images for trajectory visuals
+# ───────────────────────────────────────────────────────────────────────────
+
+logging:
+  save_anchor_images: true
+  save_flip_images: true
+  save_all_candidate_images: false
+  parquet_compression: zstd
+  flush_interval_calls: 50

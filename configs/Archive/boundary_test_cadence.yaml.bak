@@ -1,0 +1,101 @@
+# VLM Boundary Test — Experiment Configuration
+#
+# Maps 1:1 to ExperimentConfig in src/config.py.
+# Only uncomment values you want to override — everything else uses
+# the dataclass defaults.
+#
+# Usage:
+#   python experiments/run_boundary_test.py configs/boundary_test.yaml
+#   python experiments/run_boundary_test.py configs/boundary_test.yaml --device cuda
+
+# ===========================================================================
+# Shared
+# ===========================================================================
+
+device: cuda                             # cpu | cuda | mps
+generations: 50                      # Optimizer generations per seed
+pop_size: 30                          # Population size
+seeds:
+  n_per_class: 1
+  max_logprob_gap: .5
+
+n_categories: 50
+
+# categories:                           # Labels the VLM chooses from
+#   - macaw
+#   - peacock
+#   - flamingo
+#   - monarch butterfly
+#   - jellyfish
+#   - chameleon
+#   - toucan
+#   - leopard
+#   - red panda
+#   - lionfish
+#   - coral reef
+#   - volcano
+#   - castle
+#   - mosque
+#   - palace
+
+# prompt_template: "What is the main subject in this image?"
+# answer_format: " Answer with exactly one of these options: {categories}."
+
+# ===========================================================================
+# Experiment
+# ===========================================================================
+
+# name: vlm_boundary                    # Used in result directory names
+save_dir: runs                          # Root directory for results
+# generations: 100                      # Optimizer generations per seed
+# pop_size: 50                          # Population size
+
+# ===========================================================================
+# Cache (ImageNet images)
+# ===========================================================================
+# First entry is primary (writable), rest are read-only fallbacks.
+# Omit entirely → auto-creates .cache/imagenet in working directory.
+
+cache_dirs:
+#  - /Volumes/SanDisk/.cache/imagenet     # external drive (skipped when not mounted)
+  - .cache/imagenet                   # local (primary)
+
+# ===========================================================================
+# SUT (Vision-Language Model)
+# ===========================================================================
+
+sut:
+  model_id: Qwen/Qwen3.5-4B            # HuggingFace model identifier
+#   enable_thinking: false              # Allow model thinking trace
+#   max_thinking_tokens: 2000           # Token budget for thinking
+#   max_pixels: null                    # Pixel cap (null = scorer default)
+
+# ===========================================================================
+# Image manipulator (VQGAN codebook swaps)
+# ===========================================================================
+
+# image:
+#   preset: f8-16384                    # f16-1024 | f16-16384 | f8-16384
+#   patch_ratio: 0.1                    # Fraction of patches eligible
+#   patch_strategy: FREQUENCY           # FREQUENCY | ALL
+#   n_candidates: 25                    # Replacement candidates per patch
+#   candidate_strategy: KNN             # KNN | UNIFORM | KFN
+#   resolution: 256                     # VQGAN input resolution
+#   knn_cache_path: null                # Path to codebook KNN cache (null = recompute)
+
+# ===========================================================================
+# Text manipulator (PoS-aware synonym replacement)
+# ===========================================================================
+
+# text:
+#   spacy_model: en_core_web_sm         # spaCy model for PoS tagging
+#   embedding_model: fasttext-wiki-news-subwords-300  # gensim embedding model
+#   n_candidates: 25                    # Synonym candidates per word
+
+# ===========================================================================
+# Seed generation
+# ===========================================================================
+
+# seeds:
+#   n_per_class: 5                      # ImageNet images to sample per category
+#   max_logprob_gap: 2.0                   # Max log-prob gap (smaller = closer to boundary)

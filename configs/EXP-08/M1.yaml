@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-08 M1 — FuzzyOnly: Stage 1 one-hot screen at value=max_k
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Runs only the fuzzy screen (one-hot × max_k across all n_var genes).
+# No precise characterization, no evolution. Classifies genes as
+# awake/background and saves a pareto-front of the best single-gene
+# probes.
+#
+# Budget: 1 generation of (n_var + 1) individuals ≈ 225 SUT calls / seed.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp08_M1
+save_dir: runs/exp08
+
+# pop_size / generations are re-derived from the seed matrix at runtime.
+# Keeping them here as hints; the screening runner overrides pop_size to
+# match len(seed_matrix) via set_initial_population.
+generations: 1
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+
+optimizer:
+  method: M1
+  fuzzy_depths: [-1]           # -1 → max_k - 1 at runtime
+  include_zero_in_seed: true
+  awake_threshold: mad_outlier
+  sampling:
+    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

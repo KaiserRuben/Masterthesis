@@ -1,0 +1,116 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Exp-05 Phase A — SMOO Convergence Floor, extended single-seed probe
+# Pair: stingray → electric ray   (close, fish intra-cluster)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
+# Cross-pipeline: pdq_stingray-electric_ray.yaml  (same seed, same image,
+#                 identical filter_indices via seed-aligned pool config)
+# Siblings:      smoo_junco-chickadee.yaml                  (close, bird)
+#                smoo_junco-leatherback_sea_turtle.yaml     (far cross-cluster)
+# Reference:     smoo_great_white_shark-tiger_shark.yaml    (FP16 archived
+#                run — NOT comparable numerically, different regime)
+#
+# ────────────────────────────────────────────────────────────────────────
+# Research question (Phase A, SMOO side, post-refactor)
+# ────────────────────────────────────────────────────────────────────────
+# With the FP16→FP32 scorer fix and the trace-complete N-dim logprob
+# refactor (schema v2), and with TgtBal rewritten as the direct log-prob
+# gap ``|lp_A - lp_B|`` (no softmax, no tanh saturation), does SMOO's
+# Proximity-Boden now drop below the ~1e-4 FP16 plateau observed in the
+# archived reference run? And does the Mapping-Boden (Pareto front
+# growth / hypervolume) decouple from the Proximity-Boden as the
+# definition predicts?
+#
+# Expected outcomes on this pair:
+#   - New TgtBal metric: unbounded, linear near boundary, full FP32
+#     reach (~1e-7 resolution). Plateau values will NOT be comparable
+#     to the archived run's 5.3e-5 (different quantity).
+#   - On a close fish intra-cluster pair, SMOO should reach the log-prob
+#     gap floor within ~50-100 gens and stabilise for the remaining budget.
+#   - Pareto front should still grow after the Proximity-Boden is hit
+#     (Mapping-Boden evidence) — this decoupling is the central
+#     empirical claim of Exp-05 Phase A.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Cross-pipeline seed alignment
+# ────────────────────────────────────────────────────────────────────────
+# Seed-generation parameters below are byte-identical to the PDQ sibling:
+#
+#   n_categories=50, n_per_class=3, max_logprob_gap=3.5
+#   sut.model_id=Qwen/Qwen3.5-4B, device=mps
+#   cache_dirs identical
+#
+# Consequence: the pool produced by generate_seeds() is the same pool
+# PDQ sees, in the same order, with the same stingray image at index 40.
+# filter_indices=[40] therefore picks the same physical (image, class_a,
+# class_b) triple in both pipelines. Phase-A cross-pipeline comparison
+# on this pair is a seed-by-seed comparison, not a pair-by-pair one.
+#
+# Note: max_logprob_gap=3.5 is wider than 03_cadence's 1.0, so SMOO
+# starts further from the boundary on initial genotypes. With 4× the
+# 03_cadence generation budget (200 vs 50) there is ample runway for the
+# GA to converge despite the harder starting condition.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Estimated cost on MPS / Qwen3.5-4B
+# ────────────────────────────────────────────────────────────────────────
+#   200 gen × 30 pop = 6000 SUT calls
+#   N-class scoring (N=50) costs ~2-3× per-call versus the old 2-class
+#   regime, so wall-time is roughly 4-6 h per seed.
+#
+# Usage:
+#   python experiments/run_boundary_test.py \
+#     configs/EXP-05/phaseA/smoo_stingray-electric_ray.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Run identity
+# ───────────────────────────────────────────────────────────────────────────
+
+name: exp05_phaseA_smoo_stingray-electric_ray
+save_dir: runs/exp05/phaseA
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Optimizer budget
+# ───────────────────────────────────────────────────────────────────────────
+# 4× 03_cadence (50 → 200) to give the Mapping-Boden (HV plateau) room to
+# separate from the Proximity-Boden (TgtBal plateau).
+
+generations: 200
+pop_size: 30
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# System under test — matches PDQ sibling exactly
+# ───────────────────────────────────────────────────────────────────────────
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Cache
+# ───────────────────────────────────────────────────────────────────────────
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Seed selection — aligned with PDQ sibling (same pool, same indices)
+# ───────────────────────────────────────────────────────────────────────────
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5                     # aligned w/ PDQ (was 1.0 in
+                                           # archived GWS→tiger run)
+  filter_indices: [40]                     # first stingray → electric ray
+                                           # (verified against PDQ pool dump)

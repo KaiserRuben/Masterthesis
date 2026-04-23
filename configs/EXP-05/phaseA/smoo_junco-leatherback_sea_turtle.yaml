@@ -1,0 +1,107 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Exp-05 Phase A — SMOO Convergence Floor, extended single-seed probe
+# Pair: junco → leatherback sea turtle   (far, bird → reptile)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
+# Cross-pipeline: pdq_junco-leatherback_sea_turtle.yaml
+# Siblings:      smoo_stingray-electric_ray.yaml            (close, fish)
+#                smoo_junco-chickadee.yaml                  (close, bird,
+#                                                            same anchor)
+#
+# ────────────────────────────────────────────────────────────────────────
+# Rolle in Phase A — das ferne Ende der Ähnlichkeits-Achse
+# ────────────────────────────────────────────────────────────────────────
+# Drittes SMOO-Phase-A-Pair, zugleich der härteste Fall:
+#
+# 1. Anker-kontrollierte Similarity-Comparison.
+#    Dieser Run teilt das junco-Bild mit smoo_junco-chickadee.yaml. Die
+#    einzige Variable zwischen den beiden Runs ist die Ziel-Klasse:
+#    chickadee (close, passerine) vs. leatherback sea turtle (far,
+#    Meeres-Reptil). Jeder Unterschied in Floor-Verhalten zwischen
+#    beiden Runs geht auf die Ziel-Ähnlichkeit zurück, nicht auf
+#    Ankerklassen-Artefakte.
+#
+# 2. Cross-cluster Ferne-Test.
+#    Das Paar spannt den grössten Abstand in der Phase-A-Wahl: von
+#    ~15g seed-eater mit Federn (junco) zu ~500 kg Meeresreptil mit
+#    Flippen und Karapax (leatherback). Der gemeinsame Obertyp ist
+#    nur "Wirbeltier". Wenn SMOO dieses Pair innerhalb von 200 gens
+#    überhaupt konvergiert, zeigt das, dass die Pipeline auch bei
+#    taxonomisch grossen Sprüngen noch arbeitet. Wenn sie NICHT
+#    konvergiert, ist der Punkt unter Phase-C relevant: das Stopp-
+#    Kriterium muss hardcore-Fälle an ihrer Nicht-Konvergenz erkennen,
+#    nicht nur Routine-Fälle an ihrer Plateau-Länge.
+#
+# 3. Pareto-Front-Charakter.
+#    Diese Klassen haben wenig visuelles Overlap (kein Farbton, keine
+#    Silhouette, keine Textur gemeinsam). Die VQGAN-Patch-Manipulation
+#    muss möglicherweise aggressiver eingreifen. Das sollte sich im
+#    `pareto_min_MatrixDistance_fro` sichtbar höher niederschlagen als
+#    beim geschwistrigen close-Pair. Wenn ja → direkter Beleg für die
+#    These, dass die Floor-Werte mit der Ziel-Ähnlichkeit skalieren.
+#    Wenn nein → starkes Gegenargument gegen die These, zu dokumentieren.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Risiko: GA erreicht die Boundary nicht innerhalb von 200 gens
+# ────────────────────────────────────────────────────────────────────────
+# Mit max_logprob_gap=3.5 startet SMOO auf diesem Pair mit einem
+# anfänglichen log-prob Gap bis zu ~3 (der Gap-Filter gewährt maximal
+# gap=3.5, typische Werte bei weit-Pairs liegen bei ~2.5-3). Die
+# GA muss diesen Gap auf ~0 treiben durch Kombination von Bild-
+# Manipulation (VQGAN-Patch-Swap) und Text-Manipulation (Synonym-
+# Substitution). Das ist mehr Arbeit als bei einem close-Pair mit Gap
+# ~0.5 Startwert.
+#
+# Falls der Plateau nach 200 gens *nicht* erreicht wird (d.h.
+# pareto_min_TgtBal fällt am Ende immer noch sichtbar), ist das
+# informativ: es zeigt dass 200 gens auf diesem Seed-Härtegrad nicht
+# reicht, und Phase C muss ein adaptives Stopp-Kriterium haben, das
+# "nicht-konvergiert bis hart-max" sauber von "konvergiert vor soft-
+# max" unterscheidet. Der Run liefert in jedem Fall Daten.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Cross-pipeline seed alignment
+# ────────────────────────────────────────────────────────────────────────
+# Same seed-generation parameters as pdq_junco-leatherback_sea_turtle:
+#
+#   n_categories=50, n_per_class=3, max_logprob_gap=3.5
+#   sut.model_id=Qwen/Qwen3.5-4B, device=mps
+#
+# filter_indices=[85] picks the first junco → leatherback sea turtle
+# pair. Because generate_seeds() emits all pairs of one image
+# consecutively, idx 85 shares the anchor *image* with idx 83 (the
+# junco-chickadee run). Same junco, different target.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Estimated cost on MPS / Qwen3.5-4B:  ~4–6 h wall time
+# ────────────────────────────────────────────────────────────────────────
+#
+# Usage:
+#   python experiments/run_boundary_test.py \
+#     configs/EXP-05/phaseA/smoo_junco-leatherback_sea_turtle.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+name: exp05_phaseA_smoo_junco-leatherback_sea_turtle
+save_dir: runs/exp05/phaseA
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [85]                     # first junco → leatherback sea turtle
+                                           # (same junco image as idx 83)

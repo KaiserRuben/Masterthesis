@@ -1,0 +1,33 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-08 — Adaptive-Resolution Screening, SHARED BASE
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Shared pool / SUT / cache settings for all 5 methods. Each per-method
+# YAML (M0.yaml .. M4.yaml) copies these verbatim and overrides only the
+# `name`, `save_dir`, `optimizer`, and (for M0) `generations` fields.
+#
+# This file is NOT directly used by run_screening.py — it's a reference
+# and copy-paste template only. Duplication is intentional: every config
+# is self-contained and standalone-readable.
+#
+# See the Obsidian spec: [[Exp-08-Adaptive-Resolution-Screening]]
+# and the design diary:   [[2026-04-17-Exp08-Design-Adaptive-Resolution-Screening]]
+# ═══════════════════════════════════════════════════════════════════════════
+
+save_dir: runs/exp08
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  # filter_indices populated at runtime by --pair / --replicates CLI

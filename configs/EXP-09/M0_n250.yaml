@@ -1,0 +1,37 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-09 M0 — Candidate sweep low point (n_candidates = 250)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# 10× the baseline cap. Cheapest sweep point. Tests whether even a modest
+# candidate-range bump already changes optimizer behavior.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp09_M0_n250
+save_dir: runs/exp09
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+
+image:
+  n_candidates: 250
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+optimizer:
+  method: M0
+  sampling:
+    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

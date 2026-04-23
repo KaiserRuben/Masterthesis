@@ -1,0 +1,46 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-10 Phase 1 generalization — junco → leatherback_sea_turtle @ n=16383
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Pair type: far cross-cluster (bird → reptile). In Exp-09 the largest
+# absolute TgtBal reduction was observed here (2.73 → 1.07) but no flip.
+# Tests whether sparse init can cross a genuinely large semantic gap.
+#
+# Direct comparison: exp09_M0_n16383_junco_leatherback (same seed, same pair,
+# same budget, only sampling differs).
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp10_phase1_junco_leatherback_n16383
+save_dir: runs/exp10
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [85]  # junco→leatherback — same index as exp09 run 5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+optimizer:
+  method: M0
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10

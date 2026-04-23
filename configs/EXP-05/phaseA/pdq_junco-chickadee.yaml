@@ -1,0 +1,140 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Exp-05 Phase A — PDQ Convergence Floor, deep single-seed probe
+# Pair 2/3: junco → chickadee
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
+# Sibling runs:  pdq_stingray-electric_ray.yaml         (close, fish)
+#                pdq_junco-leatherback_sea_turtle.yaml  (far, bird → reptile)
+# Status:        PDQ methodology ablation — see sibling configs for shared
+#                research question and methodology deviations.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Pair rationale — junco → chickadee (close, intra-passerine)
+# ────────────────────────────────────────────────────────────────────────
+# This pair is the "close in a different cluster" slot. Together with
+# sibling pdq_stingray-electric_ray.yaml it covers two close intra-family
+# pairs from two independent taxonomic zones (elasmobranch vs. passerine).
+# If the PDQ floor is independent of cluster membership, these two should
+# behave similarly despite being on opposite ends of ImageNet.
+#
+# This pair also pairs with pdq_junco-leatherback_sea_turtle.yaml as an
+# *anchor-controlled* similarity comparison: both runs start from the same
+# junco images, but pair 2 targets a close class (chickadee) while pair 3
+# targets a far class (leatherback sea turtle). The difference between the
+# two runs isolates target-class similarity as the independent variable,
+# holding anchor-class confounds constant.
+#
+# Precedent from 03_cadence (9B/CUDA, SMOO not PDQ, different model, so
+# treat as soft prior not hard baseline): junco → chickadee was one of
+# the seeds with clean TgtBal decay and a dense Pareto front.
+#
+# Expected character:
+#   - Image-dominated (birds are primarily visual; text label prior
+#     between "junco" and "chickadee" is weak)
+#   - Small-to-medium d_i expected (visually distinct patch-by-patch but
+#     semantically close, so local manipulation should flip easily)
+#   - No known attractor dominance — neither class has appeared as a
+#     SMOO/PDQ attractor in prior runs
+#
+# ────────────────────────────────────────────────────────────────────────
+# Seed identity
+# ────────────────────────────────────────────────────────────────────────
+# Pool dump (MPS / 4B / n_categories=50 / n_per_class=3 / gap=3.5 /
+# seed_int=42) places junco → chickadee at index 83 (first occurrence;
+# also at 96 and 109).
+#
+# ────────────────────────────────────────────────────────────────────────
+# Deviations from pdq_template.yaml (same as sibling configs)
+# ────────────────────────────────────────────────────────────────────────
+#   stage2.budget_sut_calls_per_flip:  500  →  2000   (4× deeper probe)
+#   stage2.passes.rank.enabled:        false → true   (reveals rank floor)
+#   stage1.max_flips_per_seed:         30  →  10      (fit MPS runtime)
+#
+# ────────────────────────────────────────────────────────────────────────
+# Estimated cost on MPS / Qwen3.5-4B:  ~6–10 h wall time
+# ────────────────────────────────────────────────────────────────────────
+#
+# Usage:
+#   python experiments/run_pdq_test.py \
+#     configs/EXP-05/phaseA/pdq_junco-chickadee.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+name: exp05_phaseA_pdq_junco-chickadee
+save_dir: runs/exp05/phaseA
+
+device: mps
+
+sut:
+  load_in_8bit: false
+  model_id: Qwen/Qwen3.5-4B
+
+reproducibility:
+  seed_int: 42
+  dump_rng_state: true
+  dump_git_hash: true
+  dump_env: true
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [83]                     # first junco → chickadee
+
+stage1:
+  budget_sut_calls: 150
+  max_flips_per_seed: 10
+  max_distinct_targets: 10
+  flip_policy: any_non_anchor
+  strategies:
+    - name: dense_uniform
+      weight: 0.30
+    - name: bituniform_density
+      weight: 0.15
+    - name: modality_text
+      weight: 0.20
+      density: 1.0
+    - name: sparsity_sweep
+      weight: 0.15
+      densities: [0.2, 0.4, 0.6, 0.8, 1.0]
+    - name: modality_image
+      weight: 0.10
+      density: 0.6
+    - name: max_rank
+      weight: 0.10
+      subset_fractions: [0.1, 0.25, 0.5, 1.0]
+
+stage2:
+  budget_sut_calls_per_flip: 2000
+  flip_preserve_policy: any_non_anchor
+  passes:
+    zero:
+      enabled: true
+      order: by_gene_value_desc
+      full_sweep_only: true
+    rank:
+      enabled: true
+      order: by_gene_value_desc
+      max_sweeps: 10
+      step: 1
+    random_subset:
+      enabled: false
+
+distances:
+  d_i_primary: rank_sum
+  d_i_compute_all: true
+  d_o_primary: label_mismatch
+  d_o_compute_all: true
+
+logging:
+  save_anchor_images: true
+  save_flip_images: true
+  save_all_candidate_images: false
+  parquet_compression: zstd
+  flush_interval_calls: 50

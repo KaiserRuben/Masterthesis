@@ -1,0 +1,40 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-08 M3 — FuzzyPrecise: Stage 1 two-depth + Stage 2 precise scan
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Pipeline: M2 fuzzy screen → classify awake genes → Stage 2 scans each
+# awake gene across {1, 3, 6, 9, 12, 15, 18, 21, 25} to trace out the
+# per-gene flip-threshold curve. No Stage-3 evolution.
+#
+# Budget: M2 (~450) + M3 (~10% × n_var × 9 depths ≈ 220) ≈ 700 calls.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp08_M3
+save_dir: runs/exp08
+
+generations: 1
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+
+optimizer:
+  method: M3
+  fuzzy_depths: [12, -1]
+  precise_depths: [1, 3, 6, 9, 12, 15, 18, 21, 25]
+  include_zero_in_seed: true
+  awake_threshold: mad_outlier
+  sampling:
+    mode: uniform       # Explicit pin — this config was run under legacy IntegerRandomSampling; do not let new SamplingConfig default (sparse) silently change reproduction

@@ -1,0 +1,57 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-10 Phase 1 — Sparse init with full codebook
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Tests whether replacing PyMoo's IntegerRandomSampling with a Bernoulli-gated
+# sparse sampler lets the optimizer reach the (L0, TgtBal) sparse-near-boundary
+# corner that Exp-09 (monotonically-worse HV with unlocked codebook) and Exp-08
+# (screening-methods failed) both left unreached.
+#
+# Design rationale: see Diary/2026-04-19-Exp09-Results-And-Structural-Diagnosis
+# and Diary/2026-04-19-Saliency-Validation-And-Phase1-Design.
+#
+# Init composition for pop=30:
+#   -  5 % zero anchors                → 1-2 individuals with [0,...,0] image
+#   - 10 % Bernoulli × uniform depth   → 3 individuals, dense-random backup
+#   - 85 % Bernoulli × geometric depth → ~25 individuals with shallow-sparse
+# Expected E[n_active_img] ≈ 228 × 0.03 ≈ 6.8 per non-zero-anchor individual.
+#
+# Direct comparison: exp09_M0_n16383_shark (same seed, same pair, same budget,
+# only sampling differs). Success criterion (user, 2026-04-18): 2D HV
+# (n_active, TgtBal) > Exp-09 Run-1 HV of 1.48.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp10_phase1_shark_n16383
+save_dir: runs/exp10
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [5]   # shark seed 5 — identical to Exp-09 Run 1 and Exp-08 M0 baseline
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+optimizer:
+  method: M0
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10

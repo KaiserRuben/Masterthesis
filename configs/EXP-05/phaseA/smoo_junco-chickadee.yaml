@@ -1,0 +1,99 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Exp-05 Phase A — SMOO Convergence Floor, extended single-seed probe
+# Pair: junco → chickadee   (close, bird intra-cluster)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Part of:       Exp-05 PDQ & SMOO Convergence Floor (Phase A — Understand)
+# Cross-pipeline: pdq_junco-chickadee.yaml  (same seed, same image,
+#                 identical filter_indices via seed-aligned pool config)
+# Siblings:      smoo_stingray-electric_ray.yaml            (close, fish)
+#                smoo_junco-leatherback_sea_turtle.yaml     (far cross-cluster,
+#                                                            same anchor)
+#
+# ────────────────────────────────────────────────────────────────────────
+# Rolle dieses Runs in Phase A
+# ────────────────────────────────────────────────────────────────────────
+# Slot 1 in der Phase-A-Lauf-Reihenfolge — der einfachste der drei
+# SMOO-Pairs. Close intra-cluster, nicht im Shark-Attraktor-Bereich, kein
+# bekannter historischer Fehlfall. Fungiert als:
+#
+#   (a) Erste empirische Validierung der gefixten Pipeline. Wenn sich
+#       TgtBal-Plateau sichtbar unter das FP16-Niveau (~1e-4) bewegt
+#       — idealerweise bis ~1e-6 oder besser — ist die FP32-Scorer-Korrektur
+#       + direkte log-prob-gap-Metrik quantitativ bestätigt.
+#
+#   (b) Low-risk smoke test für das neue Schema-v2 Trace-Format. Wenn
+#       etwas am neuen Logging-Pfad kaputt ist, fällt es hier auf, bevor
+#       wir einen 6-10 h PDQ-Run verbrennen.
+#
+#   (c) Erster seed-aligned Cross-Pipeline-Datenpunkt. Die gleiche
+#       (junco_image, chickadee)-Instanz landet sowohl in SMOO als auch
+#       in PDQ, und die beiden Floor-Aussagen sind direkt vergleichbar.
+#
+# Dieser Run hat deshalb den niedrigsten Risiko-Nutzen-Quotient: wenn er
+# schiefläuft, lassen sich die Folgen reparieren, bevor ein teurer Run
+# die gleiche Stelle trifft.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Expected character on this pair
+# ────────────────────────────────────────────────────────────────────────
+#   - Close intra-family: junco and chickadee are both ~15g passerines
+#     with similar silhouettes and overlapping habitats. The VLM has a
+#     narrow decision boundary; small patch perturbations should drive
+#     the log-prob gap to zero quickly.
+#   - Bird cluster: first datapoint from the passerine branch of the
+#     taxonomy in this experiment. Compare against the fish-cluster
+#     sibling (stingray→electric ray) to test whether the floor-level
+#     is cluster-independent at equal similarity.
+#   - No known attractor dominance for either class.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Cross-pipeline seed alignment
+# ────────────────────────────────────────────────────────────────────────
+# Same seed-generation parameters as pdq_junco-chickadee.yaml:
+#
+#   n_categories=50, n_per_class=3, max_logprob_gap=3.5
+#   sut.model_id=Qwen/Qwen3.5-4B, device=mps
+#
+# filter_indices=[83] picks the first junco → chickadee pair in the
+# pool, which is the same underlying ImageNet image that the PDQ
+# sibling operates on.
+#
+# This pair also has an anchor-controlled comparison with the third
+# SMOO sibling (smoo_junco-leatherback_sea_turtle.yaml, filter_indices
+# =[85], same junco image, different target class). The diff between
+# runs 1 and 3 isolates target-class similarity as the independent
+# variable at constant anchor.
+#
+# ────────────────────────────────────────────────────────────────────────
+# Estimated cost on MPS / Qwen3.5-4B:  ~4–6 h wall time
+# ────────────────────────────────────────────────────────────────────────
+#
+# Usage:
+#   python experiments/run_boundary_test.py \
+#     configs/EXP-05/phaseA/smoo_junco-chickadee.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+name: exp05_phaseA_smoo_junco-chickadee
+save_dir: runs/exp05/phaseA
+
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [83]                     # first junco → chickadee
+                                           # (aligned with PDQ sibling)
