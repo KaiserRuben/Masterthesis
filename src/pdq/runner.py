@@ -27,6 +27,7 @@ from time import time
 from typing import Any
 
 import numpy as np
+import torch
 from PIL import Image
 from tqdm import tqdm
 
@@ -81,6 +82,40 @@ class _FlipRecord:
     anchor_logprobs: list[float]
     anchor_label: str
     stage1_sut_calls: int
+
+
+# ---------------------------------------------------------------------------
+# GPU allocator-pool maintenance
+# ---------------------------------------------------------------------------
+
+
+def _release_gpu_cache(device: str) -> None:
+    """Return cached but unused GPU memory to the OS.
+
+    PyTorch's CUDA and MPS allocators keep freed tensors in an internal
+    pool for reuse, which is great for throughput but problematic for
+    long-running multi-stage runs: per-call KV-cache tensors (hundreds
+    of MB each on a 4B model) accumulate in the pool over thousands of
+    SUT calls and can push process RSS into the tens of GB even though
+    Python no longer references the underlying tensors.
+
+    This helper calls the device-specific ``empty_cache`` to flush the
+    pool. It is cheap (a no-op when there is nothing to release) and
+    safe to call between stages or per-flip without affecting numerical
+    behaviour. CPU runs are no-ops.
+
+    :param device: Torch device string from the experiment config
+        (``"cpu"``, ``"cuda"``, ``"mps"``).
+    """
+    if device.startswith("cuda"):
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    elif device == "mps":
+        if torch.backends.mps.is_available():
+            # mps.empty_cache exists on PyTorch >= 2.0; guard for older.
+            empty = getattr(torch.mps, "empty_cache", None)
+            if callable(empty):
+                empty()
 
 
 # ---------------------------------------------------------------------------
@@ -226,8 +261,19 @@ class PDQRunner:
     # Public entry point
     # ------------------------------------------------------------------
 
-    def run(self) -> None:
-        """Initialise all components and run all seeds."""
+    def run(self, preflight: bool = False) -> None:
+        """Initialise all components and run all seeds.
+
+        :param preflight: If True, run a representative-cost measurement
+            on the first filtered seed before the main loop starts.
+            Prints per-call wall time and a projected total runtime
+            based on the configured budget (stage1 + max_flips ×
+            stage2). Does NOT abort; the user should Ctrl-C if the
+            projection is unacceptable. The preflight reuses the
+            already-loaded SUT and manipulator, so it adds only the
+            measurement calls' wall time (~20 × per-call seconds) to
+            the run.
+        """
         cfg = self._cfg
 
         # -- Data source (always needed first for category resolution) ----
@@ -289,6 +335,35 @@ class PDQRunner:
 
         # -- Deterministic RNG -------------------------------------------
         rng = np.random.default_rng(cfg.reproducibility.seed_int)
+
+        # -- Preflight cost check (optional) -----------------------------
+        if preflight:
+            from src.sut import preflight_cost_check
+
+            first_seed = indexed_seeds[0][1]
+            answer_suffix = cfg.answer_format.format(
+                categories=", ".join(cfg.categories),
+            )
+            # Total PDQ SUT calls per seed: stage1 budget (at most
+            # budget_sut_calls, reached if no early stop) + up to
+            # max_flips_per_seed × budget_sut_calls_per_flip for stage2.
+            # Multiplied across all filtered seeds.
+            per_seed_calls = (
+                cfg.stage1.budget_sut_calls
+                + cfg.stage1.max_flips_per_seed
+                * cfg.stage2.budget_sut_calls_per_flip
+            )
+            total_calls = per_seed_calls * len(indexed_seeds)
+            preflight_cost_check(
+                sut=sut,
+                manipulator=manipulator,
+                seed=first_seed,
+                prompt_template=cfg.prompt_template,
+                answer_suffix=answer_suffix,
+                categories=cfg.categories,
+                total_calls_projected=total_calls,
+                n_samples=20,
+            )
 
         pbar = tqdm(indexed_seeds, unit="seed", desc="PDQ")
         for pos, (seed_idx, seed) in enumerate(pbar):
@@ -534,9 +609,15 @@ class PDQRunner:
         stage1_total_calls_at_end = adapter.call_count
         n_flips = flip_id
 
-        # Drain Stage-1 SUT call records.
+        # Drain Stage-1 SUT call records and release accumulated GPU
+        # allocator-pool memory before Stage 2 begins. After 150 Stage-1
+        # calls on a 4B model, the MPS / CUDA allocator pool can hold
+        # several GB of cached KV-cache tensors that are no longer
+        # referenced — force them back to the OS so Stage 2 starts with
+        # a clean memory footprint.
         sl.append_sut_calls(adapter.pop_records())
         sl.flush_all()
+        _release_gpu_cache(cfg.device)
 
         pbar.set_postfix({
             "stage": "S2",
@@ -546,8 +627,17 @@ class PDQRunner:
         })
 
         # -- Stage 2 — minimisation ------------------------------------------
-        # SUT check closure for Stage 2: renders a genotype, calls the SUT,
-        # and returns a CheckResult with the label and adapter metadata.
+        # SUT check closure for Stage 2. Each call also bumps a counter
+        # that triggers periodic GPU allocator-pool flushes mid-flip:
+        # without them the MPS / CUDA allocator pool grows by roughly the
+        # KV-cache size (~15-20 MB on Qwen3.5-4B at N=50 categories) per
+        # call, accumulating tens of GB inside a single 2000-call flip
+        # before the per-flip _release_gpu_cache below has a chance to
+        # reclaim it. With release_every=200, mid-flip RSS growth is
+        # bounded at ~3-4 GB above the post-release baseline.
+        _stage2_call_counter = [0]
+        _STAGE2_RELEASE_EVERY = 200
+
         def _stage2_check(geno: np.ndarray) -> CheckResult:
             imgs, texts = manipulator.manipulate(
                 candidates=None, weights=geno.reshape(1, -1),
@@ -561,6 +651,12 @@ class PDQRunner:
                 candidate_id=-1,
             )
             lbl = categories[int(logprobs_t.argmax().item())]
+
+            _stage2_call_counter[0] += 1
+            if _stage2_call_counter[0] >= _STAGE2_RELEASE_EVERY:
+                _release_gpu_cache(cfg.device)
+                _stage2_call_counter[0] = 0
+
             return CheckResult(lbl != label_anchor, lbl, call_id, adapter.wall_time_cumulative)
 
         n_stage2_calls = 0
@@ -612,9 +708,22 @@ class PDQRunner:
                 stage2_result=result,
             )
 
-        # Drain Stage-2 SUT call records.
+            # Per-flip housekeeping. Drain SUT call records to disk so
+            # the adapter's in-memory buffer stays bounded at one flip's
+            # worth (~2000 records × ~3 KB ≈ 7 MB) instead of growing to
+            # all flips' worth (~70 MB). Then release the GPU allocator
+            # pool — each flip generates ``budget_sut_calls_per_flip``
+            # new KV-cache tensors that PyTorch's MPS/CUDA allocator
+            # would otherwise retain across the whole seed.
+            sl.append_sut_calls(adapter.pop_records())
+            sl.flush_all()
+            _release_gpu_cache(cfg.device)
+
+        # Final drain (no-op if all flips already drained, but keeps the
+        # invariant that the seed ends with an empty adapter buffer).
         sl.append_sut_calls(adapter.pop_records())
         sl.flush_all()
+        _release_gpu_cache(cfg.device)
 
         pbar.set_postfix({
             "anchor": label_anchor,

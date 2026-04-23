@@ -73,15 +73,19 @@ def load_config(cfg: dict) -> PDQExperimentConfig:
 # ---------------------------------------------------------------------------
 
 
-def run_experiment(cfg: dict) -> None:
+def run_experiment(cfg: dict, preflight: bool = False) -> None:
     """Build all components from *cfg* dict and run the PDQ test.
 
     :param cfg: Raw YAML dict (may contain CLI overrides applied before
         this call).
+    :param preflight: If True, measure per-SUT-call wall time on the
+        first seed and print a total-runtime projection before the
+        main loop. Useful on new hardware or after config changes
+        that alter scoring cost.
     """
     exp = load_config(cfg)
     runner = PDQRunner(exp)
-    runner.run()
+    runner.run(preflight=preflight)
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +109,16 @@ def main() -> None:
         "--save-dir", type=str,
         help="Override output directory for results",
     )
+    parser.add_argument(
+        "--preflight", action="store_true",
+        help=(
+            "Measure per-SUT-call wall time on 20 representative calls "
+            "before the main loop, and print a total-runtime projection "
+            "(budget × per-call time × seed count). Use on new hardware "
+            "or after config changes that alter scoring cost. Does NOT "
+            "abort — Ctrl-C the run if the projection is unacceptable."
+        ),
+    )
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -115,7 +129,7 @@ def main() -> None:
     if args.save_dir:
         cfg["save_dir"] = args.save_dir
 
-    run_experiment(cfg)
+    run_experiment(cfg, preflight=args.preflight)
 
     # HF streaming leaves daemon threads — force exit.
     os._exit(0)

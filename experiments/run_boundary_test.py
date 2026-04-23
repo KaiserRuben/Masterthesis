@@ -38,8 +38,9 @@ from src.objectives import (
     TextReplacementDistance,
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
-from src.sut import VLMSUT
+from src.sut import VLMSUT, preflight_cost_check
 from src.tester import VLMBoundaryTester, generate_seeds
+from src.pdq.runner import _apply_seed_filter
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -70,8 +71,16 @@ def load_config(cfg: dict) -> ExperimentConfig:
     return dacite.from_dict(ExperimentConfig, cfg, config=_DACITE_CONFIG)
 
 
-def run_experiment(cfg: dict) -> None:
-    """Build all components from *cfg* dict and run the boundary test."""
+def run_experiment(cfg: dict, preflight: bool = False) -> None:
+    """Build all components from *cfg* dict and run the boundary test.
+
+    :param cfg: Raw YAML config dict.
+    :param preflight: If True, run a SUT cost-check measurement on the
+        first seed before the main loop starts. Prints a per-call
+        timing and a projection of total wall time for the configured
+        budget. Does NOT abort the run; the user should Ctrl-C if the
+        projection is unacceptable.
+    """
     exp = load_config(cfg)
 
     # -- Resolve categories from data source (before any component sees them)
@@ -141,6 +150,35 @@ def run_experiment(cfg: dict) -> None:
         f"{len(seeds)} seed(s), "
         f"{exp.generations} gen x {exp.pop_size} pop"
     )
+
+    if preflight:
+        # Apply the same filter the tester will apply, so the projection
+        # reflects the real run count.
+        indexed = _apply_seed_filter(list(seeds), exp.seeds.filter_indices)
+        if not indexed:
+            logger.warning("Preflight: no seeds after filter — skipping.")
+        else:
+            n_seeds_run = len(indexed)
+            first_seed = indexed[0][1]
+            pair = (first_seed.class_a, first_seed.class_b)
+            scored_categories = (
+                exp.categories if exp.score_full_categories else pair
+            )
+            answer_suffix = exp.answer_format.format(
+                categories=", ".join(pair),
+            )
+            total_calls = exp.generations * exp.pop_size * n_seeds_run
+            preflight_cost_check(
+                sut=sut,
+                manipulator=manipulator,
+                seed=first_seed,
+                prompt_template=exp.prompt_template,
+                answer_suffix=answer_suffix,
+                categories=scored_categories,
+                total_calls_projected=total_calls,
+                n_samples=20,
+            )
+
     tester.test(seeds)
 
 
@@ -160,6 +198,16 @@ def main() -> None:
         "--save-dir", type=str,
         help="Override output directory for results",
     )
+    parser.add_argument(
+        "--preflight", action="store_true",
+        help=(
+            "Measure per-SUT-call wall time on 20 representative calls "
+            "before the main loop, and print a total-runtime projection. "
+            "Use on new hardware or after config changes that alter "
+            "scoring cost (e.g. score_full_categories). Does NOT abort "
+            "— Ctrl-C the run if the projection is unacceptable."
+        ),
+    )
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -170,7 +218,7 @@ def main() -> None:
     if args.save_dir:
         cfg["save_dir"] = args.save_dir
 
-    run_experiment(cfg)
+    run_experiment(cfg, preflight=args.preflight)
 
     # HF streaming leaves daemon threads — force exit.
     os._exit(0)
