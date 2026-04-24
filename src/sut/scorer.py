@@ -17,6 +17,7 @@ from __future__ import annotations
 import gc
 from abc import ABC, abstractmethod
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
@@ -106,6 +107,19 @@ class VLMScorer(ABC):
         """
         ...
 
+    @abstractmethod
+    def encode_text(self, texts: list[str]) -> np.ndarray:
+        """Return mean-pooled last-hidden-state embeddings for *texts*.
+
+        Text-only — no image conditioning, no chat-template wrapping. Used
+        by :class:`~src.sut.text_embedder.TextEmbedder` to measure sentence
+        drift in the SUT's own representational space.
+
+        :param texts: Batch of raw sentences.
+        :returns: ``float32`` array of shape ``(len(texts), hidden_dim)``.
+        """
+        ...
+
     # ------------------------------------------------------------------
     # Public helpers
     # ------------------------------------------------------------------
@@ -114,6 +128,11 @@ class VLMScorer(ABC):
     def tokenizer(self):
         """Shortcut to the underlying tokenizer."""
         return self._processor.tokenizer
+
+    @property
+    def device(self) -> torch.device:
+        """Device the underlying model sits on."""
+        return self._device
 
     # ------------------------------------------------------------------
     # Generation (optional -- kept for completeness)
@@ -386,6 +405,36 @@ class QwenVLScorer(VLMScorer):
         return self._processor(
             text=[text], images=[image], return_tensors="pt"
         ).to(self._device)
+
+    # Qwen3-VL layout: ForConditionalGeneration -> model (Qwen3VLModel) ->
+    # language_model. Qwen3.5 causal wrappers collapse the inner name; we
+    # walk defensively.
+    def _text_backbone(self) -> torch.nn.Module:
+        inner = getattr(self._model, "model", self._model)
+        return getattr(inner, "language_model", inner)
+
+    @torch.no_grad()
+    def encode_text(self, texts: list[str]) -> np.ndarray:
+        """Tokenize *texts* raw (no chat template) and mean-pool the last
+        hidden state of the text backbone. Image tower is bypassed.
+        """
+        tok = self._processor.tokenizer
+        batch = tok(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        ).to(self._device)
+        out = self._text_backbone()(
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            use_cache=False,
+        )
+        hidden = out.last_hidden_state                       # (N, T, D)
+        mask = batch["attention_mask"].unsqueeze(-1).to(hidden.dtype)
+        pooled = (hidden * mask).sum(1) / mask.sum(1).clamp(min=1)
+        return pooled.float().cpu().numpy()
 
 
 # -----------------------------------------------------------------------

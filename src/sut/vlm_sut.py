@@ -20,6 +20,7 @@ from torch import Tensor
 from src.config import ExperimentConfig
 
 from .scorer import create_scorer
+from .text_embedder import TextEmbedder
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,9 @@ class VLMSUT(SUT):
         self._cache_hits = 0
         self._cache_misses = 0
         self._last_call_cached = False
+        self._text_embedder = TextEmbedder(
+            self._scorer, self._config.sut.model_id, self._redis,
+        )
 
     # ------------------------------------------------------------------
     # SUT interface
@@ -145,6 +149,11 @@ class VLMSUT(SUT):
         top_idx = int(logprobs.argmax().item())
         top_label = self._config.categories[top_idx]
         return top_label == cond, logprobs
+
+    @property
+    def text_embedder(self) -> TextEmbedder:
+        """Text-only sentence embedder sharing this SUT's Qwen backbone."""
+        return self._text_embedder
 
     @property
     def cache_stats(self) -> dict[str, int]:
