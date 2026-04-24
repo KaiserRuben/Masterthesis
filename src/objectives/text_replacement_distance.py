@@ -1,5 +1,10 @@
 """Text replacement distance criterion for SMOO.
 
+Kept alongside :class:`TextEmbeddingDistance` so that Exp-12 can A/B the
+two formulations. Live experiments default to the embedding-based
+objective (see ``ExperimentConfig.text_objective``); this word-level
+formulation only loads when ``text_objective: fasttext`` is set.
+
 Measures the total cosine distance introduced by synonym replacements.
 For each replaced word (gene > 0), the cosine distance between the
 original word and the chosen candidate is summed.

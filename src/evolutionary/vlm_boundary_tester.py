@@ -2,7 +2,7 @@
 
 Wires together :class:`VLMManipulator`, :class:`VLMSUT`,
 :class:`DiscretePymooOptimizer`, and 3 live objectives
-(MatrixDistance, TextReplacementDistance, TargetedBalance) into a
+(MatrixDistance, TextEmbeddingDistance, TargetedBalance) into a
 multi-objective evolutionary search loop. Objectives are batched and
 run through a :class:`CriterionCollection`.
 
@@ -211,7 +211,7 @@ class VLMBoundaryTester(SMOO):
         seed → prepare → [ask → manipulate → SUT → objectives → fitness
                           → update] × generations → save
 
-    All 3 live objectives (MatrixDistance, TextReplacementDistance,
+    All 3 live objectives (MatrixDistance, TextEmbeddingDistance,
     TargetedBalance) are batched and passed via the
     :class:`CriterionCollection`.
 
@@ -325,6 +325,19 @@ class VLMBoundaryTester(SMOO):
         self._manipulator.prepare(
             seed.image, self._config.prompt_template,
         )
+
+        # 1b. Anchor sentence embedding for TextEmbeddingDistance. The
+        #     manipulator at gene=0 reproduces the original prompt, so
+        #     using ``prompt_template`` here keeps the distance for any
+        #     all-zero individual at exactly 0. Only needed for the
+        #     embedding-based text objective; the fasttext arm reads
+        #     per-position word distances straight off the manipulator.
+        if self._config.text_objective == "embedding":
+            self._anchor_text_embedding = self._sut.text_embedder.embed(
+                self._config.prompt_template,
+            )
+        else:
+            self._anchor_text_embedding = None
 
         # 2. Install per-seed init sampler. Only relevant when the
         #    OptimizerConfig selected a non-uniform sampling mode; the
@@ -564,18 +577,28 @@ class VLMBoundaryTester(SMOO):
         )
         origin_batch = origin_tensor.unsqueeze(0).expand_as(perturbed_batch)
 
-        # -- Evaluate 3 batched objectives --------------------------------
-        txt_genotypes = genotypes[:, self._manipulator.image_dim :]
+        # -- Text-distance objective (branch on config.text_objective) ----
+        if self._config.text_objective == "embedding":
+            text_kwargs: dict = {
+                "text_distances": self._sut.text_embedder.cosine_distances_to(
+                    self._anchor_text_embedding, texts,
+                ),
+            }
+        else:
+            text_kwargs = {
+                "text_genotypes": genotypes[:, self._manipulator.image_dim :],
+                "text_candidate_distances": (
+                    self._manipulator.text_candidate_distances
+                ),
+            }
 
+        # -- Evaluate 3 batched objectives --------------------------------
         self._objectives.evaluate_all(
             images=[origin_batch, perturbed_batch],
             logits=logits,
             target_classes=target_classes,
-            text_genotypes=txt_genotypes,
-            text_candidate_distances=(
-                self._manipulator.text_candidate_distances
-            ),
             batch_dim=0,
+            **text_kwargs,
         )
 
         batched_results = self._objectives.results

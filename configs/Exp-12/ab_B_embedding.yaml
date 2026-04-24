@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-12 A/B — text objective swap — arm B (sentence-embedding cosine)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Arm B pins the new sentence-embedding text objective (TextEmbeddingDistance
+# on the SUT's own encoder, cached via TextEmbedder). Pair with
+# ab_A_fasttext.yaml for the paired comparison — everything else matches.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp12_ab_B_embedding_junco_chickadee
+save_dir: runs/Exp-12
+
+text_objective: embedding
+
+generations: 100
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  n_per_class: 3
+  max_logprob_gap: 3.5
+  filter_indices: [83]  # junco→chickadee — matches Exp-10 / Exp-09 run 4
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+optimizer:
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10

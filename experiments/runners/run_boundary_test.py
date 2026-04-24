@@ -35,6 +35,7 @@ from src.objectives import (
     CriterionCollection,
     MatrixDistance,
     TargetedBalance,
+    TextEmbeddingDistance,
     TextReplacementDistance,
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
@@ -105,9 +106,18 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     sut_fut: Future[VLMSUT] = pool.submit(VLMSUT, exp)
 
     # -- Objectives & optimizer (cheap, run on main thread) ----------------
+    if exp.text_objective == "embedding":
+        text_criterion = TextEmbeddingDistance()
+    elif exp.text_objective == "fasttext":
+        text_criterion = TextReplacementDistance()
+    else:
+        raise ValueError(
+            f"Unknown text_objective={exp.text_objective!r}; "
+            f"expected 'embedding' or 'fasttext'.",
+        )
     objectives = CriterionCollection(
         MatrixDistance(),
-        TextReplacementDistance(),
+        text_criterion,
         TargetedBalance(),
     )
 

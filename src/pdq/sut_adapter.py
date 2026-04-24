@@ -66,6 +66,11 @@ class SUTAdapter:
         self._wall_cumulative: float = 0.0
         self._records: list[dict[str, Any]] = []
 
+    @property
+    def text_embedder(self):
+        """Text-only sentence embedder from the wrapped SUT (shared model)."""
+        return self._sut.text_embedder
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------

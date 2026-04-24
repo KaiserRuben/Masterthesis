@@ -476,6 +476,19 @@ class PDQRunner:
             )
         output_dist_fn = OUTPUT_DISTANCES[cfg.distances.d_o_primary]
 
+        # Anchor sentence embedding in the SUT's own text-embedding space.
+        # The zero-genotype text equals ``prompt_template`` so this yields
+        # a distance of 0 for any all-zero individual by construction.
+        text_embedder = adapter.text_embedder
+        anchor_text_embedding = text_embedder.embed(cfg.prompt_template)
+
+        def _text_distance_fn(rendered_text: str) -> float:
+            return float(
+                text_embedder.cosine_distances_to(
+                    anchor_text_embedding, [rendered_text],
+                )[0]
+            )
+
         # SUT call closure for Stage 1 — captures manipulator, adapter, prompt.
         def _sut_call(genotype: np.ndarray) -> tuple[
             list[float], int, Image.Image, str, float
@@ -500,7 +513,7 @@ class PDQRunner:
             anchor_image_arr=anchor_image_arr,
             gene_bounds=manipulator.gene_bounds,
             image_dim=manipulator.image_dim,
-            text_candidate_distances=manipulator.text_candidate_distances,
+            text_distance_fn=_text_distance_fn,
             seed_idx=seed_idx,
             strategies=cfg.stage1.strategies,
             budget=cfg.stage1.budget_sut_calls,

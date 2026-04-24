@@ -77,7 +77,11 @@ class ScoredCandidate:
     :param total_rank_sum: img_rank_sum + txt_rank_sum.
     :param hamming_to_anchor: Positions differing from the zero anchor.
     :param image_pixel_L2: Pixel L2 vs the VQGAN-reconstructed anchor image.
-    :param text_cosine_sum: Sum of per-word cosine distances for non-zero text genes.
+    :param text_cosine_sum: Cosine distance between the manipulated prompt
+        and the anchor prompt, computed in the SUT's sentence-embedding
+        space (mean-pooled last-hidden-state of the Qwen text backbone).
+        Name retained for parquet-schema compatibility; semantics replaced
+        (was: sum of per-word fasttext cosine distances).
     """
 
     candidate: Candidate
@@ -104,35 +108,6 @@ class ScoredCandidate:
 
 
 # ---------------------------------------------------------------------------
-# Text cosine sum helper
-# ---------------------------------------------------------------------------
-
-
-def _text_cosine_sum(
-    txt_genes: np.ndarray,
-    text_candidate_distances: tuple[np.ndarray, ...],
-) -> float:
-    """Sum cosine distances for all active (non-zero) text genes.
-
-    Gene value ``k > 0`` selects the k-th synonym candidate (1-indexed),
-    corresponding to ``text_candidate_distances[i][k-1]``.
-
-    :param txt_genes: Text portion of the genotype (length = text_dim).
-    :param text_candidate_distances: Per-word cosine distance arrays from
-        :attr:`VLMManipulator.text_candidate_distances`.
-    :returns: Total cosine displacement from the original prompt text.
-    """
-    total = 0.0
-    for i, gene_val in enumerate(txt_genes):
-        if gene_val > 0 and i < len(text_candidate_distances):
-            dists = text_candidate_distances[i]
-            k = int(gene_val) - 1
-            if 0 <= k < len(dists):
-                total += float(dists[k])
-    return total
-
-
-# ---------------------------------------------------------------------------
 # Core scoring function
 # ---------------------------------------------------------------------------
 
@@ -142,7 +117,7 @@ def score_candidate(
     anchor_label: str,
     anchor_geno: np.ndarray,
     anchor_image_arr: np.ndarray,
-    text_candidate_distances: tuple[np.ndarray, ...],
+    text_distance_fn: Callable[[str], float],
     image_dim: int,
     categories: tuple[str, ...],
     sut_call_fn: Callable[[np.ndarray], tuple[list[float], int, Image.Image, str, float]],
@@ -159,8 +134,9 @@ def score_candidate(
     :param anchor_label: VLM prediction on the zero-genotype anchor.
     :param anchor_geno: Zero genotype (used for hamming distance).
     :param anchor_image_arr: Pixel array of the anchor image (for pixel L2).
-    :param text_candidate_distances: Precomputed cosine distances from the
-        text manipulator (see ``VLMManipulator.text_candidate_distances``).
+    :param text_distance_fn: Closure ``(rendered_text) → float`` returning
+        cosine distance in the SUT's sentence-embedding space between the
+        manipulated prompt and the anchor prompt (cached by the embedder).
     :param image_dim: Number of image genes (split point in genotype).
     :param categories: Category tuple in the same order as logprobs.
     :param sut_call_fn: Closure ``(genotype) → (logprobs, sut_call_id,
@@ -189,7 +165,7 @@ def score_candidate(
     # -- Distances ----------------------------------------------------------
     candidate_arr = np.array(rendered_image)
     pixel_l2 = image_pixel_l2(candidate_arr, anchor_image_arr)
-    text_cos = _text_cosine_sum(txt_g, text_candidate_distances)
+    text_cos = float(text_distance_fn(rendered_text))
 
     d_i = input_distance_fn(g, anchor_geno)
     flipped = label != anchor_label

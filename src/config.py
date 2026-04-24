@@ -245,6 +245,13 @@ class ExperimentConfig:
     # Empty → auto-creates .cache/imagenet relative to CWD.
     cache_dirs: tuple[Path, ...] = ()
 
+    # Text-distance objective variant. "embedding" = sentence-level cosine
+    # in the SUT's own embedding space (default, since Exp-12 swap).
+    # "fasttext" = legacy sum of per-word fasttext cosine distances. Kept
+    # as an explicit A/B knob for Exp-12; remove once that experiment
+    # concludes.
+    text_objective: str = "embedding"
+
     # Components
     sut: SUTConfig = field(default_factory=SUTConfig)
     image: ImageConfig = field(default_factory=ImageConfig)

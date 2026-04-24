@@ -284,7 +284,7 @@ def run_stage1(
     anchor_image_arr: np.ndarray,
     gene_bounds: np.ndarray,
     image_dim: int,
-    text_candidate_distances: tuple[np.ndarray, ...],
+    text_distance_fn: Callable[[str], float],
     seed_idx: int,
     strategies: tuple[StrategyConfig, ...],
     budget: int,
@@ -312,7 +312,8 @@ def run_stage1(
     :param anchor_image_arr: Pixel array of the anchor (for pixel L2).
     :param gene_bounds: Per-gene upper bounds (exclusive).
     :param image_dim: Number of image genes (split point).
-    :param text_candidate_distances: Precomputed text cosine distances.
+    :param text_distance_fn: Closure ``(rendered_text) → float`` giving
+        SUT-embedding-space cosine distance to the anchor prompt.
     :param seed_idx: 0-based seed index for ``Candidate`` bookkeeping.
     :param strategies: Ordered strategy configs (weights used for budget split).
     :param budget: Maximum total SUT calls for Stage 1.
@@ -378,7 +379,7 @@ def run_stage1(
                 anchor_label=anchor_label,
                 anchor_geno=anchor_geno,
                 anchor_image_arr=anchor_image_arr,
-                text_candidate_distances=text_candidate_distances,
+                text_distance_fn=text_distance_fn,
                 image_dim=image_dim,
                 categories=categories,
                 sut_call_fn=sut_call_fn,
