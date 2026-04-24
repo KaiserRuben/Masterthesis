@@ -111,24 +111,12 @@ infrastructure/               # docker, local (MPS), workstation (CUDA) environm
 tests/                        # pytest suite
 ```
 
-## Experiment naming
-
-The `Exp-NN` numbering comes from the Obsidian diary at
-`~/Obsidian/Notizen/01 - Active Projects/Master Thesis/Experiments/`
-and is the single source of truth for experiment identity. Files and folders
-in this repo follow the same scheme:
-
-- Config dir `configs/Exp-NN/` ↔ runs dir `runs/Exp-NN/` ↔ Obsidian note `Exp-NN-Title.md`
-- Historical runs that predate the `Exp-NN` scheme live under `runs/Archive/`
-- Each domain (`configs/`, `experiments/`, `runs/`, `tools/`) has its own `Archive/` subdir for superseded content
-
 ## Design decisions
 
 - **Two-phase manipulator lifecycle** — `prepare(input) → context` (once), then `apply(context, genotype) → output` (many). Context is immutable; multiple genotypes reuse the same prepared context.
 - **Candidates sorted by embedding distance** — gene `1` is the minimal perturbation; gene `0` keeps the original. The optimizer is therefore biased toward small integer values when a sparsity prior is in place.
 - **Streaming Parquet writers** (`src.common.artifacts.ParquetBuffer`) — row groups flush on interval so a crash loses at most one group rather than the whole seed.
 - **Schema versions** (`src.common.artifacts.EVOLUTIONARY_SCHEMA_VERSION`, `PDQ_SCHEMA_VERSION`) — per-pipeline; bumped when on-disk layout changes.
-- **ArchiveSparsity / Concentration removed** — earlier objectives that conflicted with the sparse-near-boundary goal. Only the three live objectives above are carried in the tester today.
 
 ## SMOO integration
 
