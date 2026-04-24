@@ -15,7 +15,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from src.config import ExperimentConfig, SeedConfig, SUTConfig, resolve_categories
 from src.data import ImageNetCache

@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 from time import time
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import dacite
 import yaml
