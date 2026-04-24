@@ -58,6 +58,21 @@ def pil_to_tensor(img: Image.Image) -> Tensor:
     return torch.from_numpy(arr).permute(2, 0, 1)
 
 
+def _fmt_metric(v: float) -> str:
+    """Compact, scale-aware formatter for pbar postfix values.
+
+    Fixed 3-decimal for values >= 1e-3, scientific for smaller non-zero
+    values so tiny-but-nonzero distances no longer display as ``0.000``.
+    """
+    if v is None or not np.isfinite(v):
+        return "nan"
+    if v == 0.0:
+        return "0"
+    if abs(v) >= 1e-3:
+        return f"{v:.3f}"
+    return f"{v:.2e}"
+
+
 def build_trace_rows(
     seed_idx: int,
     gen: int,
@@ -451,6 +466,19 @@ class VLMBoundaryTester(SMOO):
                         pareto_fitness[:, j].mean()
                     )
 
+                # Coordinates of the Pareto individual with minimum TgtBal —
+                # answers "best boundary flip, and at what (img, text) cost?"
+                # rather than three independent per-axis minima.
+                if "TgtBal" in obj_names:
+                    tgtbal_j = obj_names.index("TgtBal")
+                    best_idx = int(np.argmin(pareto_fitness[:, tgtbal_j]))
+                    for j, name in enumerate(obj_names):
+                        conv_row[f"pareto_atbest_TgtBal_{name}"] = float(
+                            pareto_fitness[best_idx, j]
+                        )
+                else:
+                    best_idx = None
+
                 # Population stats from this generation's traces.
                 pop_fitness = {name: [] for name in obj_names}
                 for row in gen_traces:
@@ -464,15 +492,25 @@ class VLMBoundaryTester(SMOO):
                 conv_buf.append(conv_row)
 
                 # -- Progress bar with convergence info -------------------
-                best_bal = conv_row.get("pareto_min_TgtBal")
+                # Show the best-TgtBal Pareto individual with the (img, text)
+                # distances at which that flip was achieved — the condition
+                # under which the boundary was crossed, not three decoupled
+                # per-axis minima.
                 postfix: dict[str, Any] = {"pareto": len(pareto)}
-                if best_bal is not None:
-                    postfix["bal"] = f"{best_bal:.3f}"
-                for name in obj_names:
-                    if name != "TgtBal":
-                        short = name.replace("MatrixDistance_", "img_")
-                        postfix[short] = (
-                            f"{conv_row[f'pareto_min_{name}']:.3f}"
+                if best_idx is not None:
+                    postfix["bal"] = _fmt_metric(
+                        conv_row["pareto_atbest_TgtBal_TgtBal"]
+                    )
+                    for name in obj_names:
+                        if name == "TgtBal":
+                            continue
+                        short = (
+                            "img" if name.startswith("MatrixDistance_")
+                            else "txt" if "Text" in name
+                            else name
+                        )
+                        postfix[f"@{short}"] = _fmt_metric(
+                            conv_row[f"pareto_atbest_TgtBal_{name}"]
                         )
                 postfix["t"] = f"{time() - gen_start:.0f}s"
                 pbar.set_postfix(postfix)

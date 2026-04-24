@@ -633,8 +633,10 @@ class PDQRunner:
 
         n_stage2_calls = 0
         n_vv = 0
+        shrink_ratios: list[float] = []
 
         for fr in flip_records:
+            d_i_before = fr.sc.d_i
             result = minimise_flip(
                 flipped_geno=fr.sc.candidate.genotype,
                 sut_check_fn=_stage2_check,
@@ -649,6 +651,25 @@ class PDQRunner:
             )
             n_stage2_calls += result.sut_calls_used
             n_vv += 1
+
+            # Track Stage-2 shrinkage — how much smaller is the minimised
+            # d_i vs. the Stage-1 flip's d_i? Median ratio across flips
+            # answers "is Stage 2 actually minimising, and by how much?"
+            if d_i_before > 0:
+                shrink_ratios.append(result.d_i_min / d_i_before)
+            median_shrink = (
+                float(np.median(shrink_ratios)) if shrink_ratios else None
+            )
+            postfix: dict[str, Any] = {
+                "stage": "S2",
+                "anchor": label_anchor,
+                "S1_flips": n_flips,
+                "S2_done": n_vv,
+                "d": f"{d_i_before:.2f}→{result.d_i_min:.2f}",
+            }
+            if median_shrink is not None:
+                postfix["shrink"] = f"{median_shrink:.2f}"
+            pbar.set_postfix(postfix)
 
             # stage2_trajectories.parquet — one row per SUT call in Stage 2.
             label_before = fr.sc.label

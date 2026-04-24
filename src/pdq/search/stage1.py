@@ -348,6 +348,7 @@ def run_stage1(
     total_calls = 0
     n_flips = 0
     distinct_targets: set[str] = set()
+    min_flip_d_i: float | None = None
 
     pbar = tqdm(
         total=budget,
@@ -393,6 +394,8 @@ def run_stage1(
             if sc.flipped:
                 n_flips += 1
                 distinct_targets.add(sc.label)
+                if min_flip_d_i is None or sc.d_i < min_flip_d_i:
+                    min_flip_d_i = sc.d_i
                 logger.debug(
                     "Stage1 flip found: strategy=%s  candidate_id=%d  "
                     "label=%s  d_i=%.2f  pdq=%.4f",
@@ -400,13 +403,20 @@ def run_stage1(
                 )
 
             # -- Live metrics ---------------------------------------------
+            # ``min_d`` is the smallest input distance among *successful*
+            # flips so far — the analog of "how close to the anchor did a
+            # boundary-crossing input get?" Tracks what Stage 2 will start
+            # from.
             acc_rate = n_flips / total_calls
-            pbar.set_postfix({
+            postfix = {
                 "flips": n_flips,
                 "targets": len(distinct_targets),
                 "acc": f"{acc_rate:.1%}",
                 "last": sc.label[:10],
-            })
+            }
+            if min_flip_d_i is not None:
+                postfix["min_d"] = f"{min_flip_d_i:.2f}"
+            pbar.set_postfix(postfix)
 
             # -- Early stopping -------------------------------------------
             if total_calls >= early_stop_cfg.min_calls_before_stop:
