@@ -12,7 +12,7 @@ import pytest
 import torch
 from PIL import Image
 
-from src.config import ExperimentConfig, SUTConfig, SeedConfig
+from src.config import ExperimentConfig, GapFilterConfig, SUTConfig, SeedConfig
 from src.data.imagenet import ImageSample
 from src.utils.pair_resolver import (
     PairSpec,
@@ -118,7 +118,12 @@ def _make_config(n_per_class: int = 3, gap: float = 2.0) -> ExperimentConfig:
     return ExperimentConfig(
         categories=CATEGORIES,
         sut=SUTConfig(model_id="fake/model-x"),
-        seeds=SeedConfig(n_per_class=n_per_class, max_logprob_gap=gap),
+        seeds=SeedConfig(
+            mode="gap_filter",
+            gap_filter=GapFilterConfig(
+                n_per_class=n_per_class, max_logprob_gap=gap,
+            ),
+        ),
     )
 
 
@@ -270,7 +275,10 @@ class TestResolvePair:
         config = ExperimentConfig(
             categories=categories,
             sut=SUTConfig(model_id="fake/normalise"),
-            seeds=SeedConfig(n_per_class=2, max_logprob_gap=2.0),
+            seeds=SeedConfig(
+                mode="gap_filter",
+                gap_filter=GapFilterConfig(n_per_class=2, max_logprob_gap=2.0),
+            ),
         )
         data = FakeDataSource(list(categories))
         sut = ScriptedSUT(scripts, list(categories))
