@@ -20,6 +20,8 @@ import torch
 from PIL import Image
 from torch import Tensor
 
+from src import distlock
+
 if TYPE_CHECKING:
     from src.sut.vlm_sut import VLMSUT
 
@@ -100,9 +102,10 @@ class SUTAdapter:
         self._call_counter += 1
 
         t0 = time()
-        logprobs: Tensor = self._sut.process_input(
-            image, text=text, categories=categories,
-        )
+        with distlock.lock(self._sut.device_str):
+            logprobs: Tensor = self._sut.process_input(
+                image, text=text, categories=categories,
+            )
         wall_time = time() - t0
 
         self._wall_cumulative += wall_time

@@ -19,6 +19,7 @@ from src.config import (
     DEFAULT_ANSWER_FORMAT,
     DEFAULT_PROMPT_TEMPLATE,
     ImageConfig,
+    ParallelConfig,
     SeedConfig,
     SUTConfig,
     TextConfig,
@@ -306,6 +307,7 @@ class PDQExperimentConfig:
     archive: ArchiveConfig = field(default_factory=ArchiveConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     concurrency: ConcurrencyConfig = field(default_factory=ConcurrencyConfig)
+    parallel: ParallelConfig = field(default_factory=ParallelConfig)
 
 
 # ---------------------------------------------------------------------------

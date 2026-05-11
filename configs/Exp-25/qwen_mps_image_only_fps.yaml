@@ -1,0 +1,61 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-25 — Diversity-FPS Init A/B vs Exp-24 image-only baseline (Qwen MPS)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Sole intervention vs configs/Exp-24/qwen_mps_image_only.yaml:
+#   sampling.mode: sparse_multitier  ➜  sparse_multitier_fps
+#
+# Output: runs/Exp-25/exp25_qwen_mps_image_only_fps_seed_83_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp25_qwen_mps_image_only_fps
+save_dir: runs/Exp-25
+
+modality: image_only
+
+generations: 300
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [83]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+# text section omitted — modality=image_only forces profile=noop at runtime.
+
+optimizer:
+  sampling:
+    mode: sparse_multitier_fps          # ← only delta vs Exp-24 baseline
+    zero_anchor_fraction: 0.05
+    fps_subset_size: 512
+    fps_metric: cosine
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null
