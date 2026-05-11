@@ -103,11 +103,13 @@ cache_dirs:
 n_categories: 50
 
 seeds:
-  n_per_class: 3
-  max_logprob_gap: 3.5
+  mode: gap_filter
   filter_indices: [85]                     # first junco → leatherback sea turtle
                                            # (same junco image as idx 83)
 
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
 stage1:
   budget_sut_calls: 150
   max_flips_per_seed: 10

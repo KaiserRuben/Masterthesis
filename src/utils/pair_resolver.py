@@ -195,10 +195,15 @@ def _pool_cache_key(config: ExperimentConfig) -> _PoolCacheKey:
         resolved (non-empty) — :func:`generate_seeds` requires this.
     :returns: Hashable key identifying the pool.
     """
+    if config.seeds.mode != "gap_filter" or config.seeds.gap_filter is None:
+        raise ValueError(
+            f"pair_resolver requires seeds.mode='gap_filter'; "
+            f"got {config.seeds.mode!r}."
+        )
     return (
         tuple(config.categories),
-        config.seeds.n_per_class,
-        float(config.seeds.max_logprob_gap),
+        config.seeds.gap_filter.n_per_class,
+        float(config.seeds.gap_filter.max_logprob_gap),
         config.sut.model_id,
     )
 
@@ -285,10 +290,12 @@ def resolve_pair(
         i for i, s in enumerate(pool) if spec.matches(s.class_a, s.class_b)
     ]
 
+    gf = config.seeds.gap_filter  # asserted non-None by _pool_cache_key
+    assert gf is not None
     pool_params = (
         f"n_categories={len(config.categories)}, "
-        f"n_per_class={config.seeds.n_per_class}, "
-        f"max_logprob_gap={config.seeds.max_logprob_gap:g}, "
+        f"n_per_class={gf.n_per_class}, "
+        f"max_logprob_gap={gf.max_logprob_gap:g}, "
         f"model={config.sut.model_id}"
     )
 

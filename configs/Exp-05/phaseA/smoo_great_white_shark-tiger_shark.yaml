@@ -100,6 +100,8 @@ cache_dirs:
 n_categories: 50
 
 seeds:
-  n_per_class: 3
-  max_logprob_gap: 1.0
+  mode: gap_filter
   filter_indices: [0]                      # first seed; historically GWS→tiger
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 1.0

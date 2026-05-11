@@ -1,7 +1,7 @@
 """Shared pytest configuration and reusable test fixtures.
 
 Adds the project root to sys.path so that ``src.*`` is importable.
-Provides synthetic data builders and fake components used across
+Provides synthetic data builders + composite-shaped fakes used by
 multiple test modules.
 """
 
@@ -12,8 +12,9 @@ _root = str(Path(__file__).resolve().parent.parent)
 if _root not in sys.path:
     sys.path.insert(0, _root)
 
+from dataclasses import dataclass
+
 import numpy as np
-from gensim.models import KeyedVectors
 from PIL import Image
 
 from src.manipulator.image.manipulator import apply_genotype as apply_image_genotype
@@ -22,37 +23,14 @@ from src.manipulator.image.types import (
     ManipulationContext as ImageManipulationContext,
     PatchSelection,
 )
-from src.manipulator.text.manipulator import apply_genotype as apply_text_genotype
-from src.manipulator.text.types import (
-    ManipulationContext as TextManipulationContext,
-    TokenSequence,
-    WordSelection,
-)
+from src.manipulator.text.composite import CompositeManipulationContext
+from src.manipulator.text.operators.base import OperatorContext
+from src.manipulator.text.types import TokenSequence
 
 
 # ---------------------------------------------------------------------------
 # Synthetic data builders
 # ---------------------------------------------------------------------------
-
-VOCAB = {
-    "quick": [1.0, 0.0, 0.0],
-    "fast": [0.95, 0.05, 0.0],
-    "rapid": [0.85, 0.15, 0.0],
-    "fox": [0.0, 1.0, 0.0],
-    "wolf": [0.0, 0.9, 0.1],
-    "dog": [0.0, 0.8, 0.2],
-    "cat": [0.0, 0.6, 0.4],
-}
-
-
-def make_embeddings(vocab: dict[str, list[float]] = VOCAB) -> KeyedVectors:
-    """Build a small gensim KeyedVectors from a dict."""
-    dim = len(next(iter(vocab.values())))
-    kv = KeyedVectors(vector_size=dim)
-    words = list(vocab.keys())
-    vectors = np.array(list(vocab.values()), dtype=np.float32)
-    kv.add_vectors(words, vectors)
-    return kv
 
 
 def make_tokens(*items: tuple[str, str, str]) -> TokenSequence:
@@ -78,33 +56,57 @@ def make_image_context() -> ImageManipulationContext:
     return ImageManipulationContext(original_grid=grid, selection=selection)
 
 
-def make_text_context() -> TextManipulationContext:
-    """Synthetic text context: 4 tokens, 2 mutable words."""
-    tokens = make_tokens(
-        ("The", "DET", " "),
-        ("quick", "ADJ", " "),
-        ("brown", "ADJ", " "),
-        ("fox", "NOUN", ""),
-    )
-    selection = WordSelection(
-        positions=np.array([1, 3], dtype=np.intp),
-        candidates=(("fast", "rapid"), ("wolf", "dog", "cat")),
-        original_words=("quick", "fox"),
-    )
-    return TextManipulationContext(original_tokens=tokens, selection=selection)
+# ---------------------------------------------------------------------------
+# Fake sub-manipulators (composite-shaped)
+# ---------------------------------------------------------------------------
 
 
-# ---------------------------------------------------------------------------
-# Fake sub-manipulators
-# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class _FakeSynonymContext(OperatorContext):
+    candidates: tuple[tuple[str, ...], ...]
+
+
+class _FakeSynonymOperator:
+    """Stub Synonym operator with hard-coded positions/candidates.
+
+    Mirrors the real :class:`SynonymOperator` interface (``name``,
+    ``prepare``, ``gene_dim``, ``gene_bounds``, ``apply``) without
+    needing ModernBERT or spaCy.
+    """
+
+    name = "synonym"
+
+    def __init__(
+        self,
+        positions: tuple[int, ...] = (1, 3),
+        candidates: tuple[tuple[str, ...], ...] = (("fast", "rapid"), ("wolf", "dog", "cat")),
+    ) -> None:
+        self._positions = np.array(positions, dtype=np.intp)
+        self._candidates = candidates
+
+    def prepare(self, tokens, exclude_words=None):
+        return _FakeSynonymContext(
+            positions=self._positions,
+            candidates=self._candidates,
+        )
+
+    def gene_dim(self, ctx):
+        return ctx.n_positions
+
+    def gene_bounds(self, ctx):
+        return np.array([len(c) + 1 for c in ctx.candidates], dtype=np.int64)
+
+    def apply(self, ctx, genes, current):
+        active = np.nonzero(genes)[0]
+        if len(active) == 0:
+            return current
+        positions = ctx.positions[active]
+        words = tuple(ctx.candidates[int(i)][int(genes[i]) - 1] for i in active)
+        return current.replace(positions, words)
 
 
 class FakeImageManipulator:
-    """Minimal image manipulator for testing.
-
-    Uses the real ``apply_genotype`` on a synthetic grid, then returns
-    a solid-colour PIL image whose red channel encodes the genotype sum.
-    """
+    """Minimal image manipulator for testing."""
 
     def prepare(self, image: Image.Image) -> ImageManipulationContext:
         return make_image_context()
@@ -114,22 +116,46 @@ class FakeImageManipulator:
         r = int(np.sum(genotype)) % 256
         return Image.new("RGB", (8, 8), (r, 0, 0))
 
+    def apply_batch(
+        self,
+        ctx: ImageManipulationContext,
+        genotypes,
+    ) -> list[Image.Image]:
+        return [self.apply(ctx, g) for g in genotypes]
 
-class FakeTextManipulator:
-    """Minimal text manipulator for testing."""
 
-    def __init__(self, kv: KeyedVectors) -> None:
-        self._embeddings = kv
+class FakeCompositeTextManipulator:
+    """Minimal composite-shaped text manipulator for VLMManipulator tests.
 
-    @property
-    def embeddings(self) -> KeyedVectors:
-        return self._embeddings
+    Stub Synonym operator over the canonical "The quick brown fox" sentence.
+    Bypasses spaCy / ModernBERT — enough surface for VLMManipulator
+    integration tests.
+    """
 
-    def prepare(self, text: str, exclude_words=None) -> TextManipulationContext:
-        return make_text_context()
+    def __init__(self) -> None:
+        self._op = _FakeSynonymOperator()
 
-    def apply(self, ctx: TextManipulationContext, genotype) -> str:
-        mutated = apply_text_genotype(
-            ctx.original_tokens, ctx.selection, genotype,
+    def prepare(
+        self,
+        text: str,
+        exclude_words: frozenset[str] | None = None,
+    ) -> CompositeManipulationContext:
+        tokens = make_tokens(
+            ("The", "DET", " "),
+            ("quick", "ADJ", " "),
+            ("brown", "ADJ", " "),
+            ("fox", "NOUN", ""),
         )
-        return mutated.text
+        op_ctx = self._op.prepare(tokens)
+        return CompositeManipulationContext(
+            original_tokens=tokens,
+            op_contexts={"synonym": op_ctx},
+            op_gene_dims=(self._op.gene_dim(op_ctx),),
+            op_gene_bounds=(self._op.gene_bounds(op_ctx),),
+            op_order=("synonym",),
+        )
+
+    def apply(self, ctx: CompositeManipulationContext, genotype) -> str:
+        op_ctx = ctx.op_contexts["synonym"]
+        out = self._op.apply(op_ctx, genotype, ctx.original_tokens)
+        return out.text

@@ -32,13 +32,14 @@ from smoo import SMOO
 from torch import Tensor
 from tqdm import tqdm
 
+from src import distlock
 from src.common import apply_seed_filter, build_context_meta
 from src.common.artifacts import EVOLUTIONARY_SCHEMA_VERSION, ParquetBuffer
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import CriterionCollection
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 from src.optimizer.early_stop import EarlyStopChecker, EarlyStopConfig, EarlyStopTrigger
-from src.optimizer.sparse_sampling import SparseSampling
+from src.optimizer.sparse_sampling import build_sampler_from_config
 
 from src.config import ExperimentConfig, SeedTriple
 
@@ -168,7 +169,7 @@ def build_stats(
         positions in the full list in N-class mode.
     :param cache_stats: Aggregate ``{"hits", "misses"}`` counts at save time.
     """
-    return {
+    out: dict[str, Any] = {
         "schema_version": EVOLUTIONARY_SCHEMA_VERSION,
         "seed_idx": seed_idx,
         "class_a": seed.class_a,
@@ -200,17 +201,31 @@ def build_stats(
         "cache_misses": cache_stats["misses"],
         # Reproducibility metadata
         "model_id": config.sut.model_id,
-        "max_logprob_gap": config.seeds.max_logprob_gap,
-        "n_per_class": config.seeds.n_per_class,
+        "seed_selection_mode": config.seeds.mode,
         "n_categories_seed": config.n_categories,
         "image_preset": config.image.preset,
         "image_patch_ratio": config.image.patch_ratio,
         "image_patch_strategy": config.image.patch_strategy.name,
         "image_candidate_strategy": config.image.candidate_strategy.name,
         "image_n_candidates": config.image.n_candidates,
-        "text_n_candidates": config.text.n_candidates,
         "device": config.device,
     }
+    # Mode-specific seed-config provenance.
+    if config.seeds.mode == "gap_filter" and config.seeds.gap_filter is not None:
+        out["max_logprob_gap"] = config.seeds.gap_filter.max_logprob_gap
+        out["n_per_class"] = config.seeds.gap_filter.n_per_class
+    elif config.seeds.mode == "roster" and config.seeds.roster is not None:
+        out["roster_seeds_per_class"] = config.seeds.roster.seeds_per_class
+        out["roster_min_anchor_confidence"] = (
+            config.seeds.roster.min_anchor_confidence
+        )
+        out["roster_class_list"] = list(config.seeds.roster.class_list)
+    # Per-seed metadata (Exp-100 roster pipeline emits taxonomy / abstraction
+    # bookkeeping; gap_filter leaves it None). Stored under a namespaced key
+    # so it can never shadow an existing stats field.
+    if seed.metadata is not None:
+        out["seed_metadata"] = dict(seed.metadata)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -259,11 +274,26 @@ class VLMBoundaryTester(SMOO):
         )
         self._config = config
 
+        # Modality-driven gates — skip per-modality work when the
+        # corresponding criterion isn't in the live collection.
+        # Result-key naming: MatrixDistance_<aggregator> (e.g. _fro),
+        # TextEmbeddingDistance → "TextDist", TargetedBalance → "TgtBal".
+        names = list(objectives.names)
+        self._has_matrix_dist = any(
+            n.startswith("MatrixDistance") for n in names
+        )
+        self._has_text_dist = "TextDist" in names
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
-    def test(self, seeds: Sequence[SeedTriple]) -> None:
+    def test(
+        self,
+        seeds: Sequence[SeedTriple],
+        worker_id: int | None = None,
+        worker_stride: int | None = None,
+    ) -> None:
         """Run boundary testing for all seeds.
 
         Applies the optional ``config.seeds.filter_indices`` post-generation
@@ -274,17 +304,30 @@ class VLMBoundaryTester(SMOO):
 
         :param seeds: Sequence of ``(image, class_a, class_b)`` triples,
             as emitted by :func:`generate_seeds`.
+        :param worker_id: When set with *worker_stride*, evaluates only
+            the round-robin slice ``indexed_seeds[worker_id::worker_stride]``.
+            Slicing happens AFTER ``filter_indices`` so per-seed naming
+            stays consistent across the worker pool.
+        :param worker_stride: Total number of parallel workers.
         """
         indexed_seeds = apply_seed_filter(
             list(seeds), self._config.seeds.filter_indices,
         )
+
+        if worker_id is not None and worker_stride is not None:
+            before = len(indexed_seeds)
+            indexed_seeds = indexed_seeds[worker_id::worker_stride]
+            logger.info(
+                "Worker %d/%d: %d/%d seeds assigned",
+                worker_id, worker_stride, len(indexed_seeds), before,
+            )
 
         if not indexed_seeds:
             logger.warning("No seeds after filter — nothing to test.")
             return
 
         n_gens = self._config.generations
-        pbar = tqdm(total=n_gens, unit="gen")
+        pbar = tqdm(total=n_gens, unit="gen", position=worker_id or 0)
 
         for pos, (seed_idx, seed) in enumerate(indexed_seeds):
             pbar.reset()
@@ -344,10 +387,14 @@ class VLMBoundaryTester(SMOO):
         # 1b. Anchor sentence embedding for TextEmbeddingDistance. The
         #     manipulator at gene=0 reproduces the original prompt, so
         #     using ``prompt_template`` here keeps the distance for any
-        #     all-zero individual at exactly 0. Only needed for the
-        #     embedding-based text objective; the fasttext arm reads
-        #     per-position word distances straight off the manipulator.
-        if self._config.text_objective == "embedding":
+        #     all-zero individual at exactly 0.
+        #
+        #     Skipped entirely when TextEmbeddingDistance is not in the
+        #     objective set (modality=image_only). ``text_embedder`` is
+        #     also None on backends that can't encode_text (currently
+        #     OpenVINO) — in that case TextEmbeddingDistance receives
+        #     zeros and effectively drops out of the objective set.
+        if self._has_text_dist and self._sut.text_embedder is not None:
             self._anchor_text_embedding = self._sut.text_embedder.embed(
                 self._config.prompt_template,
             )
@@ -358,32 +405,44 @@ class VLMBoundaryTester(SMOO):
         #    OptimizerConfig selected a non-uniform sampling mode; the
         #    default "uniform" path leaves algo_params untouched and
         #    inherits PyMoo's IntegerRandomSampling from the optimizer.
+        #
+        #    `sparse_multitier_fps` additionally requires the per-seed
+        #    VQGAN codebook + KNN-ordered candidate lists to do FPS
+        #    over codebook embeddings at active positions. These come
+        #    from the image manipulator's prepared selection.
         sampling_cfg = self._config.optimizer.sampling
-        if sampling_cfg.mode == "sparse":
-            self._optimizer.set_sampling(
-                SparseSampling(
-                    text_dim=self._manipulator.text_dim,
-                    p_active=sampling_cfg.p_active,
-                    geometric_rate=sampling_cfg.geometric_rate,
-                    zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
-                    uniform_fallback_fraction=sampling_cfg.uniform_fallback_fraction,
-                )
-            )
-        elif sampling_cfg.mode != "uniform":
-            raise ValueError(
-                f"Unknown sampling mode {sampling_cfg.mode!r}; "
-                f"expected 'uniform' or 'sparse'"
-            )
+        codebook = None
+        candidates_per_position = None
+        if sampling_cfg.mode == "sparse_multitier_fps":
+            img_ctx = self._manipulator.image_context
+            if img_ctx is not None:
+                codebook = self._manipulator.image_manipulator.codec.codebook
+                candidates_per_position = img_ctx.selection.candidates
+
+        sampler = build_sampler_from_config(
+            sampling_cfg,
+            text_dim=self._manipulator.text_dim,
+            codebook=codebook,
+            candidates_per_position=candidates_per_position,
+        )
+        if sampler is not None:
+            self._optimizer.set_sampling(sampler)
 
         # 3. Re-configure optimizer for this seed's genotype dimensions.
         self._optimizer.update_gene_bounds(self._manipulator.gene_bounds)
 
         # 4. VQGAN-reconstructed baseline for MatrixDistance.
-        zero_geno = self._manipulator.zero_genotype().reshape(1, -1)
-        baseline_imgs, _ = self._manipulator.manipulate(
-            candidates=None, weights=zero_geno,
-        )
-        origin_tensor = pil_to_tensor(baseline_imgs[0])
+        #    Skipped when MatrixDistance isn't in the objective set
+        #    (modality=text_only). _run_generation will short-circuit the
+        #    per-individual tensor conversion in that case.
+        if self._has_matrix_dist:
+            zero_geno = self._manipulator.zero_genotype().reshape(1, -1)
+            baseline_imgs, _ = self._manipulator.manipulate(
+                candidates=None, weights=zero_geno,
+            )
+            origin_tensor = pil_to_tensor(baseline_imgs[0])
+        else:
+            origin_tensor = None
 
         # 5. Output directory created up-front so incremental writers can
         #    target it. Previously created at end-of-seed by _save_seed_results.
@@ -599,40 +658,48 @@ class VLMBoundaryTester(SMOO):
                 unit="call",
                 leave=False,
             )
-        for img, txt in iterator:
-            logits_list.append(
-                self._sut.process_input(
-                    img, text=txt + answer_suffix, categories=categories,
+        with distlock.lock(self._sut.device_str):
+            for img, txt in iterator:
+                logits_list.append(
+                    self._sut.process_input(
+                        img, text=txt + answer_suffix, categories=categories,
+                    )
                 )
-            )
-            cache_hits.append(self._sut.last_call_cached)
+                cache_hits.append(self._sut.last_call_cached)
 
         logits = torch.stack(logits_list)
 
         # -- Tensor conversion for MatrixDistance -------------------------
-        perturbed_batch = torch.stack(
-            [pil_to_tensor(img) for img in images]
-        )
-        origin_batch = origin_tensor.unsqueeze(0).expand_as(perturbed_batch)
-
-        # -- Text-distance objective (branch on config.text_objective) ----
-        if self._config.text_objective == "embedding":
-            text_kwargs: dict = {
-                "text_distances": self._sut.text_embedder.cosine_distances_to(
-                    self._anchor_text_embedding, texts,
-                ),
-            }
+        # Skipped when modality=text_only (no MatrixDistance criterion);
+        # CriterionCollection ignores ``images`` if no image-criterion
+        # consumes it, so passing None through is fine.
+        if self._has_matrix_dist:
+            perturbed_batch = torch.stack(
+                [pil_to_tensor(img) for img in images]
+            )
+            origin_batch = origin_tensor.unsqueeze(0).expand_as(perturbed_batch)
+            images_arg: list | None = [origin_batch, perturbed_batch]
         else:
-            text_kwargs = {
-                "text_genotypes": genotypes[:, self._manipulator.image_dim :],
-                "text_candidate_distances": (
-                    self._manipulator.text_candidate_distances
-                ),
-            }
+            images_arg = None
 
-        # -- Evaluate 3 batched objectives --------------------------------
+        # -- Text-distance objective ---------------------------------------
+        # Skipped when modality=image_only (no TextEmbeddingDistance
+        # criterion). Backends without encode_text feed zeros so the
+        # criterion passes through with no selection pressure.
+        text_kwargs: dict = {}
+        if self._has_text_dist:
+            if self._sut.text_embedder is not None:
+                text_distances = self._sut.text_embedder.cosine_distances_to(
+                    self._anchor_text_embedding, texts,
+                )
+            else:
+                import numpy as _np
+                text_distances = _np.zeros(len(texts), dtype=_np.float32)
+            text_kwargs["text_distances"] = text_distances
+
+        # -- Evaluate batched objectives ---------------------------------
         self._objectives.evaluate_all(
-            images=[origin_batch, perturbed_batch],
+            images=images_arg,
             logits=logits,
             target_classes=target_classes,
             batch_dim=0,

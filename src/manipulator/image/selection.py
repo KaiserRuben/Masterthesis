@@ -127,7 +127,10 @@ def _select_by_frequency(
     ]
 
     n_unique = len(ranked_codes)
-    n_select = max(1, int(n_unique * ratio))
+    n_select = int(n_unique * ratio)
+    if n_select <= 0:
+        # ratio=0 → no patches eligible (modality=text_only path).
+        return np.empty((0, 2), dtype=np.intp)
     top_codes = frozenset(ranked_codes[:n_select])
 
     mask = np.isin(grid.indices, list(top_codes))

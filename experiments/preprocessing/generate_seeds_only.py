@@ -77,8 +77,8 @@ def save_seeds(seeds, out_dir: Path, config: ExperimentConfig) -> None:
         "name": config.name,
         "model_id": config.sut.model_id,
         "categories": list(config.categories),
-        "n_per_class": config.seeds.n_per_class,
-        "max_logprob_gap": config.seeds.max_logprob_gap,
+        "n_per_class": config.seeds.gap_filter.n_per_class,
+        "max_logprob_gap": config.seeds.gap_filter.max_logprob_gap,
         "prompt_template": config.prompt_template,
         "answer_format": config.answer_format,
         "n_seeds": len(seeds),
@@ -119,13 +119,16 @@ def main() -> None:
     data_source = ImageNetCache(dirs=exp.cache_dirs)
     exp = resolve_categories(exp, data_source.labels())
 
-    logger.info(f"SUT starting...  {exp.sut.model_id} on {exp.device}")
+    sut_device = (
+        exp.sut.ov_device if exp.sut.backend == "openvino" else exp.device
+    )
+    logger.info(f"SUT starting...  {exp.sut.model_id} on {sut_device}")
     sut = VLMSUT(exp)
     logger.info("SUT loaded")
 
     logger.info(
-        f"Generating seeds  n_per_class={exp.seeds.n_per_class} "
-        f"gap<={exp.seeds.max_logprob_gap} "
+        f"Generating seeds  n_per_class={exp.seeds.gap_filter.n_per_class} "
+        f"gap<={exp.seeds.gap_filter.max_logprob_gap} "
         f"categories={len(exp.categories)}"
     )
     seeds = generate_seeds(sut, exp, data_source)

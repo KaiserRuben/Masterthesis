@@ -34,8 +34,10 @@ cache_dirs:
   - /Volumes/SanDisk/Cache/imagenet
 
 seeds:
-  n_per_class: 2
-  max_logprob_gap: 2.0                   # same filter — same seeds as overnight
+  mode: gap_filter
+  gap_filter:
+    n_per_class: 2
+    max_logprob_gap: 2.0                   # same filter — same seeds as overnight
 
 # ===========================================================================
 # Stage 1 — Rebalanced strategies (no sparse_small)

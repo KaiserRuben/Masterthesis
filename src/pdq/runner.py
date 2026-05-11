@@ -34,7 +34,7 @@ from tqdm import tqdm
 from src.config import ExperimentConfig, SeedTriple
 from src.data import ImageNetCache
 from src.manipulator.image.manipulator import ImageManipulator
-from src.manipulator.text.manipulator import TextManipulator
+from src.manipulator.text.composite import CompositeTextManipulator
 from src.common import apply_seed_filter, build_context_meta
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.sut import VLMSUT
@@ -245,9 +245,15 @@ class PDQRunner:
         # -- Parallel component init (same pattern as SMOO runner) --------
         pool = ThreadPoolExecutor(max_workers=3)
 
-        logger.info("Text manipulator starting...")
-        text_fut: Future[TextManipulator] = pool.submit(
-            TextManipulator.from_pretrained, config=cfg.text,
+        logger.info(
+            "Composite text manipulator starting (profile=%s)...",
+            cfg.text.composite.profile if cfg.text.composite else None,
+        )
+        text_fut: Future[CompositeTextManipulator] = pool.submit(
+            CompositeTextManipulator.from_config,
+            text_config=cfg.text,
+            device=cfg.device,
+            redis_url=cfg.sut.redis_url,
         )
 
         logger.info("Image manipulator starting...  preset=%s", cfg.image.preset)
@@ -255,7 +261,10 @@ class PDQRunner:
             ImageManipulator.from_preset, device=cfg.device, config=cfg.image,
         )
 
-        logger.info("SUT starting...  %s on %s", cfg.sut.model_id, cfg.device)
+        sut_device = (
+            cfg.sut.ov_device if cfg.sut.backend == "openvino" else cfg.device
+        )
+        logger.info("SUT starting...  %s on %s", cfg.sut.model_id, sut_device)
         sut_fut: Future[VLMSUT] = pool.submit(VLMSUT, exp_cfg)
 
         # SUT needed first for seed generation.
@@ -268,7 +277,7 @@ class PDQRunner:
         image_manip: ImageManipulator = image_fut.result()
         logger.info("Image manipulator loaded")
 
-        text_manip: TextManipulator = text_fut.result()
+        text_manip: CompositeTextManipulator = text_fut.result()
         logger.info("Text manipulator loaded")
 
         pool.shutdown(wait=False)
@@ -281,21 +290,17 @@ class PDQRunner:
         # `seed_0032` in a filtered run matches `seed_0032` in the full run).
         indexed_seeds = apply_seed_filter(seeds, cfg.seeds.filter_indices)
 
+        workers = max(1, cfg.parallel.workers)
         logger.info(
             "%d seed(s) to test (PDQ pipeline, %d strategies, "
-            "stage1_budget=%d)",
+            "stage1_budget=%d, workers=%d)",
             len(indexed_seeds),
             len(cfg.stage1.strategies),
             cfg.stage1.budget_sut_calls,
+            workers,
         )
 
-        manipulator = VLMManipulator(image_manip, text_manip)
-        adapter = SUTAdapter(sut)
-
-        # -- Deterministic RNG -------------------------------------------
-        rng = np.random.default_rng(cfg.reproducibility.seed_int)
-
-        # -- Preflight cost check (optional) -----------------------------
+        # -- Preflight cost check (optional, single-thread) ---------------
         if preflight:
             from src.sut import preflight_cost_check
 
@@ -303,10 +308,6 @@ class PDQRunner:
             answer_suffix = cfg.answer_format.format(
                 categories=", ".join(cfg.categories),
             )
-            # Total PDQ SUT calls per seed: stage1 budget (at most
-            # budget_sut_calls, reached if no early stop) + up to
-            # max_flips_per_seed × budget_sut_calls_per_flip for stage2.
-            # Multiplied across all filtered seeds.
             per_seed_calls = (
                 cfg.stage1.budget_sut_calls
                 + cfg.stage1.max_flips_per_seed
@@ -315,7 +316,7 @@ class PDQRunner:
             total_calls = per_seed_calls * len(indexed_seeds)
             preflight_cost_check(
                 sut=sut,
-                manipulator=manipulator,
+                manipulator=VLMManipulator(image_manip, text_manip),
                 seed=first_seed,
                 prompt_template=cfg.prompt_template,
                 answer_suffix=answer_suffix,
@@ -324,10 +325,72 @@ class PDQRunner:
                 n_samples=20,
             )
 
-        pbar = tqdm(indexed_seeds, unit="seed", desc="PDQ")
+        if workers == 1:
+            self._run_seed_loop(
+                indexed_seeds, sut, image_manip, text_manip, exp_cfg,
+                worker_id=0, n_workers=1,
+            )
+        else:
+            with ThreadPoolExecutor(
+                max_workers=workers, thread_name_prefix="pdqw",
+            ) as ex:
+                futs = []
+                for i in range(workers):
+                    slice_i = indexed_seeds[i::workers]
+                    if not slice_i:
+                        continue
+                    # Per-thread VLMSUT wrapper sharing scorer + embedder.
+                    sut_thread = VLMSUT(
+                        exp_cfg,
+                        scorer=sut.scorer,
+                        text_embedder=sut.text_embedder,
+                        redis_client=sut.redis_client,
+                    )
+                    futs.append(ex.submit(
+                        self._run_seed_loop,
+                        slice_i, sut_thread, image_manip, text_manip, exp_cfg,
+                        worker_id=i, n_workers=workers,
+                    ))
+                for f in futs:
+                    f.result()
+        logger.info("PDQ run complete.")
+
+    def _run_seed_loop(
+        self,
+        indexed_seeds: list[tuple[int, SeedTriple]],
+        sut: VLMSUT,
+        image_manip: ImageManipulator,
+        text_manip: CompositeTextManipulator,
+        exp_cfg: ExperimentConfig,
+        *,
+        worker_id: int,
+        n_workers: int,
+    ) -> None:
+        """Per-thread seed-iteration loop.
+
+        Each call gets its own VLMManipulator (per-seed contexts),
+        SUTAdapter (per-call records, counters), and RNG (deterministic
+        per-worker derivation from the base seed). The shared models
+        live on *image_manip* / *text_manip* / *sut.scorer*.
+        """
+        cfg = self._cfg
+        manipulator = VLMManipulator(image_manip, text_manip)
+        adapter = SUTAdapter(sut)
+        # Derive a unique RNG stream per worker so workers don't replay
+        # the same random numbers; offset by worker_id so worker_id=0
+        # matches the legacy single-thread sequence.
+        base_seed = cfg.reproducibility.seed_int
+        rng = np.random.default_rng(base_seed + worker_id)
+
+        pbar = tqdm(
+            indexed_seeds,
+            unit="seed",
+            desc=f"PDQ-w{worker_id}" if n_workers > 1 else "PDQ",
+            position=worker_id if n_workers > 1 else 0,
+        )
         for pos, (seed_idx, seed) in enumerate(pbar):
             pbar.set_description(
-                f"[{pos + 1}/{len(indexed_seeds)}] "
+                f"[w{worker_id} {pos + 1}/{len(indexed_seeds)}] "
                 f"seed_{seed_idx:04d} {seed.class_a}"
             )
             self._run_seed(
@@ -338,12 +401,10 @@ class PDQRunner:
                 rng=rng,
                 pbar=pbar,
             )
-
         pbar.close()
         logger.info(
-            "PDQ run complete. Total SUT calls: %d (%d cache misses)",
-            adapter.call_count,
-            adapter.miss_count,
+            "Worker %d done: %d SUT calls (%d cache misses)",
+            worker_id, adapter.call_count, adapter.miss_count,
         )
 
     # ------------------------------------------------------------------

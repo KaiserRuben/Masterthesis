@@ -28,10 +28,12 @@ cache_dirs:
 n_categories: 50
 
 seeds:
-  n_per_class: 3
-  max_logprob_gap: 3.5
+  mode: gap_filter
   filter_indices: [85]  # junco→leatherback — same index as exp09 run 5
 
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
 image:
   n_candidates: 16383
   knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz

@@ -18,6 +18,8 @@ from numpy.typing import NDArray
 from PIL import Image
 from torchvision.transforms import functional as TF
 
+from src import distlock
+
 from .types import CodeGrid
 
 
@@ -139,7 +141,7 @@ class VQGANCodec:
     def encode(self, image: Image.Image) -> CodeGrid:
         """Encode a PIL image to a discrete code grid."""
         x = self._preprocess(image)
-        with torch.no_grad():
+        with distlock.lock(str(self._device)), torch.no_grad():
             _, _, (_, _, indices) = self._model.encode(x)
         h, w = self._grid_size
         grid = indices.cpu().numpy().reshape(h, w).astype(np.int64)
@@ -147,15 +149,29 @@ class VQGANCodec:
 
     def decode(self, grid: CodeGrid) -> Image.Image:
         """Decode a code grid back to a PIL image."""
+        return self.decode_batch([grid])[0]
+
+    def decode_batch(self, grids: list[CodeGrid]) -> list[Image.Image]:
+        """Decode N code grids in a single VQGAN forward.
+
+        Stacks the indices into a batched tensor of shape ``(N*h*w,)``
+        and calls ``model.decode`` once with batch dimension N. On CPU
+        and on iGPU this is dramatically faster than N batch-1 calls
+        because conv/matmul kernels amortize launch overhead and use
+        BLAS GEMM at full batch.
+        """
+        if not grids:
+            return []
         h, w = self._grid_size
-        indices = torch.from_numpy(
-            grid.indices.ravel().copy()
-        ).long().to(self._device)
-        shape = (1, h, w, self._embed_dim)
-        with torch.no_grad():
+        n = len(grids)
+        flat = np.stack([g.indices.ravel() for g in grids], axis=0).reshape(-1)
+        with distlock.lock(str(self._device)), torch.no_grad():
+            indices = torch.from_numpy(flat).long().to(self._device)
+            shape = (n, h, w, self._embed_dim)
             z_q = self._model.quantize.get_codebook_entry(indices, shape)
-            x = self._model.decode(z_q)
-        return self._postprocess(x)
+            x = self._model.decode(z_q)  # (N, 3, H, W) in [-1, 1]
+            x = x.clamp(-1.0, 1.0).add(1.0).mul(0.5).cpu()
+        return [TF.to_pil_image(x[i]) for i in range(n)]
 
     def reconstruct(self, image: Image.Image) -> Image.Image:
         """Encode → decode roundtrip. Shows VQGAN reconstruction quality."""

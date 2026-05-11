@@ -1,12 +1,11 @@
 # VLM Boundary Test — Experiment Configuration
 #
-# Maps 1:1 to ExperimentConfig in src/config.py.
-# Only uncomment values you want to override — everything else uses
-# the dataclass defaults.
+# Maps 1:1 to ExperimentConfig in src/config.py. Only uncomment values
+# you want to override — everything else uses the dataclass defaults.
 #
 # Usage:
-#   python experiments/runners/run_boundary_test.py configs/boundary_test.yaml
-#   python experiments/runners/run_boundary_test.py configs/boundary_test.yaml --device cuda
+#   python experiments/runners/run_boundary_test.py configs/Exp-NN/<config>.yaml
+#   python experiments/runners/run_boundary_test.py configs/Exp-NN/<config>.yaml --device cuda
 
 # ===========================================================================
 # Shared
@@ -18,18 +17,6 @@ device: mps                             # cpu | cuda | mps
 #   - macaw
 #   - peacock
 #   - flamingo
-#   - monarch butterfly
-#   - jellyfish
-#   - chameleon
-#   - toucan
-#   - leopard
-#   - red panda
-#   - lionfish
-#   - coral reef
-#   - volcano
-#   - castle
-#   - mosque
-#   - palace
 # n_categories: 50                      # Use first N ImageNet labels (ignores categories list)
 
 # prompt_template: "What is the main subject in this image?"
@@ -59,10 +46,27 @@ cache_dirs:
 # ===========================================================================
 
 # sut:
-#   model_id: Qwen/Qwen3.5-9B          # HuggingFace model identifier
-#   enable_thinking: false              # Allow model thinking trace
-#   max_thinking_tokens: 2000           # Token budget for thinking
-#   max_pixels: null                    # Pixel cap (null = scorer default)
+#   model_id: Qwen/Qwen2.5-VL-7B-Instruct  # HuggingFace model identifier
+#   backend: torch                         # torch (CUDA/MPS/CPU) | openvino (Intel Arc/Xe)
+#   processor_id: null                     # Override (OV: original FP16 repo). Default: model_id
+#   ov_device: GPU                         # OpenVINO device label: GPU (Arc) | CPU
+#   enable_thinking: false                 # Allow model thinking trace (Qwen3-VL only)
+#   max_thinking_tokens: 2000              # Token budget for thinking
+#   max_pixels: null                       # Pixel cap (null = scorer default)
+#   load_in_8bit: false                    # torch + bitsandbytes
+#   load_in_4bit: false                    # torch + bitsandbytes
+#
+# Verified model choices (all auto-routed by family detection):
+#
+#   torch backend (Mac MPS / CUDA / CPU):
+#     - Qwen/Qwen2.5-VL-7B-Instruct          (Qwen2.5-VL family)
+#     - llava-hf/llava-v1.6-mistral-7b-hf    (LLaVA-NeXT / v1.6 family)
+#
+#   openvino backend (Intel Arc A770 / Xe — pre-converted IRs):
+#     - model_id: OpenVINO/Qwen2.5-VL-7B-Instruct-int4-ov   processor_id: Qwen/Qwen2.5-VL-7B-Instruct
+#     - model_id: OpenVINO/Qwen2.5-VL-7B-Instruct-int8-ov   processor_id: Qwen/Qwen2.5-VL-7B-Instruct
+#     - model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+#     - model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int4-ov  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
 
 # ===========================================================================
 # Image manipulator (VQGAN codebook swaps)
@@ -72,61 +76,155 @@ cache_dirs:
 #   preset: f8-16384                    # f16-1024 | f16-16384 | f8-16384
 #   patch_ratio: 0.1                    # Fraction of patches eligible
 #   patch_strategy: FREQUENCY           # FREQUENCY | ALL
-#   n_candidates: 25                    # Replacement candidates per patch
+#   n_candidates: 25                    # VQGAN-codebook replacement candidates per patch
 #   candidate_strategy: KNN             # KNN | UNIFORM | KFN
 #   resolution: 256                     # VQGAN input resolution
 #   knn_cache_path: null                # Path to codebook KNN cache (null = recompute)
 
 # ===========================================================================
-# Text manipulator (PoS-aware synonym replacement)
+# Text manipulator (composite stack — required)
 # ===========================================================================
+#
+# CompositeTextManipulator stacks four operators in canonical order:
+#   synonym (MLM-based, default ModernBERT-large) → fragmentation
+#   → character_noise → saliency
+#
+# Genome layout: [image_genes | g_synonym | g_frag | g_char | g_saliency].
+# Per-operator severity ∈ [0, 1]; severity = 0 → operator off.
+# Synonym pool depth (k_max) is normally derived from severity but can
+# be overridden explicitly (recommended: 25 to match BAE-style budgets).
 
-# text:
-#   spacy_model: en_core_web_sm         # spaCy model for PoS tagging
-#   embedding_model: fasttext-wiki-news-subwords-300  # gensim embedding model
-#   n_candidates: 25                    # Synonym candidates per word
+text:
+  spacy_model: en_core_web_sm
+  composite:
+    profile: full_stack
+    # overrides:                          # Per-operator severity tweaks
+    #   saliency: {severity: 0.30}
+    # operators:                          # Bypass library entirely:
+    #   - {name: synonym, severity: 0.55, k_max: 25, device: mps}
+    #   - {name: fragmentation, severity: 0.20}
 
 # ===========================================================================
 # Seed generation
 # ===========================================================================
 
 # seeds:
-#   n_per_class: 5                      # ImageNet images to sample per category
-#   max_logprob_gap: 2.0                   # Max log-prob gap (smaller = closer to boundary)
+#   mode: gap_filter                    # gap_filter (default) | roster
+#   filter_indices: []                  # [] = keep all, else list of 0-based indices
+#   gap_filter:
+#     n_per_class: 5                    # ImageNet images to sample per category
+#     max_logprob_gap: 2.0              # Max log-prob gap (smaller = closer to boundary)
+#
+# --- Roster mode (Exp-100+) — explicit class list with combinatorial
+#     abstraction-level expansion, disjointness filter, directed pairs. ---
+# seeds:
+#   mode: roster
+#   filter_indices: []
+#   roster:
+#     class_list: [junco, chickadee, great_white_shark]
+#     seeds_per_class: 3
+#     min_anchor_confidence: 0.8        # log-prob floor for anchor-seed acceptance
+#     abstraction:
+#       levels_anchor: [0, 1, 2]        # 0=fine, 1=mid, 2=super (per src.data.taxonomy)
+#       levels_target: [0, 1, 2]
+#       apply_disjointness: true
+#       directions: both                # both | forward | reverse
 
 # ===========================================================================
 # Optimizer (method + init-population sampling + early stopping)
 # ===========================================================================
 #
-# The block below is ACTIVE (not commented) and encodes the Phase-1
-# validated defaults — sparse init plus OR-composed early-stop triggers.
-# To revert to legacy behaviour (uniform random init, hard-cap-only stop),
-# set `sampling.mode: uniform` and `early_stop.enable: false`.
+# Init-mode selector. Pick ONE of the five configurations below by activating
+# its block; keep the others commented as drop-in replacements.
+#
+#   # | mode                | score    | use-case
+#   --+---------------------+----------+--------------------------------------
+#   1 | sparse              | —        | legacy / Exp-12-style baselines, NOT
+#     |                     |          | recommended for new runs
+#   2 | sparse_multitier    | —        | zero-cost default, dominates plain
+#     |                     |          | sparse on every KPI tested (Exp-22b)
+#   3 | sparse_score_guided | pattern  | deepest probe — best speed-to-flip +
+#     |                     |          | deepest TgtBal in Exp-22c
+#   4 | sparse_score_guided | ablation | cross-method validation alternative
+#     |                     |          | (Breiman-2001 permutation)
+#   5 | sparse_score_guided | sobol    | methodological-completeness baseline,
+#     |                     |          | empirically weakest in Exp-22c
+#
+# Exp-22 references: configs/Exp-22/*.yaml + diary 2026-05-05.
 
 optimizer:
-  method: M0                            # M0 = baseline AGE-MOEA-2. M1..M4 are run_screening.py-only.
+  method: M0                            # M0 = baseline AGE-MOEA-2
 
-  # -- Init sampling. Phase-1 validated defaults (Exp-10, 2026-04-20):
-  #    sparse init gives 134×-252× higher 2D HV on (n_active, TgtBal)
-  #    vs. uniform random across 4 pairs. `mode: uniform` reverts to
-  #    PyMoo's IntegerRandomSampling (historical baseline, no sparsity
-  #    prior — reaches dense-only Pareto fronts).
+  # --- 2. sparse_multitier (DEFAULT) ---------------------------------------
+  # Five-tier Bernoulli mixture over the image-gene block. Guarantees spike +
+  # medium + heavy + very-heavy individuals coexist from gen 0; prevents the
+  # sparse-init lock-in diagnosed in Exp-22 (88.7 % of activation regime
+  # never visited under single-p sparse). Tier values overridable per-run.
   sampling:
-    mode: sparse                        # sparse | uniform
-    p_active: 0.03                      # Bernoulli prob an image gene is active per ind. E[n_active] = image_dim * p_active.
-    geometric_rate: 0.5                 # Rate of truncated geometric depth for active genes. Higher -> shallower depths.
-    zero_anchor_fraction: 0.05          # Fraction of pop with all-zero image block (identity anchor).
-    uniform_fallback_fraction: 0.10     # Fraction with Bernoulli mask × uniform depth. Diversity insurance.
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}   # spike       E[n_active] ≈ 1
+      - {p_active: 0.030, fraction: 0.20}   # sparse      E[n_active] ≈ 7
+      - {p_active: 0.100, fraction: 0.25}   # medium      E[n_active] ≈ 22
+      - {p_active: 0.300, fraction: 0.20}   # heavy       E[n_active] ≈ 67
+      - {p_active: 0.500, fraction: 0.10}   # very heavy  E[n_active] ≈ 111
 
-  # -- Early stopping. OR-composed triggers: flip (TgtBal <= dtype-tied
-  #    epsilon) | plateau (no HV gain for `plateau_patience` gens, needs
-  #    `hypervolume_reference`) | no_improvement (min TgtBal never beat
-  #    gen-0 after warmup) | hard_cap (generations cap). Saves ~30-50%
-  #    wall time on saturated runs (e.g. shark Phase-1 converged by
-  #    gen 100, used to run to 199).
+  # --- 1. sparse (legacy single-p) -----------------------------------------
+  # sampling:
+  #   mode: sparse
+  #   p_active: 0.03
+  #   geometric_rate: 0.5
+  #   zero_anchor_fraction: 0.05
+  #   uniform_fallback_fraction: 0.10
+
+  # --- 3-5. sparse_score_guided (pattern | ablation | sobol) ---------------
+  # Score-biased multi-tier init. Same tiers as multi-tier; active positions
+  # per tier picked by binary tournament weighted by an externally-computed
+  # importance score. Pre-compute the score with:
+  #   python experiments/runners/compute_position_score.py \
+  #       <warmup-config>.yaml --method {pattern,ablation,sobol} \
+  #       --out runs/<exp>/scores/{pattern,ablation,sobol}_<seed>.npy
+  # Then point score_path at the matching .npy. If score_path does not exist
+  # at run time, the tester falls back to sparse_multitier with a warning.
+  #
+  # sampling:
+  #   mode: sparse_score_guided
+  #   score_path: runs/<exp>/scores/pattern_<seed>.npy   # pattern (recommended)
+  #   # score_path: runs/<exp>/scores/ablation_<seed>.npy  # Breiman permutation
+  #   # score_path: runs/<exp>/scores/sobol_<seed>.npy     # Saltelli total-order
+  #   zero_anchor_fraction: 0.05
+  #   tiers:
+  #     - {p_active: 0.005, fraction: 0.20}
+  #     - {p_active: 0.030, fraction: 0.20}
+  #     - {p_active: 0.100, fraction: 0.25}
+  #     - {p_active: 0.300, fraction: 0.20}
+  #     - {p_active: 0.500, fraction: 0.10}
+
+  # --- uniform (PyMoo IntegerRandomSampling) -------------------------------
+  # sampling:
+  #   mode: uniform
+
   early_stop:
     enable: true
     epsilon_margin: 1.0e-30             # Flip threshold = np.finfo(dtype).tiny + margin.
     plateau_patience: 30                # Gens of no HV improvement before plateau fires.
     no_improvement_warmup: 20           # Gens before no-improvement trigger can fire.
-    hypervolume_reference: null         # e.g. [0.5, 1.0, 5.0] for (MatDist, TextDist, TgtBal). null disables plateau trigger only.
+    hypervolume_reference: null         # e.g. [0.5, 1.0, 5.0] for (MatDist, TextDist, TgtBal).
+
+# ---------------------------------------------------------------------------
+# Parallelism (multi-thread seed dispatch)
+# ---------------------------------------------------------------------------
+#
+# Fans the seed loop out across N worker threads in a single process.
+# Models (VQGAN, VLM scorer, text embedder) are loaded once and shared
+# by reference; each thread owns thin per-seed state. GPU access is
+# serialised by a process-local mutex per device string. When SUT and
+# VQGAN devices differ (e.g. OpenVINO Arc + torch CPU), threads run
+# truly concurrently on the GPU step — otherwise the gain is CPU-prep
+# overlap only.
+#
+# With workers=1 (default) the lock layer is bypassed — zero overhead.
+#
+# parallel:
+#   workers: 2                # Number of worker threads

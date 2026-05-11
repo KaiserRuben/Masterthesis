@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 import dacite
 import yaml
 
+from src import distlock
 from src.manipulator.image.types import CandidateStrategy, PatchStrategy
 from src.pdq.config import PDQExperimentConfig, validate_config
 from src.pdq.runner import PDQRunner
@@ -76,14 +77,20 @@ def load_config(cfg: dict) -> PDQExperimentConfig:
 def run_experiment(cfg: dict, preflight: bool = False) -> None:
     """Build all components from *cfg* dict and run the PDQ test.
 
+    With ``parallel.workers > 1`` the seed loop fans out across N
+    threads sharing one model set; the device mutex
+    (:mod:`src.distlock`) serialises GPU calls.
+
     :param cfg: Raw YAML dict (may contain CLI overrides applied before
         this call).
     :param preflight: If True, measure per-SUT-call wall time on the
         first seed and print a total-runtime projection before the
-        main loop. Useful on new hardware or after config changes
-        that alter scoring cost.
+        main loop.
     """
     exp = load_config(cfg)
+    distlock.configure(exp.parallel.workers > 1)
+    if exp.parallel.workers > 1:
+        logger.info("Device locks enabled (workers=%d)", exp.parallel.workers)
     runner = PDQRunner(exp)
     runner.run(preflight=preflight)
 

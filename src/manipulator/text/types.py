@@ -1,14 +1,8 @@
-"""Immutable data types for text manipulation.
+"""Shared text-manipulation type: TokenSequence.
 
-Mirrors the image manipulator's type hierarchy:
-
-    TokenSequence   ↔  CodeGrid        (the encoded input)
-    WordSelection   ↔  PatchSelection  (which positions are mutable)
-    ManipulationContext                  (prepared seed, ready for apply)
-
-Genotypes are plain numpy arrays — same encoding:
-    0              → keep original word
-    k ∈ [1, K]     → use candidates[i][k - 1]
+The composite text manipulator and all operators consume + return
+:class:`TokenSequence` instances. Operators carry their own per-instance
+state in :class:`OperatorContext` subclasses (see ``operators/base.py``).
 """
 
 from __future__ import annotations
@@ -33,10 +27,11 @@ CONTENT_POS_TAGS = frozenset({"NOUN", "VERB", "ADJ", "ADV"})
 
 @dataclass(frozen=True)
 class TokenSequence:
-    """A tokenized text preserving whitespace for lossless reconstruction.
+    """A tokenised text preserving whitespace for lossless reconstruction.
 
-    Each token has a PoS tag and trailing whitespace. Reconstructing the
-    original text is just ``"".join(t + w for t, w in zip(tokens, whitespace))``.
+    Each token has a Universal-Dependencies PoS tag and trailing whitespace.
+    Reconstructing the original text is just
+    ``"".join(t + w for t, w in zip(tokens, whitespace))``.
     """
 
     tokens: tuple[str, ...]
@@ -56,15 +51,22 @@ class TokenSequence:
 
     @property
     def text(self) -> str:
-        """Reconstruct the original text."""
         return "".join(t + w for t, w in zip(self.tokens, self.whitespace))
 
     @property
     def n_tokens(self) -> int:
         return len(self.tokens)
 
-    def replace(self, positions: NDArray[np.intp], words: tuple[str, ...]) -> TokenSequence:
-        """Return a new sequence with specified positions replaced."""
+    def replace(
+        self,
+        positions: NDArray[np.intp],
+        words: tuple[str, ...],
+    ) -> TokenSequence:
+        """Return a new sequence with the listed positions replaced.
+
+        Casing of each replacement is matched to the original token at
+        that position (lowercase / Capitalised / UPPERCASE).
+        """
         tokens = list(self.tokens)
         for pos, word in zip(positions, words):
             tokens[pos] = _match_case(self.tokens[pos], word)
@@ -85,71 +87,15 @@ def _match_case(original: str, replacement: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Word selection (search space for one text)
+# Tokenisation helper (used by composite and operators)
 # ---------------------------------------------------------------------------
 
 
-@dataclass(frozen=True)
-class WordSelection:
-    """Which words are mutable and what replacements are valid.
-
-    Gene encoding (same as image manipulator):
-        gene = 0          → keep original word
-        gene = k ∈ [1, K] → use candidates[i][k - 1]
-    """
-
-    positions: NDArray[np.intp]               # indices into token sequence
-    candidates: tuple[tuple[str, ...], ...]   # per-word replacement words
-    original_words: tuple[str, ...]           # original word at each position
-
-    def __post_init__(self) -> None:
-        n = len(self.positions)
-        if len(self.candidates) != n:
-            raise ValueError(
-                f"positions has {n} entries but candidates has {len(self.candidates)}"
-            )
-        if len(self.original_words) != n:
-            raise ValueError(
-                f"positions has {n} entries but original_words has {len(self.original_words)}"
-            )
-
-    @property
-    def n_words(self) -> int:
-        return len(self.positions)
-
-    @property
-    def gene_bounds(self) -> NDArray[np.int64]:
-        """Upper bound (exclusive) per gene. Gene value ∈ [0, bound)."""
-        return np.array([len(c) + 1 for c in self.candidates], dtype=np.int64)
-
-
-# ---------------------------------------------------------------------------
-# Manipulation context
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class ManipulationContext:
-    """Everything needed to manipulate one text many times."""
-
-    original_tokens: TokenSequence
-    selection: WordSelection
-
-    @property
-    def genotype_dim(self) -> int:
-        return self.selection.n_words
-
-    @property
-    def gene_bounds(self) -> NDArray[np.int64]:
-        return self.selection.gene_bounds
-
-    def zero_genotype(self) -> NDArray[np.int64]:
-        """All-zero genotype: no words changed, original text."""
-        return np.zeros(self.genotype_dim, dtype=np.int64)
-
-    def random_genotype(self, rng: np.random.Generator) -> NDArray[np.int64]:
-        """Uniformly random genotype within bounds."""
-        return np.array(
-            [rng.integers(0, bound) for bound in self.gene_bounds],
-            dtype=np.int64,
-        )
+def tokenize(nlp, text: str) -> TokenSequence:
+    """Tokenise + PoS-tag a text using a pre-loaded spaCy model."""
+    doc = nlp(text)
+    return TokenSequence(
+        tokens=tuple(t.text for t in doc),
+        pos_tags=tuple(t.pos_ for t in doc),
+        whitespace=tuple(t.whitespace_ for t in doc),
+    )

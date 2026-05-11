@@ -34,8 +34,15 @@ def generate_seeds(
     :returns: List of :class:`SeedTriple` that passed both filters.
     """
     categories = config.categories
-    n_per_class = config.seeds.n_per_class
-    max_logprob_gap = config.seeds.max_logprob_gap
+    if config.seeds.mode != "gap_filter":
+        raise ValueError(
+            f"generate_seeds() requires seeds.mode='gap_filter'; "
+            f"got {config.seeds.mode!r}. Use the roster pipeline "
+            f"(src.common.roster_seeds) for mode='roster'."
+        )
+    assert config.seeds.gap_filter is not None  # guaranteed by SeedConfig.__post_init__
+    n_per_class = config.seeds.gap_filter.n_per_class
+    max_logprob_gap = config.seeds.gap_filter.max_logprob_gap
 
     # Load images (cached or streamed).
     samples = data_source.load_samples(

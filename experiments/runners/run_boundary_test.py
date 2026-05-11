@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import logging
 import os
 import sys
@@ -25,24 +26,28 @@ import dacite
 import numpy as np
 import yaml
 
+from src import distlock
 from src.config import ExperimentConfig, resolve_categories
 from src.data import ImageNetCache
 from src.manipulator.image.manipulator import ImageManipulator
 from src.manipulator.image.types import CandidateStrategy, PatchStrategy
-from src.manipulator.text.manipulator import TextManipulator
+from src.manipulator.text.composite import CompositeTextManipulator
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import (
     CriterionCollection,
     MatrixDistance,
     TargetedBalance,
     TextEmbeddingDistance,
-    TextReplacementDistance,
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 from src.sut import VLMSUT, preflight_cost_check
 from src.common import apply_seed_filter
 from src.evolutionary import VLMBoundaryTester
-from src.common import generate_seeds
+from src.common import (
+    combinatorial_pairs,
+    generate_seeds,
+    roster_seeds,
+)
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -73,17 +78,66 @@ def load_config(cfg: dict) -> ExperimentConfig:
     return dacite.from_dict(ExperimentConfig, cfg, config=_DACITE_CONFIG)
 
 
+def _configure_distlock(workers: int) -> None:
+    """Enable the process-local device mutex iff parallelism is active.
+
+    Single-worker mode leaves locks disabled so every GPU-call site is a
+    no-op around the lock. Multi-worker mode flips them on; threads then
+    serialise on per-device ``threading.Lock`` instances.
+    """
+    distlock.configure(workers > 1)
+    if workers > 1:
+        logger.info("Device locks enabled (workers=%d)", workers)
+
+
+def _apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
+    """Force genome-block sizes consistent with the modality flag.
+
+    * ``image_only`` → text profile becomes ``noop`` (text_dim=0).
+    * ``text_only``  → ``image.patch_ratio`` becomes 0 (image_dim=0).
+    * ``joint``      → unchanged.
+
+    User-facing YAML only needs ``modality:`` — this avoids inconsistent
+    states where genome sizes and Pareto dimensionality drift apart.
+    """
+    if exp.modality == "image_only":
+        new_composite = dataclasses.replace(
+            exp.text.composite,
+            profile="noop",
+            operators=(),
+            overrides={},
+        )
+        logger.info("modality=image_only → forcing text profile to 'noop'")
+        return dataclasses.replace(
+            exp,
+            text=dataclasses.replace(exp.text, composite=new_composite),
+        )
+    if exp.modality == "text_only":
+        logger.info("modality=text_only → forcing image.patch_ratio to 0.0")
+        return dataclasses.replace(
+            exp,
+            image=dataclasses.replace(exp.image, patch_ratio=0.0),
+        )
+    return exp
+
+
 def run_experiment(cfg: dict, preflight: bool = False) -> None:
     """Build all components from *cfg* dict and run the boundary test.
 
+    With ``parallel.workers > 1`` the per-seed loop runs across N worker
+    threads sharing one model set: VQGAN, VLM scorer and text embedder
+    are loaded once; each thread owns thin wrappers (VLMSUT, optimizer,
+    objectives, tester) that hold per-seed state. Device-bound GPU
+    sections are serialised via the in-process device mutex
+    (:mod:`src.distlock`).
+
     :param cfg: Raw YAML config dict.
     :param preflight: If True, run a SUT cost-check measurement on the
-        first seed before the main loop starts. Prints a per-call
-        timing and a projection of total wall time for the configured
-        budget. Does NOT abort the run; the user should Ctrl-C if the
-        projection is unacceptable.
+        first seed before the main loop starts.
     """
     exp = load_config(cfg)
+    exp = _apply_modality(exp)
+    _configure_distlock(exp.parallel.workers)
 
     # -- Resolve categories from data source (before any component sees them)
     data_source = ImageNetCache(dirs=exp.cache_dirs)
@@ -92,9 +146,15 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     # -- Parallel init: text manipulator, image manipulator, SUT ------------
     pool = ThreadPoolExecutor(max_workers=3)
 
-    logger.info("Text manipulator starting...")
-    text_fut: Future[TextManipulator] = pool.submit(
-        TextManipulator.from_pretrained, config=exp.text,
+    logger.info(
+        "Composite text manipulator starting (profile=%s)...",
+        exp.text.composite.profile,
+    )
+    text_fut: Future = pool.submit(
+        CompositeTextManipulator.from_config,
+        text_config=exp.text,
+        device=exp.device,
+        redis_url=exp.sut.redis_url,
     )
 
     logger.info(f"Image manipulator starting...  preset={exp.image.preset}")
@@ -102,28 +162,34 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
         ImageManipulator.from_preset, device=exp.device, config=exp.image,
     )
 
-    logger.info(f"SUT starting...  {exp.sut.model_id} on {exp.device}")
+    sut_device = (
+        exp.sut.ov_device if exp.sut.backend == "openvino" else exp.device
+    )
+    logger.info(f"SUT starting...  {exp.sut.model_id} on {sut_device}")
     sut_fut: Future[VLMSUT] = pool.submit(VLMSUT, exp)
 
     # -- Objectives & optimizer (cheap, run on main thread) ----------------
-    if exp.text_objective == "embedding":
-        text_criterion = TextEmbeddingDistance()
-    elif exp.text_objective == "fasttext":
-        text_criterion = TextReplacementDistance()
-    else:
-        raise ValueError(
-            f"Unknown text_objective={exp.text_objective!r}; "
-            f"expected 'embedding' or 'fasttext'.",
-        )
-    objectives = CriterionCollection(
-        MatrixDistance(),
-        text_criterion,
-        TargetedBalance(),
+    # Pareto dimensionality follows ``exp.modality``: drop the criterion
+    # whose modality-side genome is fixed at zero. TargetedBalance is
+    # always retained — it is the boundary signal.
+    crits: list = []
+    if exp.modality != "text_only":
+        crits.append(MatrixDistance())
+    if exp.modality != "image_only":
+        crits.append(TextEmbeddingDistance())
+    crits.append(TargetedBalance())
+    objectives = CriterionCollection(*crits)
+    logger.info(
+        "modality=%s → %d objectives: %s",
+        exp.modality,
+        len(crits),
+        ", ".join(type(c).__name__ for c in crits),
     )
 
+    # Single-worker optimizer (only used when parallel.workers == 1).
     optimizer = DiscretePymooOptimizer(
         gene_bounds=np.zeros(1, dtype=np.int64),  # updated per-seed
-        num_objectives=3,
+        num_objectives=len(crits),
         pop_size=exp.pop_size,
     )
 
@@ -132,8 +198,24 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     sut = sut_fut.result()
     logger.info("SUT loaded")
 
-    logger.info("Generating seeds (scoring all category pairs)")
-    seeds = generate_seeds(sut, exp, data_source)
+    if exp.seeds.mode == "gap_filter":
+        logger.info("Generating seeds (gap_filter: scoring all category pairs)")
+        seeds = generate_seeds(sut, exp, data_source)
+    elif exp.seeds.mode == "roster":
+        logger.info(
+            "Generating seeds (roster: %d classes × %d seeds, "
+            "combinatorial abstraction expansion)",
+            len(exp.seeds.roster.class_list),
+            exp.seeds.roster.seeds_per_class,
+        )
+        seed_images = roster_seeds(sut, exp, data_source)
+        seeds = combinatorial_pairs(
+            seed_images,
+            exp.seeds.roster.class_list,
+            exp.seeds.roster.abstraction,
+        )
+    else:  # pragma: no cover — guarded by SeedConfig.__post_init__
+        raise ValueError(f"Unknown seeds.mode={exp.seeds.mode!r}")
 
     image_manip = image_fut.result()
     logger.info("Image manipulator loaded")
@@ -143,9 +225,72 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
 
     pool.shutdown(wait=False)
 
-    manipulator = VLMManipulator(image_manip, text_manip)
+    if not seeds:
+        logger.warning("No seeds passed filters — nothing to test.")
+        return
 
-    tester = VLMBoundaryTester(
+    workers = max(1, exp.parallel.workers)
+    logger.info(
+        f"{len(seeds)} seed(s), "
+        f"{exp.generations} gen x {exp.pop_size} pop, "
+        f"workers={workers}"
+    )
+
+    if preflight:
+        _run_preflight(exp, sut, image_manip, text_manip, seeds)
+
+    if workers == 1:
+        tester = _build_tester(exp, sut, image_manip, text_manip, objectives)
+        tester.test(seeds)
+        return
+
+    # -- Multi-thread fan-out -------------------------------------------
+    # Build N independent tester bundles, all referencing the same
+    # underlying VQGAN / VLM scorer / text embedder. Each thread owns
+    # its own VLMSUT wrapper (counters, last_call_cached), VLMManipulator
+    # (per-seed contexts), optimizer (per-seed reset state), objectives
+    # collection (per-call .results buffer), and tester. Round-robin
+    # seed slicing happens inside ``tester.test``.
+    bundles = [
+        _build_tester(
+            exp,
+            VLMSUT(
+                exp,
+                scorer=sut.scorer,
+                text_embedder=sut.text_embedder,
+                redis_client=sut.redis_client,
+            ),
+            image_manip,
+            text_manip,
+            CriterionCollection(*[type(c)() for c in crits]),
+        )
+        for _ in range(workers)
+    ]
+
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="seedw") as ex:
+        futs = [
+            ex.submit(t.test, seeds, i, workers)
+            for i, t in enumerate(bundles)
+        ]
+        for f in futs:
+            f.result()
+
+
+def _build_tester(
+    exp: ExperimentConfig,
+    sut: VLMSUT,
+    image_manip: ImageManipulator,
+    text_manip: CompositeTextManipulator,
+    objectives: CriterionCollection,
+) -> VLMBoundaryTester:
+    """Wire one tester bundle. Caller owns the shared models."""
+    optimizer = DiscretePymooOptimizer(
+        gene_bounds=np.zeros(1, dtype=np.int64),  # updated per-seed
+        num_objectives=objectives.num_objectives,
+        pop_size=exp.pop_size,
+    )
+    manipulator = VLMManipulator(image_manip, text_manip)
+    return VLMBoundaryTester(
         sut=sut,
         manipulator=manipulator,
         optimizer=optimizer,
@@ -153,44 +298,37 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
         config=exp,
     )
 
-    if not seeds:
-        logger.warning("No seeds passed filters — nothing to test.")
+
+def _run_preflight(
+    exp: ExperimentConfig,
+    sut: VLMSUT,
+    image_manip: ImageManipulator,
+    text_manip: CompositeTextManipulator,
+    seeds,
+) -> None:
+    """Run preflight cost check using a temporary single-thread bundle."""
+    indexed = apply_seed_filter(list(seeds), exp.seeds.filter_indices)
+    if not indexed:
+        logger.warning("Preflight: no seeds after filter — skipping.")
         return
-
-    logger.info(
-        f"{len(seeds)} seed(s), "
-        f"{exp.generations} gen x {exp.pop_size} pop"
+    n_seeds_run = len(indexed)
+    first_seed = indexed[0][1]
+    pair = (first_seed.class_a, first_seed.class_b)
+    scored_categories = (
+        exp.categories if exp.score_full_categories else pair
     )
-
-    if preflight:
-        # Apply the same filter the tester will apply, so the projection
-        # reflects the real run count.
-        indexed = apply_seed_filter(list(seeds), exp.seeds.filter_indices)
-        if not indexed:
-            logger.warning("Preflight: no seeds after filter — skipping.")
-        else:
-            n_seeds_run = len(indexed)
-            first_seed = indexed[0][1]
-            pair = (first_seed.class_a, first_seed.class_b)
-            scored_categories = (
-                exp.categories if exp.score_full_categories else pair
-            )
-            answer_suffix = exp.answer_format.format(
-                categories=", ".join(pair),
-            )
-            total_calls = exp.generations * exp.pop_size * n_seeds_run
-            preflight_cost_check(
-                sut=sut,
-                manipulator=manipulator,
-                seed=first_seed,
-                prompt_template=exp.prompt_template,
-                answer_suffix=answer_suffix,
-                categories=scored_categories,
-                total_calls_projected=total_calls,
-                n_samples=20,
-            )
-
-    tester.test(seeds)
+    answer_suffix = exp.answer_format.format(categories=", ".join(pair))
+    total_calls = exp.generations * exp.pop_size * n_seeds_run
+    preflight_cost_check(
+        sut=sut,
+        manipulator=VLMManipulator(image_manip, text_manip),
+        seed=first_seed,
+        prompt_template=exp.prompt_template,
+        answer_suffix=answer_suffix,
+        categories=scored_categories,
+        total_calls_projected=total_calls,
+        n_samples=20,
+    )
 
 
 def main() -> None:

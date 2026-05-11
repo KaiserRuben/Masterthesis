@@ -128,7 +128,7 @@ def score_all_samples(
         ``b_logprob``, ``gap``.
     """
     categories = config.categories
-    n_per_class = config.seeds.n_per_class
+    n_per_class = config.seeds.gap_filter.n_per_class
 
     samples = data_source.load_samples(
         categories=list(categories),
@@ -325,7 +325,7 @@ def main() -> None:
     logger.info(
         "Config  device=%s  model=%s  n_categories=%d  n_per_class=%d  gap=%.2f",
         exp.device, exp.sut.model_id, len(exp.categories),
-        exp.seeds.n_per_class, exp.seeds.max_logprob_gap,
+        exp.seeds.gap_filter.n_per_class, exp.seeds.gap_filter.max_logprob_gap,
     )
 
     logger.info("Loading SUT...")
@@ -341,7 +341,7 @@ def main() -> None:
     )
 
     # 2. Aggregate per pair.
-    agg = aggregate_pairs(records, max_gap=exp.seeds.max_logprob_gap)
+    agg = aggregate_pairs(records, max_gap=exp.seeds.gap_filter.max_logprob_gap)
 
     # 3. Attach seed-pool indices (so the table links to filter_indices).
     if not args.skip_pool:
@@ -365,7 +365,7 @@ def main() -> None:
     print(f"Categories:   {len(exp.categories)}")
     print(f"Total pairs:  {len(agg)}")
     print(f"Pool-eligible: {agg['in_pool'].sum()}  "
-          f"(pairs with at least one sample at gap ≤ {exp.seeds.max_logprob_gap:.2f})")
+          f"(pairs with at least one sample at gap ≤ {exp.seeds.gap_filter.max_logprob_gap:.2f})")
     print()
     print("Mean-gap distribution (all pairs):")
     print(agg["mean_gap"].describe().to_string())

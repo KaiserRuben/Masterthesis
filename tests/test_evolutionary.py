@@ -17,7 +17,7 @@ from src.objectives import (
     CriterionCollection,
     MatrixDistance,
     TargetedBalance,
-    TextReplacementDistance,
+    TextEmbeddingDistance,
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 from src.config import ExperimentConfig, SeedTriple
@@ -26,12 +26,7 @@ from src.evolutionary.vlm_boundary_tester import (
     pil_to_tensor,
 )
 
-from conftest import (
-    FakeImageManipulator,
-    FakeTextManipulator,
-    make_embeddings,
-    VOCAB,
-)
+from conftest import FakeCompositeTextManipulator, FakeImageManipulator
 
 
 # ---------------------------------------------------------------------------
@@ -46,6 +41,11 @@ ANSWER_FORMAT = " from: {categories}."
 class FakeSUT:
     """Returns deterministic logprobs favouring cat_a."""
 
+    text_embedder = None
+    device_str = "cpu"
+    last_call_cached = False
+    cache_stats = {"hits": 0, "misses": 0}
+
     def process_input(self, image, text=None, categories=None):
         return torch.tensor([-0.1, -2.0, -5.0])
 
@@ -56,24 +56,19 @@ class FakeSUT:
 
 
 @pytest.fixture()
-def embeddings():
-    return make_embeddings(VOCAB)
-
-
-@pytest.fixture()
-def manipulator(embeddings):
+def manipulator():
     return VLMManipulator(
         image_manipulator=FakeImageManipulator(),
-        text_manipulator=FakeTextManipulator(embeddings),
+        text_manipulator=FakeCompositeTextManipulator(),
     )
 
 
 @pytest.fixture()
 def objectives():
-    """3 live batched objectives (MatrixDistance, TextReplacementDistance, TargetedBalance)."""
+    """3 live batched objectives (MatrixDistance, TextEmbeddingDistance, TargetedBalance)."""
     return CriterionCollection(
         MatrixDistance(),
-        TextReplacementDistance(),
+        TextEmbeddingDistance(),
         TargetedBalance(),
     )
 
@@ -220,8 +215,8 @@ class TestVLMBoundaryTester:
             ctx = json.load(f)
 
         assert "image_patch_positions" in ctx
-        assert "text_original_words" in ctx
-        assert "text_candidate_distances" in ctx
+        assert "text_original_tokens" in ctx
+        assert "text_op_order" in ctx
 
     def test_origin_image_saved(self, config, manipulator, objectives, seed):
         tester = self._make_tester(config, manipulator, objectives)

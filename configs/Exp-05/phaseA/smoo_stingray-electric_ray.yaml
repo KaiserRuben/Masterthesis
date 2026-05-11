@@ -109,8 +109,10 @@ cache_dirs:
 n_categories: 50
 
 seeds:
-  n_per_class: 3
-  max_logprob_gap: 3.5                     # aligned w/ PDQ (was 1.0 in
-                                           # archived GWS→tiger run)
+  mode: gap_filter
   filter_indices: [40]                     # first stingray → electric ray
+                                           # archived GWS→tiger run)
                                            # (verified against PDQ pool dump)
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5                     # aligned w/ PDQ (was 1.0 in

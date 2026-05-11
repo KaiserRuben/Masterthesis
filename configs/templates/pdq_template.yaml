@@ -64,8 +64,12 @@ save_dir: runs
 device: cuda                             # cpu | cuda | mps
 
 sut:
-  load_in_8bit: false                    # true on 24 GB GPUs for 9B
-  model_id: Qwen/Qwen3.5-4B               # Qwen3.5-4B | Qwen3.5-9B
+  model_id: Qwen/Qwen2.5-VL-7B-Instruct   # See evolutionary_template.yaml for the full menu
+  backend: torch                          # torch (CUDA/MPS/CPU) | openvino (Intel Arc/Xe)
+  processor_id: null                      # Override; required when model_id is an OV-IR repo
+  ov_device: GPU                          # OpenVINO device: GPU (Arc) | CPU
+  load_in_8bit: false                     # torch + bitsandbytes (24 GB+ GPUs)
+  load_in_4bit: false                     # torch + bitsandbytes
 
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -95,8 +99,11 @@ sut:
 
 n_categories: 20                         # EDIT per experiment
 seeds:
-  n_per_class: 2                         # EDIT per experiment
-  max_logprob_gap: 2.5                   # EDIT per experiment
+  mode: gap_filter                       # gap_filter (default) | roster
+  filter_indices: []                     # [] = keep all generated seeds
+  gap_filter:
+    n_per_class: 2                       # EDIT per experiment
+    max_logprob_gap: 2.5                 # EDIT per experiment
 
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -132,6 +139,18 @@ reproducibility:
 cache_dirs:
   - ~/.cache/imagenet                    # primary (local)
   - /Volumes/SanDisk/Cache/imagenet      # fallback (external, skipped if absent)
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# Text manipulator — composite stack (required)
+# ───────────────────────────────────────────────────────────────────────────
+# Same composite + profile system as the SMOO runner. PDQ uses the
+# manipulator for genotype rendering only (Stage 1 fires the text-modality
+# strategy by sampling all-text genotypes); the composite itself is shared.
+
+text:
+  composite:
+    profile: full_stack
 
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -239,3 +258,11 @@ logging:
 #   Min d_i: ≥ 2 for tight pairs, ≥ 30 for distant pairs
 #
 # ═══════════════════════════════════════════════════════════════════════════
+
+# ---------------------------------------------------------------------------
+# Parallelism (multi-thread seed dispatch)
+# ---------------------------------------------------------------------------
+# See configs/templates/evolutionary_template.yaml for full description.
+#
+# parallel:
+#   workers: 2                # Number of worker threads

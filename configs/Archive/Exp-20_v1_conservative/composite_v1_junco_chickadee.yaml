@@ -1,0 +1,68 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-20 — Composite Text-Operators v1
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# First run with the new CompositeTextManipulator (Synonym + Saliency under
+# the per-operator concat genome layout). Mirrors Exp-12 arm B exactly
+# except for the text-manipulation pipeline:
+#
+#   * same pair: junco → chickadee
+#   * same seed filter: index 83 (= junco-chickadee gap pair from Exp-09 run 4)
+#   * same budget: 100 gens × 30 pop
+#   * same sparse-init defaults (Phase-1 validated, Exp-10)
+#   * same text_objective: embedding
+#
+# Only difference: text.composite is set, which switches the runner from
+# the legacy single-operator TextManipulator to the new
+# CompositeTextManipulator using the exp20_default profile
+# (saliency S=0.25 + synonym S=0.10 — modest mixed-mode setup).
+#
+# Reference baseline: runs/Exp-12/exp12_ab_B_embedding_junco_chickadee_seed_83_*
+# Use the same pair Pareto-front readout for direct (Exp-12, Exp-20) comparison.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp20_composite_v1_junco_chickadee
+save_dir: runs/Exp-20
+
+generations: 100
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [83]   # junco→chickadee — matches Exp-12 / Exp-10 / Exp-09 run 4
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+# -- Composite text-manipulator (new in Exp-20) ----------------------------
+# Activates CompositeTextManipulator. Profile resolves to:
+#   - saliency  (severity=0.25)  → K_max=2  → 1..2 char corruptions per word
+#   - synonym   (severity=0.10)  → K_max=1  → top-1 nearest-neighbour swap
+# Per the canonical order (synonym first, then saliency), Synonym replaces
+# the content noun; Saliency then optionally corrupts whatever is there.
+text:
+  composite:
+    profile: exp20_default
+
+optimizer:
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10

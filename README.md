@@ -20,14 +20,14 @@ Both pipelines share seed generation, SUT scoring, and the image/text manipulato
 
 **Manipulators** (`src/manipulator/`) apply the genotype:
 - Image: VQGAN codebook swaps
-- Text: PoS-aware synonym replacement (spaCy + FastText)
+- Text: composite stack of MLM-Synonym (ModernBERT-large) + Fragmentation + Character Noise + Saliency, in canonical order
 - VLMManipulator bridges the two halves of the genotype
 
 **SUT** (`src/sut/`) — teacher-forced log-prob scoring. For each category label, the VLM is forced to decode the label given the perturbed input and the per-token log-probs are length-normalised.
 
 **Objectives** (evolutionary only, `src/objectives/`):
 - `MatrixDistance` — Frobenius norm of (origin − perturbed) image
-- `TextReplacementDistance` — Σ cosine distance of replaced words
+- `TextEmbeddingDistance` — cosine distance of the manipulated prompt vs. anchor in the SUT's sentence-embedding space
 - `TargetedBalance` — `|P(A) − P(B)|`, → 0 at the decision boundary
 
 **Init distribution** (`src/optimizer/sparse_sampling.py`) — `uniform` (PyMoo default) or `sparse` (Bernoulli-gated zero-anchor + geometric depth). Sparse init is required for full-codebook runs (n=16383); without a sparsity prior, uniform init prevents the optimizer from reaching the `(L0, TgtBal)` sparse-near-boundary corner.

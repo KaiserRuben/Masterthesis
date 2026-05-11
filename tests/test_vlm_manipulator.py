@@ -1,8 +1,7 @@
 """Tests for VLMManipulator: the multi-modal wrapper.
 
-All tests use synthetic data — no real VQGAN or FastText models are loaded.
-Fake sub-manipulators delegate to the real pure ``apply_genotype`` functions
-with synthetic ManipulationContexts built from known data.
+Uses synthetic FakeImageManipulator + FakeCompositeTextManipulator —
+no real VQGAN, ModernBERT, or spaCy load.
 """
 
 import numpy as np
@@ -11,47 +10,25 @@ from PIL import Image
 
 from src.manipulator.vlm_manipulator import VLMManipulator
 
-from conftest import (
-    FakeImageManipulator,
-    FakeTextManipulator,
-    make_embeddings,
-    VOCAB,
-)
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+from conftest import FakeCompositeTextManipulator, FakeImageManipulator
 
 
 @pytest.fixture()
-def embeddings():
-    return make_embeddings(VOCAB)
-
-
-@pytest.fixture()
-def vlm(embeddings):
-    """Return a prepared VLMManipulator."""
+def vlm():
     m = VLMManipulator(
         image_manipulator=FakeImageManipulator(),
-        text_manipulator=FakeTextManipulator(embeddings),
+        text_manipulator=FakeCompositeTextManipulator(),
     )
     m.prepare(Image.new("RGB", (8, 8)), "The quick brown fox")
     return m
 
 
 @pytest.fixture()
-def unprepared(embeddings):
-    """Return a VLMManipulator that has NOT been prepared."""
+def unprepared():
     return VLMManipulator(
         image_manipulator=FakeImageManipulator(),
-        text_manipulator=FakeTextManipulator(embeddings),
+        text_manipulator=FakeCompositeTextManipulator(),
     )
-
-
-# ---------------------------------------------------------------------------
-# TestVLMManipulatorProperties
-# ---------------------------------------------------------------------------
 
 
 class TestVLMManipulatorProperties:
@@ -65,7 +42,7 @@ class TestVLMManipulatorProperties:
         np.testing.assert_array_equal(vlm.gene_bounds, expected)
 
     def test_image_dim_text_dim(self, vlm):
-        # Image context has 2 patches, text context has 2 words
+        # Image: 2 patches; text: 2 mutable positions in stub composite
         assert vlm.image_dim == 2
         assert vlm.text_dim == 2
 
@@ -76,46 +53,35 @@ class TestVLMManipulatorProperties:
         assert vlm.is_prepared
 
 
-# ---------------------------------------------------------------------------
-# TestVLMManipulatorManipulate
-# ---------------------------------------------------------------------------
-
-
 class TestVLMManipulatorManipulate:
     def test_zero_genotype_produces_original(self, vlm):
         weights = vlm.zero_genotype().reshape(1, -1)
         images, texts = vlm.manipulate(candidates=None, weights=weights)
-
         assert len(images) == 1
         assert len(texts) == 1
-        # Zero genotype => original text preserved
         assert texts[0] == "The quick brown fox"
-        # Zero genotype => red channel = 0
         assert images[0].getpixel((0, 0))[0] == 0
 
     def test_single_image_mutation(self, vlm):
         g = vlm.zero_genotype()
-        g[0] = 1  # mutate first image gene only
+        g[0] = 1
         weights = g.reshape(1, -1)
         images, texts = vlm.manipulate(candidates=None, weights=weights)
-
-        assert texts[0] == "The quick brown fox"  # text unchanged
-        assert images[0].getpixel((0, 0))[0] == 1  # red = sum of img genes
+        assert texts[0] == "The quick brown fox"
+        assert images[0].getpixel((0, 0))[0] == 1
 
     def test_single_text_mutation(self, vlm):
         g = vlm.zero_genotype()
-        g[vlm.image_dim] = 1  # mutate first text gene only
+        g[vlm.image_dim] = 1  # mutate first text gene
         weights = g.reshape(1, -1)
         images, texts = vlm.manipulate(candidates=None, weights=weights)
-
-        assert "fast" in texts[0].lower()  # first candidate for "quick"
-        assert images[0].getpixel((0, 0))[0] == 0  # image unchanged
+        assert "fast" in texts[0].lower()
+        assert images[0].getpixel((0, 0))[0] == 0
 
     def test_batched_manipulate(self, vlm):
         pop_size = 5
         weights = np.zeros((pop_size, vlm.genotype_dim), dtype=np.int64)
         images, texts = vlm.manipulate(candidates=None, weights=weights)
-
         assert len(images) == pop_size
         assert len(texts) == pop_size
 
@@ -125,57 +91,6 @@ class TestVLMManipulatorManipulate:
                 candidates=None,
                 weights=np.zeros((1, 4), dtype=np.int64),
             )
-
-
-# ---------------------------------------------------------------------------
-# TestTextCandidateDistances
-# ---------------------------------------------------------------------------
-
-
-class TestTextCandidateDistances:
-    def test_distances_computed_during_prepare(self, vlm):
-        assert vlm.text_candidate_distances is not None
-
-    def test_distances_shape_matches_text_context(self, vlm):
-        dists = vlm.text_candidate_distances
-        assert len(dists) == vlm.text_dim
-        # Each entry has as many distances as candidates for that word
-        for i, d in enumerate(dists):
-            n_cands = len(vlm.text_context.selection.candidates[i])
-            assert len(d) == n_cands
-
-    def test_distances_are_cosine(self, vlm, embeddings):
-        """Verify distances match manual cosine distance computation."""
-        dists = vlm.text_candidate_distances
-        for i, (orig, cands) in enumerate(
-            zip(
-                vlm.text_context.selection.original_words,
-                vlm.text_context.selection.candidates,
-            )
-        ):
-            for k, cand in enumerate(cands):
-                vec_o = embeddings[orig.lower()]
-                vec_c = embeddings[cand.lower()]
-                cos_sim = np.dot(vec_o, vec_c) / (
-                    np.linalg.norm(vec_o) * np.linalg.norm(vec_c)
-                )
-                expected_dist = 1.0 - cos_sim
-                np.testing.assert_allclose(
-                    dists[i][k], expected_dist, atol=1e-6
-                )
-
-    def test_distances_sorted_ascending(self, vlm):
-        """Candidates are sorted by cosine distance, so distances should be ascending."""
-        for d in vlm.text_candidate_distances:
-            for j in range(len(d) - 1):
-                assert d[j] <= d[j + 1] + 1e-9, (
-                    f"Distances not ascending: {d}"
-                )
-
-
-# ---------------------------------------------------------------------------
-# TestGenotypeHelpers
-# ---------------------------------------------------------------------------
 
 
 class TestGenotypeHelpers:

@@ -93,7 +93,9 @@ cache_dirs:
 n_categories: 50
 
 seeds:
-  n_per_class: 3
-  max_logprob_gap: 3.5
+  mode: gap_filter
   filter_indices: [83]                     # first junco → chickadee
                                            # (aligned with PDQ sibling)
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5

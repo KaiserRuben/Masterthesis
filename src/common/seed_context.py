@@ -20,19 +20,25 @@ def build_context_meta(manipulator: VLMManipulator) -> dict[str, Any]:
     """Snapshot the manipulator's prepared context for offline reconstruction.
 
     Requires ``manipulator.prepare()`` to have been called.
+
+    Image side: image_manipulator still exposes a flat ``selection`` with
+    ``positions`` / ``original_codes`` / ``candidates``.
+
+    Text side (post 2026-04-28 composite cleanup): the text context is a
+    :class:`CompositeManipulationContext` carrying the original tokenised
+    prompt (with PoS tags) and the per-operator gene-block layout.
     """
     img_sel = manipulator.image_context.selection
-    txt_sel = manipulator.text_context.selection
+    txt_ctx = manipulator.text_context
     return {
         "image_patch_positions": img_sel.positions.tolist(),
         "image_original_codes": img_sel.original_codes.tolist(),
         "image_candidates": [c.tolist() for c in img_sel.candidates],
-        "text_word_positions": txt_sel.positions.tolist(),
-        "text_original_words": list(txt_sel.original_words),
-        "text_candidates": [list(c) for c in txt_sel.candidates],
-        "text_candidate_distances": [
-            d.tolist() for d in manipulator.text_candidate_distances
-        ],
+        "text_original_tokens": list(txt_ctx.original_tokens.tokens),
+        "text_pos_tags": list(txt_ctx.original_tokens.pos_tags),
+        "text_op_order": list(txt_ctx.op_order),
+        "text_op_gene_dims": list(txt_ctx.op_gene_dims),
+        "text_gene_bounds": txt_ctx.gene_bounds.tolist(),
     }
 
 

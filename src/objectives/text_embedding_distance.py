@@ -1,17 +1,10 @@
 """Sentence-level text distance criterion for SMOO.
 
-Replaces the former word-wise ``TextReplacementDistance`` (sum of per-word
-fasttext cosine distances). That formulation rated ``main`` ↔ ``non-main``
-as barely more distant than ``main`` ↔ ``primary`` — negation collapsed
-into synonymy because word embeddings encode distributional similarity,
-not polarity.
-
-This criterion instead consumes *precomputed* per-individual cosine
-distances between the manipulated sentence's SUT embedding and the
-anchor's SUT embedding. The orchestrator (boundary tester) is
-responsible for producing these via
+Consumes *precomputed* per-individual cosine distances between the
+manipulated sentence's SUT embedding and the anchor's SUT embedding.
+The orchestrator (boundary tester) produces these via
 :class:`~src.sut.text_embedder.TextEmbedder`; the criterion itself is
-just a pass-through so SMOO's selection pressure sees it like any other
+a pass-through so SMOO's selection pressure sees it like any other
 batched objective.
 
 Minimising: smaller drift from the original prompt is better.

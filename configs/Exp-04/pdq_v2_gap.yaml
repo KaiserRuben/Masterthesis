@@ -35,8 +35,10 @@ cache_dirs:
   - /Volumes/SanDisk/Cache/imagenet
 
 seeds:
-  n_per_class: 3                         # was 2 — more images per class
-  max_logprob_gap: 3.5                   # was 2.0 — admit more cross-class pairs
+  mode: gap_filter
+  gap_filter:
+    n_per_class: 3                         # was 2 — more images per class
+    max_logprob_gap: 3.5                   # was 2.0 — admit more cross-class pairs
 
 # ===========================================================================
 # Stage 1 — Same rebalance

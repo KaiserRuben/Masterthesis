@@ -64,7 +64,8 @@ Three criteria drive the evolutionary tester. Do not re-introduce the older
 they were removed for structural conflict with the sparsity goal.
 
 - `MatrixDistance` (from `smoo.objectives.image_criteria`) — image distance
-- `TextReplacementDistance` — text distance
+- `TextEmbeddingDistance` — sentence-level cosine distance in the SUT's
+  own embedding space (mean-pooled Qwen text-backbone hidden state)
 - `TargetedBalance` — `|P(A) − P(B)|`, boundary proximity
 
 PDQ does not use this module; it has its own distance metrics under
@@ -91,10 +92,8 @@ writes trace/convergence/stats/context incrementally via `ParquetBuffer`).
 
 ## Test baseline
 
-`pytest tests/` has **22 pre-existing failures** (test_evolutionary, test_vlm_sut,
-test_objectives — fake-object scaffolding issues unrelated to live code). The
-contract for any change is "no net regression": 22 → 22, preferably fewer,
-never more.
+`pytest tests/` is fully green — keep it that way. Any change must leave the
+suite passing.
 
 ## External systems referenced by the code
 

@@ -1,9 +1,9 @@
-"""Multi-modal VLM manipulator wrapping image + text sub-manipulators.
+"""Multi-modal VLM manipulator wrapping image + composite-text sub-manipulators.
 
 Bridges the two-phase (prepare / apply) lifecycle of the individual
-manipulators with SMOO's ``Manipulator`` interface.  The optimizer
-works with a single concatenated genotype ``[image_genes | text_genes]``
-and this class splits and dispatches appropriately.
+manipulators with SMOO's ``Manipulator`` interface. The optimizer works
+with a single concatenated genotype ``[image_genes | text_genes]`` and
+this class splits and dispatches.
 """
 
 from __future__ import annotations
@@ -16,15 +16,15 @@ from PIL import Image
 from smoo.manipulator import Manipulator
 
 from .image.manipulator import ImageManipulator
-from .text.manipulator import TextManipulator
+from .text.composite import CompositeTextManipulator
 
 if TYPE_CHECKING:
     from .image.types import ManipulationContext as ImageManipulationContext
-    from .text.types import ManipulationContext as TextManipulationContext
+    from .text.composite import CompositeManipulationContext
 
 
 class VLMManipulator(Manipulator):
-    """Multi-modal manipulator wrapping image + text sub-manipulators.
+    """Multi-modal manipulator wrapping image + composite-text sub-manipulators.
 
     Lifecycle::
 
@@ -38,13 +38,12 @@ class VLMManipulator(Manipulator):
     def __init__(
         self,
         image_manipulator: ImageManipulator,
-        text_manipulator: TextManipulator,
+        text_manipulator: CompositeTextManipulator,
     ) -> None:
         self._image = image_manipulator
         self._text = text_manipulator
         self._image_ctx: ImageManipulationContext | None = None
-        self._text_ctx: TextManipulationContext | None = None
-        self._text_candidate_distances: tuple[np.ndarray, ...] | None = None
+        self._text_ctx: CompositeManipulationContext | None = None
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -56,109 +55,84 @@ class VLMManipulator(Manipulator):
     ) -> None:
         """Prepare both manipulators for a seed (image, text) pair.
 
-        Call once per seed.  Creates manipulation contexts and precomputes
-        text candidate distances for the TextReplacementDistance objective.
+        Call once per seed.
 
-        Args:
-            image: Seed PIL image.
-            text: Seed prompt text.
-            exclude_words: Words to protect from text mutation
-                (case-insensitive).  Typically the category labels so
-                the optimizer cannot trivially remove the correct answer.
+        :param image: Seed PIL image.
+        :param text: Seed prompt text.
+        :param exclude_words: Words to protect from text mutation
+            (case-insensitive). Typically the category labels so the
+            optimizer cannot trivially remove the correct answer.
         """
         self._image_ctx = self._image.prepare(image)
         self._text_ctx = self._text.prepare(text, exclude_words=exclude_words)
-        self._text_candidate_distances = self._compute_text_distances()
-
-    def _compute_text_distances(self) -> tuple[np.ndarray, ...]:
-        """Compute cosine distances between each original word and its candidates.
-
-        Returns a tuple of 1-D arrays: ``distances[i][k]`` is the cosine
-        distance for word *i*, candidate *k*.
-        """
-        embeddings = self._text.embeddings
-        return tuple(
-            np.array([float(embeddings.distance(orig.lower(), c)) for c in cands])
-            for orig, cands in zip(
-                self._text_ctx.selection.original_words,
-                self._text_ctx.selection.candidates,
-            )
-        )
 
     # -- properties ----------------------------------------------------------
 
     @property
     def is_prepared(self) -> bool:
-        """Whether ``prepare()`` has been called."""
         return self._image_ctx is not None and self._text_ctx is not None
 
     @property
     def genotype_dim(self) -> int:
-        """Total genotype length: image genes + text genes."""
         return self._image_ctx.genotype_dim + self._text_ctx.genotype_dim
 
     @property
     def image_dim(self) -> int:
-        """Number of image genes."""
         return self._image_ctx.genotype_dim
 
     @property
     def text_dim(self) -> int:
-        """Number of text genes."""
         return self._text_ctx.genotype_dim
 
     @property
     def gene_bounds(self) -> NDArray[np.int64]:
-        """Per-gene upper bounds (exclusive), concatenated ``[image | text]``."""
         return np.concatenate([
             self._image_ctx.gene_bounds,
             self._text_ctx.gene_bounds,
         ])
 
     @property
+    def image_manipulator(self) -> ImageManipulator:
+        """Underlying image sub-manipulator. Exposed for samplers that
+        need access to the VQGAN codebook (e.g. embedding-FPS init)."""
+        return self._image
+
+    @property
     def image_context(self) -> ImageManipulationContext:
-        """The prepared image manipulation context."""
         return self._image_ctx
 
     @property
-    def text_context(self) -> TextManipulationContext:
-        """The prepared text manipulation context."""
+    def text_context(self) -> CompositeManipulationContext:
         return self._text_ctx
-
-    @property
-    def text_candidate_distances(self) -> tuple[np.ndarray, ...]:
-        """Precomputed cosine distances for TextReplacementDistance objective."""
-        return self._text_candidate_distances
 
     # -- SMOO Manipulator interface ------------------------------------------
 
     def manipulate(self, candidates=None, *, weights, **kwargs):
         """Apply genotypes to produce mutated (images, texts) pairs.
 
-        Args:
-            candidates: Unused (contexts stored from ``prepare()``).
-            weights: ``NDArray`` of shape ``(pop_size, genotype_dim)`` with
-                integer genotypes.  The first ``image_dim`` genes control
-                the image; the remaining ``text_dim`` genes control the text.
-
-        Returns:
-            Tuple ``(images, texts)`` where *images* is a list of
-            ``PIL.Image`` and *texts* is a list of ``str``.
+        :param candidates: Unused (contexts stored from ``prepare()``).
+        :param weights: ``NDArray`` of shape ``(pop_size, genotype_dim)``
+            with integer genotypes. The first ``image_dim`` genes drive
+            the image; the remaining ``text_dim`` drive the text.
+        :returns: ``(images, texts)`` lists.
         """
         if not self.is_prepared:
             raise RuntimeError("Call prepare() before manipulate().")
 
-        images: list[Image.Image] = []
-        texts: list[str] = []
-        for genotype in weights:
-            img_genes = genotype[: self.image_dim].astype(np.int64)
-            txt_genes = genotype[self.image_dim :].astype(np.int64)
-            images.append(self._image.apply(self._image_ctx, img_genes))
-            texts.append(self._text.apply(self._text_ctx, txt_genes))
+        weights = np.asarray(weights, dtype=np.int64)
+        img_genes = weights[:, : self.image_dim]
+        txt_genes = weights[:, self.image_dim:]
+
+        # One VQGAN forward for the whole population (was N batch-1 calls).
+        images = self._image.apply_batch(self._image_ctx, img_genes)
+        # Text apply is a candidate-table lookup — keep sequential.
+        texts = [
+            self._text.apply(self._text_ctx, txt_genes[i])
+            for i in range(len(weights))
+        ]
         return images, texts
 
     def get_images(self, z):
-        """Not applicable for VLM multi-modal testing."""
         raise NotImplementedError(
             "VLMManipulator produces (images, texts) via manipulate(). "
             "Use manipulate() instead."
@@ -167,11 +141,9 @@ class VLMManipulator(Manipulator):
     # -- genotype helpers ----------------------------------------------------
 
     def zero_genotype(self) -> NDArray[np.int64]:
-        """All-zero genotype: identity for both modalities."""
         return np.zeros(self.genotype_dim, dtype=np.int64)
 
     def random_genotype(self, rng: np.random.Generator) -> NDArray[np.int64]:
-        """Uniformly random genotype within all bounds."""
         return np.concatenate([
             self._image_ctx.random_genotype(rng),
             self._text_ctx.random_genotype(rng),

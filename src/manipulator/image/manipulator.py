@@ -192,8 +192,29 @@ class ImageManipulator:
         Returns:
             Manipulated PIL image.
         """
-        mutated = apply_genotype(ctx.original_grid, ctx.selection, genotype)
-        return self._codec.decode(mutated)
+        return self.apply_batch(ctx, genotype[None, :])[0]
+
+    def apply_batch(
+        self,
+        ctx: ManipulationContext,
+        genotypes: NDArray[np.int64],
+    ) -> list[Image.Image]:
+        """Apply N genotypes and decode them in a single VQGAN forward.
+
+        Args:
+            ctx: Prepared context from ``prepare()``.
+            genotypes: Integer array of shape ``(N, ctx.genotype_dim)``.
+
+        Returns:
+            List of N manipulated PIL images, in genotype order.
+        """
+        if len(genotypes) == 0:
+            return []
+        grids = [
+            apply_genotype(ctx.original_grid, ctx.selection, g)
+            for g in genotypes
+        ]
+        return self._codec.decode_batch(grids)
 
 
 # ---------------------------------------------------------------------------

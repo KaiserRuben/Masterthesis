@@ -1,37 +1,52 @@
-"""Synonym-based text manipulation via embedding-space nearest neighbors.
+"""Composite text-mutation pipeline.
 
-Content-bearing words (nouns, verbs, adjectives, adverbs) are identified
-via PoS tagging, then candidate replacements are found using FastText
-cosine KNN. The genotype encoding mirrors the image manipulator:
+Single supported path: :class:`CompositeTextManipulator` stacks four
+operators (Synonym, Fragmentation, Character Noise, Saliency) under a
+per-operator-block genotype layout. The Synonym operator is MLM-based
+(default ``answerdotai/ModernBERT-large``) with a fine-grained PoS
+filter, lemma reject, and morphological-negation reject.
+
+Genotype encoding (uniform across operators)::
 
     0              → keep original word
-    k ∈ [1, K]     → use the k-th nearest synonym
+    k ∈ [1, K]     → use the k-th candidate / bucket value
 
 Usage::
 
-    from src.manipulator.text import TextManipulator
+    from src.manipulator.text import CompositeTextManipulator
     from src.config import TextConfig
-
-    m = TextManipulator.from_pretrained()
-    ctx = m.prepare("The quick brown fox jumps over the lazy dog.")
-    genotype = ctx.zero_genotype()
-    genotype[0] = 1  # replace first content word with nearest synonym
-    result = m.apply(ctx, genotype)
+    cm = CompositeTextManipulator.from_config(text_config)
+    ctx = cm.prepare("The quick brown fox.")
+    out = cm.apply(ctx, ctx.zero_genotype())
 """
 
-from .manipulator import TextManipulator, apply_genotype
-from .types import (
-    CONTENT_POS_TAGS,
-    ManipulationContext,
-    TokenSequence,
-    WordSelection,
+from .composite import (
+    CANONICAL_ORDER,
+    CompositeManipulationContext,
+    CompositeTextManipulator,
 )
+from .config import TextCompositeConfig, TextConfig
+from .profiles import (
+    OperatorSpec,
+    TextProfile,
+    build_operators_from_specs,
+    load_profile_library,
+    resolve_profile,
+)
+from .types import CONTENT_POS_TAGS, TokenSequence, tokenize
 
 __all__ = [
+    "CANONICAL_ORDER",
     "CONTENT_POS_TAGS",
-    "ManipulationContext",
-    "TextManipulator",
+    "CompositeManipulationContext",
+    "CompositeTextManipulator",
+    "OperatorSpec",
+    "TextCompositeConfig",
+    "TextConfig",
+    "TextProfile",
     "TokenSequence",
-    "WordSelection",
-    "apply_genotype",
+    "build_operators_from_specs",
+    "load_profile_library",
+    "resolve_profile",
+    "tokenize",
 ]

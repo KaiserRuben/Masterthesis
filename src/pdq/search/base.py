@@ -80,8 +80,7 @@ class ScoredCandidate:
     :param text_cosine_sum: Cosine distance between the manipulated prompt
         and the anchor prompt, computed in the SUT's sentence-embedding
         space (mean-pooled last-hidden-state of the Qwen text backbone).
-        Name retained for parquet-schema compatibility; semantics replaced
-        (was: sum of per-word fasttext cosine distances).
+        Name retained for parquet-schema compatibility.
     """
 
     candidate: Candidate

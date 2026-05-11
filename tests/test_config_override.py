@@ -72,10 +72,21 @@ OVERRIDE_CASES = [
     ("image.resolution", {"image": {"resolution": 512}}, 512),
     ("image.knn_cache_path", {"image": {"knn_cache_path": "/tmp/knn_cache.npy"}}, Path("/tmp/knn_cache.npy")),
     ("text.spacy_model", {"text": {"spacy_model": "en_core_web_lg"}}, "en_core_web_lg"),
-    ("text.embedding_model", {"text": {"embedding_model": "glove-wiki-gigaword-100"}}, "glove-wiki-gigaword-100"),
-    ("text.n_candidates", {"text": {"n_candidates": 10}}, 10),
-    ("seeds.n_per_class", {"seeds": {"n_per_class": 10}}, 10),
-    ("seeds.max_logprob_gap", {"seeds": {"max_logprob_gap": 5.0}}, 5.0),
+    (
+        "text.composite.profile",
+        {"text": {"composite": {"profile": "domain_expert"}}},
+        "domain_expert",
+    ),
+    (
+        "seeds.gap_filter.n_per_class",
+        {"seeds": {"gap_filter": {"n_per_class": 10}}},
+        10,
+    ),
+    (
+        "seeds.gap_filter.max_logprob_gap",
+        {"seeds": {"gap_filter": {"max_logprob_gap": 5.0}}},
+        5.0,
+    ),
 ]
 
 
