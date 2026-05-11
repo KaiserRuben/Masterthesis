@@ -98,11 +98,18 @@ class TestPatchSelection:
         for r, c in pos:
             assert grid.indices[r, c] == 0
 
-    def test_select_frequency_at_least_one(self):
+    def test_select_frequency_rounds_down(self):
         grid = CodeGrid(np.arange(16, dtype=np.int64).reshape(4, 4))
-        # All unique — ratio=0.01 should still select at least 1
+        # 16 unique codes → ratio=0.01 * 16 = 0.16 → int(...) = 0.
+        # The `max(1, ...)` floor was removed so modality=text_only can
+        # produce a zero-patch selection by setting patch_ratio=0.
         pos = select_patches(grid, PatchStrategy.FREQUENCY, ratio=0.01)
-        assert len(pos) >= 1
+        assert len(pos) == 0
+
+    def test_select_frequency_zero_ratio(self):
+        grid = CodeGrid(np.arange(16, dtype=np.int64).reshape(4, 4))
+        pos = select_patches(grid, PatchStrategy.FREQUENCY, ratio=0.0)
+        assert pos.shape == (0, 2)
 
 
 # ---------------------------------------------------------------------------

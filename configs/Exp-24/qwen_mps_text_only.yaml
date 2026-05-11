@@ -1,0 +1,65 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-24 — Modality-Impact Cross-SUT (Qwen2.5-VL torch/MPS, text-only)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Mirror of qwen_mps_joint.yaml — sole change is `modality: text_only`,
+# which forces image.patch_ratio=0 (image_dim=0) and drops MatrixDistance
+# from the Pareto. Search runs purely over the text composite genome;
+# 2-objective Pareto (TextEmbeddingDistance + TargetedBalance).
+#
+# Output: runs/Exp-24/exp24_qwen_mps_text_only_seed_83_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp24_qwen_mps_text_only
+save_dir: runs/Exp-24
+
+modality: text_only                     # image genome forced empty
+
+generations: 300
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [83]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+# image.patch_ratio overridden to 0 at runtime; n_candidates / knn_cache_path
+# unused but harmless.
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+text:
+  composite:
+    profile: full_stack
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null

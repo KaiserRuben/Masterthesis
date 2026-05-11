@@ -1,0 +1,72 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-24 — Modality-Impact Cross-SUT (Qwen2.5-VL torch/MPS, joint)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Mirrors Exp-22b methodology (gap_filter [83] = junco↔chickadee, 300 gen ×
+# 30 pop, sparse_multitier, full_stack composite, n_candidates=16383). The
+# sole experimental axis is the modality flag: this config keeps both
+# image and text genome blocks active (3-objective Pareto).
+#
+# Companion configs in this directory:
+#   qwen_mps_{joint,image_only,text_only}.yaml      (Mac MPS Qwen2.5-VL)
+#   llava_ov_{joint,image_only,text_only}.yaml      (Workstation Arc LLaVA-NeXT)
+#
+# All six runs share gap_filter [83]. Note: the seed indexed at position 83
+# is SUT-dependent (gap_filter scores against the live SUT), so the actual
+# anchor image / pair may differ across SUT families. The gap_filter +
+# n_categories + max_logprob_gap settings are fixed for comparability.
+#
+# Output: runs/Exp-24/exp24_qwen_mps_joint_seed_83_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp24_qwen_mps_joint
+save_dir: runs/Exp-24
+
+modality: joint                         # both blocks active, 3-obj Pareto
+
+generations: 300
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [83]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+text:
+  composite:
+    profile: full_stack
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}   # spike
+      - {p_active: 0.030, fraction: 0.20}   # sparse
+      - {p_active: 0.100, fraction: 0.25}   # medium
+      - {p_active: 0.300, fraction: 0.20}   # heavy
+      - {p_active: 0.500, fraction: 0.10}   # very heavy
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null
