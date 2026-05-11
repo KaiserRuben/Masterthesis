@@ -1,0 +1,70 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-23 — VLM-SUT Comparison II (Qwen2.5-VL int4 OpenVINO, seed 1)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Mirrors Exp-22's seed-1 config (mlm_composite_seed1.yaml) but swaps the
+# SUT to Qwen2.5-VL-7B INT4 on OpenVINO/Arc A770. Goal: validate the new
+# VLM-SUT integration end-to-end through the evolutionary pipeline and
+# check the TgtBal floor against Exp-22's reference (Qwen3.5-4B text).
+#
+# Key deltas vs Exp-22:
+#   - sut.backend=openvino, model_id=OpenVINO/...-int4-ov, processor_id set
+#   - generations/pop reduced for first-pass turnaround (validate, then scale)
+#   - TextEmbeddingDistance now uses the sentence-transformers MiniLM
+#     fallback (OV IR has no hidden-state outputs); internally consistent
+#     within this run, not directly cross-comparable to Exp-22 in that one
+#     dimension. MatrixDistance + TargetedBalance unchanged.
+#
+# Output: runs/Exp-23/exp23_qwen25vl_int4_seed1_seed_1_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp23_qwen25vl_int4_seed1
+save_dir: runs/Exp-23
+
+generations: 400
+pop_size: 50
+
+device: cpu                                # Ignored by OV backend; kept valid
+
+sut:
+  model_id: OpenVINO/Qwen2.5-VL-7B-Instruct-int4-ov
+  processor_id: Qwen/Qwen2.5-VL-7B-Instruct
+  backend: openvino
+  ov_device: GPU
+  # redis_url uses the default redis://localhost:6379 (podman container)
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet       # bulk volume; primary writable
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [1]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+
+text:
+  composite:
+    profile: full_stack
+    overrides:
+      synonym: {device: cpu}                # full_stack profile defaults to mps; override for Linux/Arc
+
+optimizer:
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null

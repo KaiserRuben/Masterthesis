@@ -71,6 +71,12 @@ class FakeScorer(VLMScorer):
     def _prepare_inputs(self, image, prompt, enable_thinking):  # type: ignore[override]
         raise NotImplementedError("FakeScorer does not prepare real inputs")
 
+    def encode_text(self, texts):  # type: ignore[override]
+        # Stub for the abstract method. Tests don't exercise text-embedding
+        # paths; returning a zero vector keeps the contract.
+        import numpy as np
+        return np.zeros((len(texts), 1), dtype=np.float32)
+
     def score_categories(
         self,
         image,  # type: ignore[override]
@@ -117,6 +123,14 @@ def _make_sut(
                     categories=", ".join(self._config.categories),
                 )
             )
+            # Production VLMSUT.__init__ sets these; tests bypass that
+            # path, so seed defaults that disable the Redis cache and
+            # text-embedder paths.
+            self._redis = None
+            self._cache_hits = 0
+            self._cache_misses = 0
+            self._last_call_cached = False
+            self._text_embedder = None
 
     return FakeSUT(config)
 
@@ -139,7 +153,10 @@ class TestExperimentConfig:
     def test_default_values(self) -> None:
         cfg = ExperimentConfig()
         assert cfg.sut.model_id == "Qwen/Qwen3.5-9B"
-        assert cfg.device == "cpu"
+        assert cfg.device == "mps"
+        assert cfg.sut.backend == "torch"
+        assert cfg.sut.processor_id is None
+        assert cfg.sut.ov_device == "GPU"
         assert cfg.categories == ()
         assert cfg.sut.enable_thinking is False
         assert cfg.sut.max_thinking_tokens == 2000

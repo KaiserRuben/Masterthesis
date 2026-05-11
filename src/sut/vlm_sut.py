@@ -55,31 +55,69 @@ class VLMSUT(SUT):
     :param config: Configuration object.  Uses defaults when ``None``.
     """
 
-    def __init__(self, config: ExperimentConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: ExperimentConfig | None = None,
+        *,
+        scorer=None,
+        text_embedder=None,
+        redis_client=None,
+    ) -> None:
+        """Build a VLMSUT.
+
+        :param config: Experiment configuration. Uses defaults when ``None``.
+        :param scorer: Pre-loaded :class:`~src.sut.scorer.VLMScorer` to
+            share across worker threads. ``None`` (default) loads a
+            fresh scorer using ``config.sut`` — the legacy single-process
+            path. When provided, ``config.sut.*`` model-loading fields
+            are ignored (the caller already loaded the model).
+        :param text_embedder: Pre-built :class:`TextEmbedder` paired
+            with *scorer*. Pass alongside *scorer* when sharing across
+            threads so the LRU/Redis cache is unified.
+        :param redis_client: Pre-connected Redis client to share. When
+            ``None`` (and *scorer* is also ``None``), the constructor
+            connects on its own using ``config.sut.redis_url``.
+        """
         self._config = config or ExperimentConfig()
         self._device = torch.device(self._config.device)
-        self._scorer = create_scorer(
-            model_id=self._config.sut.model_id,
-            device=self._config.device,
-            enable_thinking=self._config.sut.enable_thinking,
-            max_thinking_tokens=self._config.sut.max_thinking_tokens,
-            max_pixels=self._config.sut.max_pixels,
-            load_in_8bit=self._config.sut.load_in_8bit,
-            load_in_4bit=self._config.sut.load_in_4bit,
-        )
+        if scorer is None:
+            self._scorer = create_scorer(
+                model_id=self._config.sut.model_id,
+                device=self._config.device,
+                enable_thinking=self._config.sut.enable_thinking,
+                max_thinking_tokens=self._config.sut.max_thinking_tokens,
+                max_pixels=self._config.sut.max_pixels,
+                load_in_8bit=self._config.sut.load_in_8bit,
+                load_in_4bit=self._config.sut.load_in_4bit,
+                backend=self._config.sut.backend,
+                processor_id=self._config.sut.processor_id,
+                ov_device=self._config.sut.ov_device,
+            )
+        else:
+            self._scorer = scorer
         self._prompt = (
             self._config.prompt_template
             + self._config.answer_format.format(
                 categories=", ".join(self._config.categories),
             )
         )
-        self._redis = _connect_redis(self._config.sut.redis_url)
+        self._redis = (
+            redis_client
+            if redis_client is not None
+            else _connect_redis(self._config.sut.redis_url)
+        )
         self._cache_hits = 0
         self._cache_misses = 0
         self._last_call_cached = False
-        self._text_embedder = TextEmbedder(
-            self._scorer, self._config.sut.model_id, self._redis,
-        )
+        if text_embedder is not None:
+            self._text_embedder = text_embedder
+        else:
+            self._text_embedder = _maybe_make_text_embedder(
+                self._scorer,
+                self._config.sut.model_id,
+                self._redis,
+                self.device_str,
+            )
 
     # ------------------------------------------------------------------
     # SUT interface
@@ -151,9 +189,42 @@ class VLMSUT(SUT):
         return top_label == cond, logprobs
 
     @property
-    def text_embedder(self) -> TextEmbedder:
-        """Text-only sentence embedder sharing this SUT's Qwen backbone."""
+    def text_embedder(self) -> TextEmbedder | None:
+        """Text-only sentence embedder sharing this SUT's backbone.
+
+        ``None`` when the scorer doesn't support ``encode_text`` (currently
+        the OpenVINO backend). Callers must handle ``None`` and substitute
+        a zero-distance fallback for the :class:`TextEmbeddingDistance`
+        objective.
+        """
         return self._text_embedder
+
+    @property
+    def scorer(self):
+        """Underlying :class:`~src.sut.scorer.VLMScorer`.
+
+        Exposed so the parent runner can build per-thread VLMSUT
+        wrappers that share one set of model weights.
+        """
+        return self._scorer
+
+    @property
+    def redis_client(self):
+        """Shared Redis client (or ``None``). Exposed for thread fan-out."""
+        return self._redis
+
+    @property
+    def device_str(self) -> str:
+        """String form of the SUT device — used as the distlock key.
+
+        Torch backends return e.g. ``"mps"`` / ``"cuda:0"``. OpenVINO
+        backends report the OV device (``"ov:GPU"`` / ``"ov:CPU"``) so
+        the lock key reflects the actual physical accelerator, not the
+        ignored torch device.
+        """
+        if self._config.sut.backend == "openvino":
+            return f"ov:{self._config.sut.ov_device}"
+        return str(self._device)
 
     @property
     def cache_stats(self) -> dict[str, int]:
@@ -164,6 +235,29 @@ class VLMSUT(SUT):
     def last_call_cached(self) -> bool:
         """Whether the most recent ``process_input`` call was served from cache."""
         return self._last_call_cached
+
+
+# -----------------------------------------------------------------------
+# TextEmbedder factory -- skip when scorer can't encode_text
+# -----------------------------------------------------------------------
+
+
+def _maybe_make_text_embedder(scorer, model_id, redis, device_str):
+    """Build a :class:`TextEmbedder` only if the scorer supports it.
+
+    The OpenVINO backend exports the IR with logits-only outputs, so its
+    ``encode_text`` raises :class:`NotImplementedError`. We probe with a
+    one-token call; on failure, return ``None``.
+    """
+    try:
+        scorer.encode_text(["x"])
+    except NotImplementedError:
+        logger.info(
+            "Scorer does not support encode_text -- TextEmbeddingDistance "
+            "will receive zeros (effective 2-objective optimization)."
+        )
+        return None
+    return TextEmbedder(scorer, model_id, redis, device_str=device_str)
 
 
 # -----------------------------------------------------------------------

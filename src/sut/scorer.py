@@ -1,15 +1,24 @@
 """VLM scorers: teacher-forced log-prob scoring over a closed label set.
 
-Extracted from ``experiments/imagenet_vlm_probing/run.py`` and cleaned up
-for reuse in the boundary-testing pipeline.
+Two execution backends share the same scoring code path:
 
-Provides:
+* ``torch`` (default) -- HuggingFace transformers on CUDA/MPS/CPU. Used for
+  Mac development (MPS) and CUDA workstations.
+* ``openvino`` -- OpenVINO IR on Intel Arc/Xe via :mod:`optimum.intel`.
+  ``OVModelForVisualCausalLM`` exposes the same ``(input_ids, past_key_values,
+  use_cache)`` forward contract, so :meth:`VLMScorer.score_categories` is
+  unchanged across backends.
 
-* :class:`VLMScorer` -- abstract base with model-agnostic KV-cache scoring.
-* :class:`Qwen3VLScorer` -- concrete scorer for Qwen3-VL models.
-* :class:`Qwen35Scorer` -- concrete scorer for Qwen3.5 models (DeltaNet).
-* :func:`create_scorer` -- factory that picks the right scorer from a
-  model id string.
+Public surface:
+
+* :class:`VLMScorer` -- abstract base with backend-agnostic KV-cache scoring.
+  Backends plug in via the :meth:`_create_model` / :meth:`_create_processor`
+  hooks.
+* :class:`QwenVLScorer`, :class:`LlavaScorer` -- per-family torch scorers
+  (chat-template + ``encode_text`` differ; loading is shared with the base).
+* :class:`OVQwenVLScorer`, :class:`OVLlavaScorer` -- the OV variants. They
+  inherit family-specific input prep and override only the model loader.
+* :func:`create_scorer` -- factory keyed by ``(family, backend)``.
 """
 
 from __future__ import annotations
@@ -61,31 +70,68 @@ class VLMScorer(ABC):
         max_pixels: int | None = None,
         load_in_8bit: bool = False,
         load_in_4bit: bool = False,
+        processor_id: str | None = None,
+        ov_device: str = "GPU",
     ) -> None:
         self._device = torch.device(device)
         self._enable_thinking = enable_thinking
         self._max_thinking_tokens = max_thinking_tokens
 
+        self._processor = self._create_processor(
+            processor_id=processor_id or model_id,
+            max_pixels=max_pixels,
+        )
+        self._model = self._create_model(
+            model_id=model_id,
+            dtype=dtype,
+            load_in_8bit=load_in_8bit,
+            load_in_4bit=load_in_4bit,
+            ov_device=ov_device,
+        )
+        if hasattr(self._model, "eval"):
+            self._model.eval()
+
+    # ------------------------------------------------------------------
+    # Backend hooks (default: torch via transformers + bitsandbytes).
+    # OpenVINO subclasses override these.
+    # ------------------------------------------------------------------
+
+    def _create_processor(
+        self,
+        processor_id: str,
+        max_pixels: int | None,
+    ) -> AutoProcessor:
+        """Default torch impl. Backends share this — :class:`AutoProcessor`
+        works against the OV IR repo as long as a ``preprocessor_config.json``
+        is shipped alongside (the OpenVINO/* repos do)."""
         proc_kwargs: dict = {}
         if max_pixels is not None:
             proc_kwargs["max_pixels"] = max_pixels
-        self._processor = AutoProcessor.from_pretrained(model_id, **proc_kwargs)
+        return AutoProcessor.from_pretrained(processor_id, **proc_kwargs)
 
+    def _create_model(
+        self,
+        model_id: str,
+        dtype: torch.dtype | None,
+        load_in_8bit: bool,
+        load_in_4bit: bool,
+        ov_device: str,  # noqa: ARG002 -- used by OV override
+    ) -> AutoModelForImageTextToText:
+        """Default torch impl. The ``ov_device`` parameter is unused here
+        but kept in the signature so OV overrides plug in without touching
+        the call site in :meth:`__init__`."""
+        device_str = str(self._device)
         model_kwargs: dict = {}
         if load_in_8bit:
             model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
-            model_kwargs["device_map"] = device
+            model_kwargs["device_map"] = device_str
         elif load_in_4bit:
             model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
-            model_kwargs["device_map"] = device
+            model_kwargs["device_map"] = device_str
         else:
             model_kwargs["torch_dtype"] = dtype or torch.float16
-            model_kwargs["device_map"] = device
-
-        self._model = AutoModelForImageTextToText.from_pretrained(
-            model_id, **model_kwargs,
-        )
-        self._model.eval()
+            model_kwargs["device_map"] = device_str
+        return AutoModelForImageTextToText.from_pretrained(model_id, **model_kwargs)
 
     # ------------------------------------------------------------------
     # Abstract
@@ -346,7 +392,7 @@ class VLMScorer(ABC):
 
 
 class QwenVLScorer(VLMScorer):
-    """Scorer for Qwen VL models (Qwen3-VL and Qwen3.5).
+    """Scorer for Qwen VL models (Qwen2/2.5/3-VL and Qwen3.5).
 
     Defaults *max_pixels* to ``512 * 28 * 28`` (~400 image tokens)
     when not explicitly set.
@@ -362,6 +408,8 @@ class QwenVLScorer(VLMScorer):
         max_pixels: int | None = None,
         load_in_8bit: bool = False,
         load_in_4bit: bool = False,
+        processor_id: str | None = None,
+        ov_device: str = "GPU",
     ) -> None:
         super().__init__(
             model_id,
@@ -372,6 +420,8 @@ class QwenVLScorer(VLMScorer):
             max_pixels=max_pixels if max_pixels is not None else 512 * 28 * 28,
             load_in_8bit=load_in_8bit,
             load_in_4bit=load_in_4bit,
+            processor_id=processor_id,
+            ov_device=ov_device,
         )
 
     def _prepare_inputs(
@@ -437,14 +487,200 @@ class QwenVLScorer(VLMScorer):
         return pooled.float().cpu().numpy()
 
 
+class LlavaScorer(VLMScorer):
+    """Scorer for the LLaVA family (LLaVA-1.5 and LLaVA-NeXT/v1.6).
+
+    Both variants use the same processor-driven chat template — concrete
+    template differences (Mistral ``[INST]…[/INST]`` vs Vicuna) are baked
+    into the processor's ``apply_chat_template`` and don't need scorer-
+    level branching.
+
+    LLaVA models do not implement a ``<think>`` trace; ``enable_thinking``
+    is silently ignored at chat-template time.
+    """
+
+    def _normalize_image(self, image: Image.Image) -> Image.Image:
+        """Hook for backend-specific image preprocessing. Default no-op."""
+        return image
+
+    def _prepare_inputs(
+        self,
+        image: Image.Image,
+        prompt: str,
+        enable_thinking: bool,  # noqa: ARG002 -- LLaVA has no thinking mode
+    ) -> dict:
+        image = self._normalize_image(image)
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+        text = self._processor.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False,
+        )
+        return self._processor(
+            text=[text], images=[image], return_tensors="pt",
+        ).to(self._device)
+
+    # LLaVA layout: LlavaForConditionalGeneration -> model -> language_model.
+    # LLaVA-NeXT: LlavaNextForConditionalGeneration -> model -> language_model.
+    def _text_backbone(self) -> torch.nn.Module:
+        inner = getattr(self._model, "model", self._model)
+        return getattr(inner, "language_model", inner)
+
+    @torch.no_grad()
+    def encode_text(self, texts: list[str]) -> np.ndarray:
+        """Tokenize *texts* raw (no chat template) and mean-pool the last
+        hidden state of the language backbone."""
+        tok = self._processor.tokenizer
+        batch = tok(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=512,
+        ).to(self._device)
+        out = self._text_backbone()(
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            use_cache=False,
+        )
+        hidden = out.last_hidden_state
+        mask = batch["attention_mask"].unsqueeze(-1).to(hidden.dtype)
+        pooled = (hidden * mask).sum(1) / mask.sum(1).clamp(min=1)
+        return pooled.float().cpu().numpy()
+
+
+# -----------------------------------------------------------------------
+# OpenVINO backend
+# -----------------------------------------------------------------------
+
+
+class _OpenVINOBackendMixin:
+    """Swaps the model loader to use ``OVModelForVisualCausalLM``.
+
+    Designed as a mixin so the family scorers (chat template, encode_text)
+    are reused unchanged. The OpenVINO IR is loaded directly — no PyTorch
+    weights are touched on the boundary-tester host.
+
+    The OV IR is compiled logits-only, so we cannot mean-pool the SUT's
+    own language backbone for ``encode_text`` the way the torch path does.
+    Instead we delegate to a lightweight sentence-transformers encoder
+    (CPU, ~80 MB). The embedding space differs from the SUT's, but
+    :class:`TextEmbeddingDistance` only consumes *cosine distance from
+    anchor* — that distance is internally consistent within an experiment,
+    which is what the optimizer needs.
+    """
+
+    _SENTENCE_ENCODER_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
+    _sentence_encoder = None  # lazy, class-level cache (one per process)
+
+    def _create_processor(  # type: ignore[override]
+        self,
+        processor_id: str,
+        max_pixels: int | None,
+    ) -> AutoProcessor:
+        # Same call as the torch path. The original (FP16) repo carries
+        # the processor; the OpenVINO/* IR repo also ships a copy, so
+        # either id works.
+        proc_kwargs: dict = {}
+        if max_pixels is not None:
+            proc_kwargs["max_pixels"] = max_pixels
+        return AutoProcessor.from_pretrained(processor_id, **proc_kwargs)
+
+    def _create_model(  # type: ignore[override]
+        self,
+        model_id: str,
+        dtype: torch.dtype | None,         # noqa: ARG002 -- OV IR sets this at export
+        load_in_8bit: bool,                 # noqa: ARG002 -- OV uses NNCF, not bnb
+        load_in_4bit: bool,                 # noqa: ARG002
+        ov_device: str,
+    ):
+        # Late import — keeps optimum-intel optional for torch-only users.
+        from optimum.intel import OVModelForVisualCausalLM
+        return OVModelForVisualCausalLM.from_pretrained(model_id, device=ov_device)
+
+    @classmethod
+    def _get_sentence_encoder(cls):
+        if cls._sentence_encoder is None:
+            from sentence_transformers import SentenceTransformer
+            cls._sentence_encoder = SentenceTransformer(
+                cls._SENTENCE_ENCODER_ID, device="cpu",
+            )
+        return cls._sentence_encoder
+
+    def encode_text(self, texts: list[str]) -> np.ndarray:  # type: ignore[override]
+        encoder = self._get_sentence_encoder()
+        return encoder.encode(
+            texts, convert_to_numpy=True, show_progress_bar=False,
+        ).astype(np.float32)
+
+    def cleanup(self) -> None:  # type: ignore[override]
+        gc.collect()  # OV manages its own GPU buffers; nothing to free here.
+
+
+class OVQwenVLScorer(_OpenVINOBackendMixin, QwenVLScorer):
+    """Qwen-VL family on OpenVINO. Inherits chat template + max_pixels
+    default from :class:`QwenVLScorer`; only model loading is overridden.
+
+    Note: optimum-intel 1.27 supports ``qwen2_vl`` and ``qwen2_5_vl`` —
+    ``qwen3_vl`` is not yet covered and will fail at IR load.
+    """
+
+
+class OVLlavaScorer(_OpenVINOBackendMixin, LlavaScorer):
+    """LLaVA / LLaVA-NeXT family on OpenVINO.
+
+    Pins images to LLaVA-NeXT's smallest anyres tile (336x336). optimum-
+    intel 1.27's anyres adapter has a token-count mismatch with the HF
+    processor on certain image sizes -- raises
+    ``RuntimeError: Number of elements of source < number of ones in mask``
+    inside ``merge_vision_text_embeddings``. Forcing the single-grid case
+    sidesteps the bug; remove this override once optimum-intel fixes it.
+    """
+
+    _LLAVA_NEXT_BASE_SIZE: tuple[int, int] = (336, 336)
+
+    def _normalize_image(self, image: Image.Image) -> Image.Image:  # type: ignore[override]
+        if image.size != self._LLAVA_NEXT_BASE_SIZE:
+            return image.resize(self._LLAVA_NEXT_BASE_SIZE, Image.LANCZOS)
+        return image
+
+
 # -----------------------------------------------------------------------
 # Registry / factory
 # -----------------------------------------------------------------------
 
-SCORER_REGISTRY: dict[str, type[VLMScorer]] = {
-    "qwen3-vl": QwenVLScorer,
-    "qwen3.5": QwenVLScorer,
+# Family detection runs against ``model_id.lower()`` substring matches.
+# Order matters: more specific first.
+_FAMILY_PATTERNS: tuple[tuple[str, str], ...] = (
+    ("llava", "llava"),
+    ("qwen",  "qwen-vl"),  # both Qwen-VL and text-only Qwen3.5 use QwenVLScorer
+)
+
+# Keyed by (family, backend).
+SCORER_REGISTRY: dict[tuple[str, str], type[VLMScorer]] = {
+    ("qwen-vl", "torch"):    QwenVLScorer,
+    ("qwen-vl", "openvino"): OVQwenVLScorer,
+    ("llava",   "torch"):    LlavaScorer,
+    ("llava",   "openvino"): OVLlavaScorer,
 }
+
+
+def _detect_family(model_id: str) -> str:
+    """Detect the model family from a model id (HF repo)."""
+    s = model_id.lower()
+    for needle, family in _FAMILY_PATTERNS:
+        if needle in s:
+            return family
+    raise ValueError(
+        f"Could not detect family for model '{model_id}'. "
+        f"Known families: {sorted({f for _, f in _FAMILY_PATTERNS})}"
+    )
 
 
 def create_scorer(
@@ -455,35 +691,45 @@ def create_scorer(
     max_pixels: int | None = None,
     load_in_8bit: bool = False,
     load_in_4bit: bool = False,
+    backend: str = "torch",
+    processor_id: str | None = None,
+    ov_device: str = "GPU",
 ) -> VLMScorer:
-    """Instantiate the right scorer for *model_id*.
+    """Instantiate the right scorer for *model_id* on *backend*.
 
-    Looks up *model_id* (case-insensitive) against
-    :data:`SCORER_REGISTRY` keys.
+    Family is detected from *model_id* substring (``"qwen"`` /
+    ``"llava"``); backend selects between torch and OpenVINO.
 
-    :param model_id: HuggingFace model identifier.
-    :param device: Torch device string.
-    :param enable_thinking: Allow thinking traces.
-    :param max_thinking_tokens: Token budget for thinking.
-    :param max_pixels: Pixel cap forwarded to the scorer.
-    :param load_in_8bit: Load model quantized to 8-bit (bitsandbytes).
-    :param load_in_4bit: Load model quantized to 4-bit (bitsandbytes).
+    :param model_id: HuggingFace repo id. For OpenVINO, normally a pre-
+        converted IR repo (e.g. ``OpenVINO/Qwen2.5-VL-7B-Instruct-int4-ov``).
+    :param device: Torch device string. Ignored on the OpenVINO backend.
+    :param backend: ``"torch"`` (default) or ``"openvino"``.
+    :param processor_id: Optional override for the processor repo
+        (defaults to *model_id*). Useful for OV when the IR repo differs
+        from the original FP16 repo.
+    :param ov_device: OpenVINO device label (``"GPU"`` for Arc, ``"CPU"``).
     :returns: A concrete :class:`VLMScorer` instance.
-    :raises ValueError: If no registry key matches *model_id*.
+    :raises ValueError: If family or backend are not recognized.
     """
-    model_lower = model_id.lower()
-    for key, cls in SCORER_REGISTRY.items():
-        if key in model_lower:
-            return cls(
-                model_id,
-                device,
-                enable_thinking,
-                max_thinking_tokens,
-                max_pixels=max_pixels,
-                load_in_8bit=load_in_8bit,
-                load_in_4bit=load_in_4bit,
-            )
-    raise ValueError(
-        f"No scorer for model '{model_id}'. "
-        f"Known prefixes: {list(SCORER_REGISTRY.keys())}"
+    family = _detect_family(model_id) if backend == "torch" else (
+        # For OV the model_id is often the IR repo (no "Qwen/"/"llava-hf/"
+        # prefix) -- detect via processor_id when set, else model_id.
+        _detect_family(processor_id or model_id)
+    )
+    key = (family, backend)
+    cls = SCORER_REGISTRY.get(key)
+    if cls is None:
+        raise ValueError(
+            f"No scorer for {key}. Known: {sorted(SCORER_REGISTRY.keys())}"
+        )
+    return cls(
+        model_id,
+        device,
+        enable_thinking,
+        max_thinking_tokens,
+        max_pixels=max_pixels,
+        load_in_8bit=load_in_8bit,
+        load_in_4bit=load_in_4bit,
+        processor_id=processor_id,
+        ov_device=ov_device,
     )

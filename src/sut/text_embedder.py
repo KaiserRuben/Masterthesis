@@ -23,6 +23,8 @@ from typing import Protocol
 
 import numpy as np
 
+from src import distlock
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,10 +55,12 @@ class TextEmbedder:
         scorer: _SupportsEncodeText,
         model_id: str,
         redis_client=None,
+        device_str: str = "cpu",
     ) -> None:
         self._scorer = scorer
         self._model_id = model_id
         self._redis = redis_client
+        self._device_str = device_str
         self._hits = 0
         self._misses = 0
         if self._redis is None:
@@ -136,4 +140,5 @@ class TextEmbedder:
         return self._miss_many([text])[0]
 
     def _miss_many(self, texts: list[str]) -> np.ndarray:
-        return self._scorer.encode_text(texts)
+        with distlock.lock(self._device_str):
+            return self._scorer.encode_text(texts)
