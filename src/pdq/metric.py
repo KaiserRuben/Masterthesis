@@ -35,10 +35,8 @@ from .distances.input import (
     weighted_content,
 )
 from .distances.output import (
-    embedding_cosine,
     label_mismatch,
     string_edit,
-    wordnet_path,
 )
 
 
@@ -83,12 +81,8 @@ INPUT_DISTANCES: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
 # ---------------------------------------------------------------------------
 
 # Signature: (label_a: str, label_b: str) -> float
-# Phase-3 stubs raise NotImplementedError when called; they exist in the
-# registry so the config validator accepts their names.
 
 OUTPUT_DISTANCES: dict[str, Callable[[str, str], float]] = {
     "label_mismatch": label_mismatch,
     "label_edit": string_edit,
-    "label_embedding": embedding_cosine,
-    "wordnet_path": wordnet_path,
 }

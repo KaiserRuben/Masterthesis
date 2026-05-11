@@ -49,8 +49,6 @@ VALID_D_I: frozenset[str] = frozenset({
 VALID_D_O: frozenset[str] = frozenset({
     "label_mismatch",
     "label_edit",
-    "label_embedding",
-    "wordnet_path",
 })
 
 VALID_FLIP_POLICIES: frozenset[str] = frozenset({
@@ -203,8 +201,6 @@ class DistancesConfig:
     d_i_compute_all: bool = True
     d_o_primary: str = "label_mismatch"
     d_o_compute_all: bool = True
-    d_o_embedding_model: str = "fasttext-wiki-news-subwords-300"
-    d_o_wordnet_enabled: bool = True
 
 
 @dataclass(frozen=True)
