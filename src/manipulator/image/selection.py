@@ -67,7 +67,12 @@ def build_codebook_knn(
 
     if cache_path is not None:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        np.savez_compressed(cache_path, knn_order=order, codebook_hash=cb_hash)
+        # Pass an open file so np.savez_compressed doesn't auto-append .npz
+        # to the tmp path and break the rename.
+        tmp = cache_path.with_name(cache_path.name + ".tmp")
+        with tmp.open("wb") as fh:
+            np.savez_compressed(fh, knn_order=order, codebook_hash=cb_hash)
+        tmp.replace(cache_path)
 
     return order
 
