@@ -1,0 +1,107 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-100 PoC — Combinatorial Class Geometry, |X|=6 in 2-2-2 distribution
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Roster (manually picked, validated 2026-04-26):
+#   L2 'bird':                junco        (sparrow / songbird)
+#                             macaw        (macaw   / parrot)
+#   L2 'reptile':             green iguana (iguana  / lizard)
+#                             boa constrictor (constrictor / snake)
+#   L2 'musical instrument':  cello        (cello   / string instrument)
+#                             drum         (drum    / percussion instrument)
+#
+# Note: original choice 'bald eagle' was swapped for 'macaw' on 2026-04-26
+# after pre-flight runs revealed Qwen 4B mis-classifies bald eagle as
+# 'green iguana' in 10/12 cases (gt_logprob ≈ -6) — likely a 4B-specific
+# blind spot. macaw stays in L2='bird' with L1≠'songbird', preserving the
+# within-bucket c=2 invariant relative to junco. See Diary
+# 2026-04-26-Exp100-PoC-Kickoff.
+#
+# Within-bucket pairs: 3 (all c=2)  → 3 × 24 =  72 runs
+# Across-bucket pairs: 12 (all c=None) → 12 × 54 = 648 runs
+# Total: 720 runs.
+#
+# Runtime forecast at ~3–5 min/run incl. early-stop:
+#   MPS:         ~36–60 h (~1.5–2.5 days)
+#   Workstation: ~9–15 h
+#
+# Pre-registered hypotheses (Exp-100 spec §Hypothesen):
+#   H1: c=2 within > c=None across in min_TgtBal / gens_to_flip
+#   H2: Animal-Animal cross < Animal-Artifact cross (sub-structure within c=None)
+#   H3: Monotonic abstraction trend on diagonal (L_a = L_b) cells
+#   H4: Animal buckets show stronger abstraction effect than artifact bucket
+#   H5: Direction-symmetry holds, except in asymmetric-abstraction cross cells
+#
+# Design ref: Obsidian [[Exp-100-Class-Geometry]]
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp100_poc_6x_2-2-2_n3
+save_dir: runs/Exp-100
+
+# Optimizer budget — matches Exp-10 Phase-1 validated defaults.
+# Early-stop typically cuts runs much shorter than the 200-gen cap.
+generations: 200
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+# n_categories left unset — categories will resolve to the full label set
+# from the data source (used only by RosterSeedGenerator for honest L0
+# scoring; the actual SMOO runs are pair-only).
+
+seeds:
+  mode: roster
+  roster:
+    class_list:
+      - junco
+      - macaw
+      - green iguana
+      - boa constrictor
+      - cello
+      - drum
+    seeds_per_class: 3
+    # Threshold semantic: max acceptable distance of logprob_norm(GT)
+    # from 0 (positive value, smaller = stricter). 3.5 = floor -3.5,
+    # admits gt_logprob >= -3.5 (≥ ~3 % mass on GT in 6-class contrast).
+    # Calibrated empirically from the 2026-04-26 preflight where green
+    # iguana clustered at gt_logprob ≈ [-3.27, -3.13]; junco / macaw
+    # are well above (-0.03, -0.48), so the relaxation only admits the
+    # mid-confident reptile/instrument tail.
+    min_anchor_confidence: 3.5
+    abstraction:
+      levels_anchor: [0, 1, 2]
+      levels_target: [0, 1, 2]
+      apply_disjointness: true
+      directions: both
+
+# Image manipulator — Exp-10 Phase-1 validated settings.
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+# Optimizer — sparse_multitier per new template default (post Exp-22 Phase 1+2).
+# Replaces legacy single-p sparse: 5-tier Bernoulli mixture guarantees spike +
+# medium + heavy + very-heavy individuals coexist from gen 0, preventing the
+# activation-regime lock-in diagnosed in Exp-22 (88.7 % of activation regime
+# never visited under single-p sparse). Floor on hard pair junco↔chickadee
+# dropped 2.43 → 2.08 from this change alone. See diary 2026-05-05.
+#
+# Early-stop defaults (epsilon_margin, plateau_patience=30,
+# no_improvement_warmup=20) inherited from EarlyStopCfg.
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}   # spike       E[n_active] ≈ 1
+      - {p_active: 0.030, fraction: 0.20}   # sparse      E[n_active] ≈ 7
+      - {p_active: 0.100, fraction: 0.25}   # medium      E[n_active] ≈ 22
+      - {p_active: 0.300, fraction: 0.20}   # heavy       E[n_active] ≈ 67
+      - {p_active: 0.500, fraction: 0.10}   # very heavy  E[n_active] ≈ 111

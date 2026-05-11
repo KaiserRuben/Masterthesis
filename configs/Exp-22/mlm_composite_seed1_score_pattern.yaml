@@ -1,0 +1,69 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-22c-pattern — Score-Guided Init via Pattern-Mining (Tian SparseEA2-style)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Phase-2 follow-up to Exp-22b. Same multi-tier framework, but each tier's
+# activation positions are now picked via binary tournament weighted by an
+# externally-computed importance score from
+#   experiments/runners/compute_position_score.py --method pattern
+#
+# Pattern method: warm-up of N=20 multi-tier-sampled generations × 30 pop = 600
+# probe individuals; per image position, log-frequency-ratio between top and
+# bottom TgtBal-quartile = score. Lower score = more important.
+#
+# Pre-requisite: score file at sampling.score_path must exist. Generate with:
+#   python experiments/runners/compute_position_score.py \
+#     configs/Exp-22/mlm_composite_junco_chickadee_multitier.yaml \
+#     --method pattern \
+#     --out runs/Exp-22/scores/pattern_seed1.npy
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp22c_pattern_seed1
+save_dir: runs/Exp-22
+
+generations: 300
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [1]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+text:
+  composite:
+    profile: full_stack
+
+optimizer:
+  sampling:
+    mode: sparse_score_guided
+    score_path: runs/Exp-22/scores/pattern_seed1.npy
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null

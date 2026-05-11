@@ -111,11 +111,28 @@ class TestShapeAndBounds:
         # problem.n_var=15 but 15 > text_dim(10); should work
         s._do(problem, n_samples=10)
 
-        # problem.n_var==text_dim: no image block → error
-        bad = make_problem(n_image=0, text_dim=5)
+        # problem.n_var < text_dim: malformed → error
+        bad = make_problem(n_image=0, text_dim=3)
         s2 = SparseSampling(text_dim=5, seed=0)
         with pytest.raises(ValueError, match="text_dim"):
             s2._do(bad, n_samples=10)
+
+    def test_text_only_modality_n_image_zero(self) -> None:
+        """n_image == 0 (modality=text_only): image block skipped, text uniform."""
+        text_dim = 5
+        s = SparseSampling(text_dim=text_dim, seed=0)
+        problem = make_problem(n_image=0, text_dim=text_dim, text_bound=10)
+
+        samples = s._do(problem, n_samples=20)
+
+        # Output is text-only.
+        assert samples.shape == (20, text_dim)
+        assert samples.dtype == np.int64
+        # Text genes within [0, text_bound].
+        assert samples.min() >= 0
+        assert samples.max() <= 10
+        # Text block should not be all-zero (uniform over 11 values).
+        assert samples.sum() > 0
 
 
 # ===========================================================================

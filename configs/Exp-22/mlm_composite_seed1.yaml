@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-22 — MLM Composite vs. FastText (junco↔chickadee, seed 83)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Direct A/B for the Synonym backend swap. Identical setup to Exp-21
+# (pair, seed, image-side, surface operators, severities, generations,
+# plateau_patience) — only difference: the Synonym operator now uses
+# ModernBERT-large MLM with PoS + lemma + negation filter, instead of the
+# pre-cleanup FastText-subword KNN that powered Exp-21.
+#
+# Question: does the clean MLM pool (no "non-main" / "non-subject"
+# subword artefacts) still find competitive boundary distance, or does
+# losing the artefact shortcut cost ≥ 0.4 TgtBal?
+#
+# Reference baselines:
+#   - Exp-12 arm B (FastText K=25, single-op):       min TgtBal = 2.087  (artefakt-haltig)
+#   - Exp-12 arm C (GloVe K=25, single-op):          min TgtBal = 2.710  (sauber, single-op)
+#   - Exp-21 (FastText K=25, full_stack composite):  min TgtBal = 1.667  (artefakt-haltig, composite)
+#
+# Triangulation: Exp-22 = (clean pool) × (composite). If between 2.0–2.5,
+# pool sauberkeit costs ~0.4–0.8; if ≤ 1.7, MLM context-aware substitute
+# matches FastText artefact pool; if > 2.5, surface-op bonus alone can't
+# compensate.
+#
+# Output: runs/Exp-22/exp22_mlm_composite_seed1_seed_83_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp22_mlm_composite_seed1
+save_dir: runs/Exp-22
+
+generations: 300
+pop_size: 30
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [1]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+# Composite: full_stack profile (MLM-Synonym + Frag + CharNoise + Saliency).
+# Synonym is now ModernBERT-large with k_max=25 explicit override; fire-rate
+# governed by severity 0.55. Surface operators identical to Exp-21.
+text:
+  composite:
+    profile: full_stack
+
+optimizer:
+  sampling:
+    mode: sparse
+    p_active: 0.03
+    geometric_rate: 0.5
+    zero_anchor_fraction: 0.05
+    uniform_fallback_fraction: 0.10
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null
