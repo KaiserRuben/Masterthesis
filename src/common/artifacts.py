@@ -34,8 +34,16 @@ logger = logging.getLogger(__name__)
 # ``image_original_codes`` / ``image_candidates`` fields are
 # replaced by StyleGAN-specific bookkeeping (``image_origin_class``,
 # ``image_target_class``, ``image_num_ws``, ``image_kappa_quant_levels``).
+#
+# PDQ v5 (2026-05-22): combined pipeline. ``archive.parquet`` gains three
+# columns to identify rows produced from an evolutionary anchor instead of
+# the canonical zero-genotype anchor: ``pareto_idx`` (Pareto-front index
+# of the source individual, nullable), ``evolutionary_gen`` (generation
+# in which the Pareto member appeared, nullable), and ``anchor_source``
+# (``"zero"`` for legacy PDQ, ``"evolutionary"`` for combined-pipeline
+# rows). Default values keep the canonical PDQ path schema-stable.
 EVOLUTIONARY_SCHEMA_VERSION = 4
-PDQ_SCHEMA_VERSION = 2
+PDQ_SCHEMA_VERSION = 5
 
 
 class ParquetBuffer:

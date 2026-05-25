@@ -29,14 +29,31 @@ def hamming(a: np.ndarray, b: np.ndarray) -> int:
 
 
 def rank_sum(g: np.ndarray) -> int:
-    """Sum of all gene values (total displacement from anchor).
+    """Sum of all gene values (total displacement from zero anchor).
 
     Higher rank = larger codebook perturbation per gene; rank_sum
     accumulates those perturbations across the whole genotype.  Default
     ``d_i_primary`` for PDQ because it correlates best with perceptual
     distance without requiring image rendering.
+
+    Defined relative to the canonical zero anchor — use
+    :func:`rank_sum_delta` when the anchor is a non-zero genotype
+    (e.g. an evolutionary balanced individual fed in by the combined
+    pipeline).
     """
     return int(np.sum(g))
+
+
+def rank_sum_delta(g: np.ndarray, anchor: np.ndarray) -> int:
+    """Sum of ``|g − anchor|`` — anchor-aware rank_sum.
+
+    Reduces to :func:`rank_sum` when *anchor* is the zero genotype.
+    The combined pipeline (``run_main_pipeline``) passes an evolutionary
+    balanced genome here; the metric is then the L1 distance in genome
+    space between the partner and that anchor, which is the quantity
+    Stage 2 minimises step-by-step.
+    """
+    return int(np.sum(np.abs(g.astype(np.int64) - anchor.astype(np.int64))))
 
 
 def weighted_content(g: np.ndarray, weights: np.ndarray) -> float:

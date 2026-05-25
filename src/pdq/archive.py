@@ -39,6 +39,9 @@ def build_archive_row(
     anchor_logprobs: list[float],
     anchor_label: str,
     stage1_sut_calls: int,
+    pareto_idx: int | None = None,
+    evolutionary_gen: int | None = None,
+    anchor_source: str = "zero",
 ) -> dict[str, Any]:
     """Build a row dict for ``archive.parquet`` from a Stage-1 flip.
 
@@ -103,6 +106,10 @@ def build_archive_row(
         "sut_calls_total": stage1_sut_calls,
         # Provenance
         "found_by": sc.candidate.strategy,
+        # Combined-pipeline provenance (PDQ v5).
+        "pareto_idx": pareto_idx,
+        "evolutionary_gen": evolutionary_gen,
+        "anchor_source": anchor_source,
     }
 
 
@@ -116,21 +123,14 @@ def append_to_archive(
     anchor_logprobs: list[float],
     anchor_label: str,
     stage1_sut_calls: int,
+    pareto_idx: int | None = None,
+    evolutionary_gen: int | None = None,
+    anchor_source: str = "zero",
 ) -> None:
     """Append one flip to the archive parquet buffer.
 
     Thin wrapper around :func:`build_archive_row` that writes directly to
     the buffer — callers don't need to import the row builder separately.
-
-    :param buffer: The ``archive.parquet`` :class:`ParquetBuffer`.
-    :param sc: Stage-1 flip candidate.
-    :param flip_id: 0-based flip index within this seed.
-    :param seed_id: Seed identifier string.
-    :param run_id: Experiment name / run identifier.
-    :param anchor_geno_list: Anchor genotype as plain list.
-    :param anchor_logprobs: Logprobs from the anchor SUT call.
-    :param anchor_label: VLM prediction on the anchor.
-    :param stage1_sut_calls: Total Stage-1 SUT calls at time of write.
     """
     row = build_archive_row(
         sc=sc,
@@ -141,6 +141,9 @@ def append_to_archive(
         anchor_logprobs=anchor_logprobs,
         anchor_label=anchor_label,
         stage1_sut_calls=stage1_sut_calls,
+        pareto_idx=pareto_idx,
+        evolutionary_gen=evolutionary_gen,
+        anchor_source=anchor_source,
     )
     buffer.append(row)
 
@@ -161,6 +164,9 @@ def build_archive_row_stage2(
     stage1_sut_calls: int,
     stage2_result: Stage2Result,
     eps: float = 1e-9,
+    pareto_idx: int | None = None,
+    evolutionary_gen: int | None = None,
+    anchor_source: str = "zero",
 ) -> dict[str, Any]:
     """Build a ``VV`` archive row using Stage-2 minimised genotype.
 
@@ -237,6 +243,12 @@ def build_archive_row_stage2(
         "sut_calls_total": stage1_sut_calls + stage2_result.sut_calls_used,
         # Provenance
         "found_by": sc.candidate.strategy,
+        # Combined-pipeline provenance (PDQ v5). Null for canonical
+        # zero-anchor runs; populated when the anchor is an evolutionary
+        # balanced individual.
+        "pareto_idx": pareto_idx,
+        "evolutionary_gen": evolutionary_gen,
+        "anchor_source": anchor_source,
     }
 
 
@@ -251,20 +263,11 @@ def append_archive_row_stage2(
     anchor_label: str,
     stage1_sut_calls: int,
     stage2_result: Stage2Result,
+    pareto_idx: int | None = None,
+    evolutionary_gen: int | None = None,
+    anchor_source: str = "zero",
 ) -> None:
-    """Append one Stage-2 minimised archive row to the buffer.
-
-    :param buffer: The ``archive.parquet`` :class:`ParquetBuffer`.
-    :param sc: Stage-1 flip candidate.
-    :param flip_id: Flip index within this seed.
-    :param seed_id: Seed identifier string.
-    :param run_id: Experiment name.
-    :param anchor_geno_list: Anchor genotype as plain list.
-    :param anchor_logprobs: Anchor SUT logprobs.
-    :param anchor_label: Anchor VLM label.
-    :param stage1_sut_calls: Total Stage-1 SUT calls.
-    :param stage2_result: Stage-2 minimisation result.
-    """
+    """Append one Stage-2 minimised archive row to the buffer."""
     row = build_archive_row_stage2(
         sc=sc,
         flip_id=flip_id,
@@ -275,5 +278,8 @@ def append_archive_row_stage2(
         anchor_label=anchor_label,
         stage1_sut_calls=stage1_sut_calls,
         stage2_result=stage2_result,
+        pareto_idx=pareto_idx,
+        evolutionary_gen=evolutionary_gen,
+        anchor_source=anchor_source,
     )
     buffer.append(row)

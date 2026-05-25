@@ -106,6 +106,9 @@ ARCHIVE_COLUMNS: list[str] = [
     "pdq", "validity",
     "stage1_sut_calls", "stage2_sut_calls", "sut_calls_total",
     "found_by",
+    # PDQ v5 — combined-pipeline provenance (nullable; defaults = legacy
+    # zero-anchor row).
+    "pareto_idx", "evolutionary_gen", "anchor_source",
 ]
 
 CONVERGENCE_COLUMNS: list[str] = [

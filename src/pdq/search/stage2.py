@@ -4,25 +4,35 @@ Given a Stage-1 flip genotype ``g_f``, Stage 2 finds the smallest
 perturbation ``g_min`` such that the VLM still predicts a label different
 from the anchor label.
 
+The "anchor" / "target" of minimisation is configurable via the
+``target`` parameter of each pass (and ``anchor_geno`` on
+:func:`minimise_flip`). The default behaviour minimises toward the
+**zero genotype** — the canonical PDQ semantics. When the combined
+pipeline feeds a non-zero anchor (an evolutionary balanced individual),
+passing that anchor as ``target`` drives Stage 2 toward minimising
+``|g − anchor|`` instead.
+
 Three passes run in order A → B → C (C disabled by default):
 
-    Pass A — greedy zeroing
-        Try setting each non-zero gene to 0.  Keep if the flip survives.
-        Reduces genotype sparsity (number of active genes).  Processes
-        genes in ``"by_gene_value_desc"`` order (highest rank first) so
-        each accepted zeroing yields the largest d_i reduction per call.
+    Pass A — greedy zero-toward-target
+        Try setting each gene that differs from *target* directly to
+        ``target[i]``.  Keep if the flip survives.  Reduces the number
+        of differing positions ("sparsity" in delta-from-target sense).
+        Processes genes in ``"by_gene_value_desc"`` order (largest abs
+        diff from target first) so each accepted step yields the largest
+        d_i reduction per call.
 
-    Pass B — rank reduction
-        For each remaining non-zero gene, decrement the value by
-        ``step_size`` (default 1) while the flip is preserved.  Stops
-        reducing a gene when a decrement breaks the flip or the gene
-        reaches 0.  Reduces rank_sum (magnitude) without necessarily
-        eliminating genes.
+    Pass B — rank step-toward-target
+        For each gene that still differs from *target*, move the value
+        toward ``target[i]`` by ``step_size`` (default 1) while the flip
+        is preserved.  Stops a gene when a step breaks the flip or the
+        gene reaches ``target[i]``.  Reduces rank_sum without necessarily
+        eliminating the difference at every position.
 
-    Pass C — random-subset zeroing (optional, default disabled)
-        Sample random subsets of non-zero genes and zero them all at
-        once.  Aggressive shortcut when many genes are "jointly removable"
-        but individually load-bearing.
+    Pass C — random-subset zero-toward-target (optional, default disabled)
+        Sample random subsets of differing positions and set them all to
+        ``target[subset]`` in one call.  Aggressive shortcut when many
+        genes are "jointly snappable" but individually load-bearing.
 
 Each pass is a pure function returning ``(best_genotype, trajectory)``.
 The trajectory is a list of per-step dicts ready for conversion to
@@ -104,18 +114,52 @@ class Stage2Result:
 # ---------------------------------------------------------------------------
 
 
-def _ordered_nonzero(g: np.ndarray, order: str) -> np.ndarray:
-    """Return indices of non-zero genes in the requested order.
+def _ordered_differs(
+    g: np.ndarray, target: np.ndarray, order: str,
+) -> np.ndarray:
+    """Return indices of genes that differ from *target* in the requested order.
+
+    When *target* is the zero genotype this reduces to "non-zero gene
+    indices" (legacy behaviour).  When *target* is a non-zero anchor
+    (e.g. an evolutionary balanced individual) it returns the positions
+    of the *delta* — exactly the positions Stage 2 can productively
+    touch when minimising ``|g − target|``.
 
     :param g: Genotype array.
-    :param order: ``"by_gene_value_desc"`` (largest value first) or
-        any other string (ascending position order).
-    :returns: Array of non-zero gene indices.
+    :param target: Reference genotype.  Indices where ``g == target`` are
+        excluded (no work to do there).
+    :param order: ``"by_gene_value_desc"`` (largest ``|g − target|``
+        first) or any other string (ascending position order).
+    :returns: Array of gene indices where ``g != target``.
     """
-    indices = np.where(g != 0)[0]
+    indices = np.where(g != target)[0]
     if order == "by_gene_value_desc" and len(indices) > 0:
-        return indices[np.argsort(g[indices])[::-1]]
+        diffs = np.abs(g[indices].astype(np.int64) - target[indices].astype(np.int64))
+        return indices[np.argsort(diffs)[::-1]]
     return indices
+
+
+def _resolve_target(
+    target: np.ndarray | None, like: np.ndarray,
+) -> np.ndarray:
+    """Return *target* or a zero array shaped like *like*.
+
+    Default ``target=None`` preserves the legacy "minimise toward zero"
+    behaviour without forcing callers to construct a zero array.
+    """
+    if target is None:
+        return np.zeros_like(like)
+    return np.asarray(target, dtype=like.dtype)
+
+
+def _delta_rank_sum(g: np.ndarray, target: np.ndarray) -> int:
+    """Sum of ``|g − target|`` — anchor-aware rank_sum."""
+    return int(np.sum(np.abs(g.astype(np.int64) - target.astype(np.int64))))
+
+
+def _delta_sparsity(g: np.ndarray, target: np.ndarray) -> int:
+    """Number of positions where ``g`` differs from *target*."""
+    return int(np.sum(g != target))
 
 
 # ---------------------------------------------------------------------------
@@ -153,16 +197,24 @@ def greedy_zeroing(
     order: str = "by_gene_value_desc",
     full_sweep_only: bool = True,  # noqa: ARG001 — kept for config parity
     pbar: tqdm | None = None,
+    target: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
-    """Greedy zeroing pass: try setting each non-zero gene to 0.
+    """Pass A — snap each differing gene to ``target[i]`` in one step.
 
-    Iterates non-zero gene positions in *order* (default: highest gene
-    value first).  At each position the gene is tentatively set to 0; if
-    the flip survives the change is kept, otherwise it is reverted.
+    Iterates positions where ``flipped_geno != target`` in *order*
+    (default: largest absolute delta first).  At each position the gene
+    is tentatively set to ``target[i]``; if the flip survives the change
+    is kept, otherwise it is reverted.
 
-    *full_sweep_only* is accepted for config-field parity but does not
-    alter behaviour in this implementation: every gene is visited at most
-    once (one sweep through non-zero positions).
+    ``target=None`` (default) reduces to the legacy "zero each non-zero
+    gene" behaviour — the canonical PDQ pass.  Passing a non-zero anchor
+    (e.g. an evolutionary balanced individual) instead snaps each
+    differing gene to that anchor's value, driving the partner toward
+    the anchor while preserving the flip.
+
+    The rank_sum / sparsity reported in the trajectory are measured as
+    delta-from-target (``Σ|g − target|`` and ``Σ[g != target]``) so the
+    numbers remain meaningful for both anchor modes.
 
     :param flipped_geno: Stage-1 flip genotype to minimise.
     :param flip_check_fn: ``(genotype) → CheckResult`` — one SUT call.
@@ -171,24 +223,28 @@ def greedy_zeroing(
     :param full_sweep_only: Unused; retained for API consistency with
         ``ZeroPassConfig``.
     :param pbar: Optional tqdm bar to update.
+    :param target: Reference genotype.  ``None`` = zeros (legacy PDQ);
+        non-zero = anchor-aware minimisation (combined pipeline).
     :returns: ``(best_geno, trajectory)``.
     """
+    tgt = _resolve_target(target, flipped_geno)
     g = flipped_geno.copy()
     trajectory: list[dict[str, Any]] = []
     calls_used = 0
 
-    cur_rank_sum = int(np.sum(g))
-    cur_sparsity = int(np.count_nonzero(g))
+    cur_rank_sum = _delta_rank_sum(g, tgt)
+    cur_sparsity = _delta_sparsity(g, tgt)
 
-    for step_num, i in enumerate(_ordered_nonzero(flipped_geno, order)):
+    for step_num, i in enumerate(_ordered_differs(flipped_geno, tgt, order)):
         if calls_used >= budget:
             break
-        if g[i] == 0:
-            continue  # already zeroed by a prior accepted step
+        if g[i] == tgt[i]:
+            continue  # already snapped to target by a prior accepted step
 
         old_val = int(g[i])
+        target_val = int(tgt[i])
         g_try = g.copy()
-        g_try[i] = 0
+        g_try[i] = target_val
 
         result = flip_check_fn(g_try)
         calls_used += 1
@@ -198,15 +254,15 @@ def greedy_zeroing(
         accepted = result.still_flipped
         if accepted:
             g = g_try
-            cur_rank_sum -= old_val
-            cur_sparsity -= 1
+            cur_rank_sum -= abs(old_val - target_val)
+            cur_sparsity -= 1  # position now matches target
 
         trajectory.append({
             "step": step_num,
             "pass_name": "zero",
             "target_gene": int(i),
             "old_value": old_val,
-            "new_value": 0,
+            "new_value": target_val,
             "still_flipped": result.still_flipped,
             "accepted": accepted,
             "label_after": result.label,
@@ -221,8 +277,8 @@ def greedy_zeroing(
         _update_pbar(pbar, "zero", cur_rank_sum, cur_sparsity, trajectory)
 
         logger.debug(
-            "Pass A step %d: gene=%d  %d→0  accepted=%s  rank_sum=%d",
-            step_num, i, old_val, accepted, cur_rank_sum,
+            "Pass A step %d: gene=%d  %d→%d  accepted=%s  delta_rs=%d",
+            step_num, i, old_val, target_val, accepted, cur_rank_sum,
         )
 
     return g, trajectory
@@ -240,42 +296,57 @@ def rank_reduction(
     order: str = "by_gene_value_desc",
     step_size: int = 1,
     pbar: tqdm | None = None,
+    target: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
-    """Rank-reduction pass: decrement each non-zero gene by *step_size*.
+    """Pass B — step each differing gene toward ``target[i]`` by ``step_size``.
 
-    For each non-zero gene visited in *order*, attempts to reduce its value
-    by *step_size* while the flip is preserved.  Stops reducing a gene
-    when a decrement breaks the flip or the gene reaches 0.  If a decrement
-    reaches 0 and is accepted, the gene is effectively zeroed — this
-    complements Pass A by cleaning up low-rank genes that Pass A left
-    because zeroing them individually was too aggressive.
+    For each gene where ``g[i] != target[i]`` visited in *order*, attempts
+    repeated steps of size ``step_size`` toward ``target[i]`` while the
+    flip is preserved.  Stops a gene when a step breaks the flip or when
+    the gene reaches ``target[i]`` exactly.  When a step reaches the
+    target value and is accepted the position joins the "snapped" set —
+    this complements Pass A by cleaning up genes whose direct snap broke
+    the flip but a partial step survives.
+
+    ``target=None`` reduces to the legacy decrement-toward-zero behaviour.
+    With a non-zero anchor *target* the step direction is
+    ``sign(target[i] − g[i])`` so the gene moves toward the anchor from
+    either side — increment when the partner is below the anchor,
+    decrement when above.
 
     :param flipped_geno: Genotype to minimise (typically output of Pass A).
     :param flip_check_fn: ``(genotype) → CheckResult`` — one SUT call.
     :param budget: Maximum SUT calls for this pass.
     :param order: Gene traversal order.
-    :param step_size: Decrement per attempt (``RankPassConfig.step``).
+    :param step_size: Magnitude per step (``RankPassConfig.step``).
     :param pbar: Optional tqdm bar to update.
+    :param target: Reference genotype.  ``None`` = zeros (legacy PDQ);
+        non-zero = anchor-aware minimisation.
     :returns: ``(best_geno, trajectory)``.
     """
+    tgt = _resolve_target(target, flipped_geno)
     g = flipped_geno.copy()
     trajectory: list[dict[str, Any]] = []
     calls_used = 0
     step_num = 0
 
-    cur_rank_sum = int(np.sum(g))
-    cur_sparsity = int(np.count_nonzero(g))
+    cur_rank_sum = _delta_rank_sum(g, tgt)
+    cur_sparsity = _delta_sparsity(g, tgt)
 
-    for i in _ordered_nonzero(flipped_geno, order):
+    for i in _ordered_differs(flipped_geno, tgt, order):
         if calls_used >= budget:
             break
-        if g[i] == 0:
+        if g[i] == tgt[i]:
             continue
 
-        # Reduce gene i step by step while flip survives.
-        while g[i] > 0 and calls_used < budget:
+        # Step gene i toward target while flip survives.
+        while g[i] != tgt[i] and calls_used < budget:
             old_val = int(g[i])
-            new_val = max(0, old_val - step_size)
+            target_val = int(tgt[i])
+            diff = target_val - old_val
+            direction = 1 if diff > 0 else -1
+            step = direction * min(step_size, abs(diff))
+            new_val = old_val + step
             g_try = g.copy()
             g_try[i] = new_val
 
@@ -287,8 +358,8 @@ def rank_reduction(
             accepted = result.still_flipped
             if accepted:
                 g = g_try
-                cur_rank_sum -= (old_val - new_val)
-                if new_val == 0:
+                cur_rank_sum -= abs(step)
+                if new_val == target_val:
                     cur_sparsity -= 1
 
             trajectory.append({
@@ -312,7 +383,7 @@ def rank_reduction(
             _update_pbar(pbar, "rank", cur_rank_sum, cur_sparsity, trajectory)
 
             if not accepted:
-                break  # Gene is as low as it can go; try next gene
+                break  # Gene is as close to target as it can get; try next gene
 
     return g, trajectory
 
@@ -330,13 +401,17 @@ def random_subset(
     subset_sizes: tuple[int, ...] = (2, 3, 5),
     n_trials_per_size: int = 20,
     pbar: tqdm | None = None,
+    target: np.ndarray | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
-    """Random-subset zeroing pass: zero random groups of non-zero genes.
+    """Pass C — snap random subsets of differing genes to ``target[subset]``.
 
-    Samples subsets of active gene positions and tries zeroing the entire
-    subset simultaneously.  If the flip survives, all genes in the subset
-    are zeroed.  This is an aggressive shortcut that can eliminate clusters
-    of genes that are individually load-bearing but jointly dispensable.
+    Samples subsets of positions where ``g != target`` and tries snapping
+    the entire subset to ``target`` in one SUT call.  If the flip survives,
+    every position in the subset matches the target afterward.  Aggressive
+    shortcut for clusters of genes that are individually load-bearing
+    but jointly snappable.
+
+    ``target=None`` reduces to the legacy "zero a random subset" behaviour.
 
     :param flipped_geno: Genotype to minimise (typically output of Passes A+B).
     :param flip_check_fn: ``(genotype) → CheckResult`` — one SUT call.
@@ -347,28 +422,31 @@ def random_subset(
     :param n_trials_per_size: Trials per size (from
         ``RandomSubsetPassConfig.n_trials_per_size``).
     :param pbar: Optional tqdm bar to update.
+    :param target: Reference genotype.  ``None`` = zeros (legacy PDQ);
+        non-zero = anchor-aware minimisation.
     :returns: ``(best_geno, trajectory)``.
     """
+    tgt = _resolve_target(target, flipped_geno)
     g = flipped_geno.copy()
     trajectory: list[dict[str, Any]] = []
     calls_used = 0
     step_num = 0
 
-    cur_rank_sum = int(np.sum(g))
-    cur_sparsity = int(np.count_nonzero(g))
+    cur_rank_sum = _delta_rank_sum(g, tgt)
+    cur_sparsity = _delta_sparsity(g, tgt)
 
     for k in subset_sizes:
         for _ in range(n_trials_per_size):
             if calls_used >= budget:
                 break
-            nonzero_idx = np.where(g != 0)[0]
-            if len(nonzero_idx) < k:
+            differing_idx = np.where(g != tgt)[0]
+            if len(differing_idx) < k:
                 break
 
-            chosen = rng.choice(nonzero_idx, size=k, replace=False)
+            chosen = rng.choice(differing_idx, size=k, replace=False)
             old_vals = g[chosen].copy()
             g_try = g.copy()
-            g_try[chosen] = 0
+            g_try[chosen] = tgt[chosen]
 
             result = flip_check_fn(g_try)
             calls_used += 1
@@ -378,15 +456,15 @@ def random_subset(
             accepted = result.still_flipped
             if accepted:
                 g = g_try
-                cur_rank_sum = int(np.sum(g))
-                cur_sparsity = int(np.count_nonzero(g))
+                cur_rank_sum = _delta_rank_sum(g, tgt)
+                cur_sparsity = _delta_sparsity(g, tgt)
 
             trajectory.append({
                 "step": step_num,
                 "pass_name": "random_subset",
                 "target_gene": chosen.tolist(),
                 "old_value": old_vals.tolist(),
-                "new_value": 0,
+                "new_value": tgt[chosen].tolist(),
                 "still_flipped": result.still_flipped,
                 "accepted": accepted,
                 "label_after": result.label,
@@ -422,6 +500,7 @@ def minimise_flip(
     stage1_flip_label: str = "",
     seed_idx: int = 0,
     flip_id: int = 0,
+    anchor_geno: np.ndarray | None = None,
 ) -> Stage2Result:
     """Run Stage-2 minimisation passes A → B → C on a Stage-1 flip.
 
@@ -429,6 +508,11 @@ def minimise_flip(
     pass receives the remainder.  Budget is also tracked globally so that
     if Pass A consumes fewer calls than its allocation, the surplus rolls
     forward to Pass B (remaining-budget semantics).
+
+    ``anchor_geno=None`` (default) minimises toward the zero genotype —
+    the canonical PDQ semantics.  Passing a non-zero anchor (e.g. an
+    evolutionary balanced individual) switches every pass to anchor-aware
+    mode, minimising ``|g − anchor_geno|`` instead.
 
     :param flipped_geno: Stage-1 flip genotype to minimise.
     :param sut_check_fn: ``(genotype) → CheckResult`` — one SUT call per
@@ -438,16 +522,19 @@ def minimise_flip(
     :param rng: Seeded random generator (Pass C only).
     :param cfg: :class:`~src.pdq.config.Stage2Config` with pass flags and
         parameters.
-    :param input_distance_fn: ``(g, zero_anchor) → float`` — computes d_i
+    :param input_distance_fn: ``(g, anchor_geno) → float`` — computes d_i
         for the minimised genotype.
     :param stage1_flip_label: The Stage-1 flip label (used as fallback when
         no Stage-2 step was accepted).
     :param seed_idx: 0-based seed index for logging.
     :param flip_id: 0-based flip index within the seed.
+    :param anchor_geno: Reference genotype to minimise toward.  ``None``
+        = zero genotype (canonical PDQ).  Combined-pipeline callers pass
+        the evolutionary anchor here.
     :returns: :class:`Stage2Result` with the minimised genotype, d_i_min,
         call count, per-pass trajectories, stop reason, and final label.
     """
-    anchor_geno = np.zeros_like(flipped_geno)
+    tgt = _resolve_target(anchor_geno, flipped_geno)
 
     # -- Determine enabled passes and their budget allocations --------------
     enabled: list[str] = []
@@ -459,7 +546,7 @@ def minimise_flip(
         enabled.append("random_subset")
 
     if not enabled:
-        d_i = input_distance_fn(flipped_geno, anchor_geno)
+        d_i = input_distance_fn(flipped_geno, tgt)
         return Stage2Result(
             genotype_min=flipped_geno.copy(),
             d_i_min=d_i,
@@ -469,8 +556,8 @@ def minimise_flip(
             final_label=stage1_flip_label,
         )
 
-    if int(np.count_nonzero(flipped_geno)) == 0:
-        d_i = input_distance_fn(flipped_geno, anchor_geno)
+    if int(np.sum(flipped_geno != tgt)) == 0:
+        d_i = input_distance_fn(flipped_geno, tgt)
         return Stage2Result(
             genotype_min=flipped_geno.copy(),
             d_i_min=d_i,
@@ -516,14 +603,15 @@ def minimise_flip(
             order=cfg.passes.zero.order,
             full_sweep_only=cfg.passes.zero.full_sweep_only,
             pbar=pbar,
+            target=tgt,
         )
         trajectory_per_pass["zero"] = traj
         used = len(traj)
         total_calls += used
         remaining -= used
         logger.debug(
-            "Stage2 Pass A: %d calls  rank_sum=%d  sparsity=%d",
-            used, int(np.sum(g)), int(np.count_nonzero(g)),
+            "Stage2 Pass A: %d calls  delta_rank_sum=%d  delta_sparsity=%d",
+            used, _delta_rank_sum(g, tgt), _delta_sparsity(g, tgt),
         )
 
     if cfg.passes.rank.enabled and remaining > 0:
@@ -541,6 +629,7 @@ def minimise_flip(
                 order=cfg.passes.rank.order,
                 step_size=cfg.passes.rank.step,
                 pbar=pbar,
+                target=tgt,
             )
             rank_traj.extend(traj)
             used = len(traj)
@@ -550,8 +639,8 @@ def minimise_flip(
                 break  # No progress — further sweeps won't help
         trajectory_per_pass["rank"] = rank_traj
         logger.debug(
-            "Stage2 Pass B: %d calls  rank_sum=%d  sparsity=%d",
-            len(rank_traj), int(np.sum(g)), int(np.count_nonzero(g)),
+            "Stage2 Pass B: %d calls  delta_rank_sum=%d  delta_sparsity=%d",
+            len(rank_traj), _delta_rank_sum(g, tgt), _delta_sparsity(g, tgt),
         )
 
     if cfg.passes.random_subset.enabled and remaining > 0:
@@ -564,14 +653,15 @@ def minimise_flip(
             subset_sizes=cfg.passes.random_subset.subset_sizes,
             n_trials_per_size=cfg.passes.random_subset.n_trials_per_size,
             pbar=pbar,
+            target=tgt,
         )
         trajectory_per_pass["random_subset"] = traj
         used = len(traj)
         total_calls += used
         remaining -= used
         logger.debug(
-            "Stage2 Pass C: %d calls  rank_sum=%d  sparsity=%d",
-            used, int(np.sum(g)), int(np.count_nonzero(g)),
+            "Stage2 Pass C: %d calls  delta_rank_sum=%d  delta_sparsity=%d",
+            used, _delta_rank_sum(g, tgt), _delta_sparsity(g, tgt),
         )
 
     pbar.close()
@@ -580,13 +670,13 @@ def minimise_flip(
         stopped_reason = "budget_exhausted"
 
     # -- Compute final d_i and label ----------------------------------------
-    d_i_min = input_distance_fn(g, anchor_geno)
+    d_i_min = input_distance_fn(g, tgt)
     final_label = _last_accepted_label(trajectory_per_pass, stage1_flip_label)
 
     logger.debug(
         "Stage2 flip minimised: anchor=%s  d_i %s→%.1f  calls=%d  reason=%s",
         anchor_label,
-        "?" if total_calls == 0 else str(int(input_distance_fn(flipped_geno, anchor_geno))),
+        "?" if total_calls == 0 else str(int(input_distance_fn(flipped_geno, tgt))),
         d_i_min,
         total_calls,
         stopped_reason,

@@ -31,6 +31,7 @@ from .distances.input import (
     hamming,
     image_pixel_l2,
     rank_sum,
+    rank_sum_delta,
     sparsity,
     weighted_content,
 )
@@ -65,13 +66,14 @@ def pdq(d_i: float, d_o: float, eps: float = 1e-9) -> float:
 
 INPUT_DISTANCES: dict[str, Callable[[np.ndarray, np.ndarray], float]] = {
     "rank_sum": lambda g, anchor: float(rank_sum(g)),
+    "rank_sum_delta": lambda g, anchor: float(rank_sum_delta(g, anchor)),
     "sparsity": lambda g, anchor: float(sparsity(g)),
     "hamming": lambda g, anchor: float(hamming(g, anchor)),
     "weighted_content": lambda g, anchor: weighted_content(g, np.ones(len(g), dtype=np.float32)),
     "image_pixel_L2": lambda g, anchor: (_ for _ in ()).throw(  # type: ignore[misc]
         NotImplementedError(
             "image_pixel_L2 cannot be used as d_i_primary via the registry; "
-            "it requires rendered images.  Use rank_sum or sparsity instead."
+            "it requires rendered images.  Use rank_sum, rank_sum_delta, or sparsity instead."
         )
     ),
 }

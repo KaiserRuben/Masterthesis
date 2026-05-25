@@ -41,6 +41,7 @@ VALID_STRATEGIES: frozenset[str] = frozenset({
 
 VALID_D_I: frozenset[str] = frozenset({
     "rank_sum",
+    "rank_sum_delta",
     "sparsity",
     "hamming",
     "weighted_content",

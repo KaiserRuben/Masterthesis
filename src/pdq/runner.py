@@ -15,13 +15,10 @@ Architecture mirrors ``experiments/runners/run_boundary_test.py``:
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import platform
 import subprocess
 import sys
-from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from time import time
 from typing import Any
@@ -31,14 +28,21 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
+from src.common import (
+    apply_seed_filter,
+    build_context_meta,
+    dispatch_workers,
+    init_shared_components,
+    precompute_image_backend,
+    prepare_pipeline_seeds,
+    seed_target_class,
+)
 from src.config import ExperimentConfig, SeedTriple
 from src.data import ImageNetCache
-from src.manipulator.image.manipulator import ImageManipulator
+from src.manipulator.image_backend import ImageBackend
 from src.manipulator.text.composite import CompositeTextManipulator
-from src.common import apply_seed_filter, build_context_meta
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.sut import VLMSUT
-from src.common import generate_seeds
 
 from .archive import append_archive_row_stage2
 from .artifacts import PDQ_SCHEMA_VERSION, SeedLogger
@@ -242,54 +246,18 @@ class PDQRunner:
 
         exp_cfg = _make_exp_config(cfg)
 
-        # -- Parallel component init (same pattern as SMOO runner) --------
-        pool = ThreadPoolExecutor(max_workers=3)
-
-        logger.info(
-            "Composite text manipulator starting (profile=%s)...",
-            cfg.text.composite.profile if cfg.text.composite else None,
-        )
-        text_fut: Future[CompositeTextManipulator] = pool.submit(
-            CompositeTextManipulator.from_config,
-            text_config=cfg.text,
-            device=cfg.device,
-            redis_url=cfg.sut.redis_url,
-        )
-
-        logger.info("Image manipulator starting...  preset=%s", cfg.image.preset)
-        image_fut: Future[ImageManipulator] = pool.submit(
-            ImageManipulator.from_preset, device=cfg.device, config=cfg.image,
-        )
-
-        sut_device = (
-            cfg.sut.ov_device if cfg.sut.backend == "openvino" else cfg.device
-        )
-        logger.info("SUT starting...  %s on %s", cfg.sut.model_id, sut_device)
-        sut_fut: Future[VLMSUT] = pool.submit(VLMSUT, exp_cfg)
-
-        # SUT needed first for seed generation.
-        sut: VLMSUT = sut_fut.result()
-        logger.info("SUT loaded")
-
-        logger.info("Generating seeds...")
-        seeds = generate_seeds(sut, exp_cfg, data_source)
-
-        image_manip: ImageManipulator = image_fut.result()
-        logger.info("Image manipulator loaded")
-
-        text_manip: CompositeTextManipulator = text_fut.result()
-        logger.info("Text manipulator loaded")
-
-        pool.shutdown(wait=False)
-
+        # -- Shared component init + seed gen + backend precompute --------
+        components = init_shared_components(exp_cfg, data_source)
+        seeds = prepare_pipeline_seeds(components, exp_cfg)
         if not seeds:
             logger.warning("No seeds passed filters — nothing to test.")
             return
+        precompute_image_backend(components, seeds, exp_cfg)
 
-        # Apply post-generation seed filter (preserves original indices so
-        # `seed_0032` in a filtered run matches `seed_0032` in the full run).
+        # -- Seed dispatch ------------------------------------------------
+        # Preserves original indices so seed_0032 in a filtered run still
+        # reports as seed_0032.
         indexed_seeds = apply_seed_filter(seeds, cfg.seeds.filter_indices)
-
         workers = max(1, cfg.parallel.workers)
         logger.info(
             "%d seed(s) to test (PDQ pipeline, %d strategies, "
@@ -315,8 +283,10 @@ class PDQRunner:
             )
             total_calls = per_seed_calls * len(indexed_seeds)
             preflight_cost_check(
-                sut=sut,
-                manipulator=VLMManipulator(image_manip, text_manip),
+                sut=components.sut,
+                manipulator=VLMManipulator(
+                    components.image_manip, components.text_manip,
+                ),
                 seed=first_seed,
                 prompt_template=cfg.prompt_template,
                 answer_suffix=answer_suffix,
@@ -325,43 +295,53 @@ class PDQRunner:
                 n_samples=20,
             )
 
-        if workers == 1:
+        def _build_pdq_bundle(worker_id: int) -> tuple[VLMSUT, int, int]:
+            """Per-worker SUT wrapper (sharing scorer / embedder / redis)
+            plus identifying worker_id / n_workers for log prefixes.
+
+            With ``workers == 1`` returns the shared SUT directly so the
+            legacy single-thread sequence is byte-identical.
+            """
+            if workers > 1:
+                sut_thread = VLMSUT(
+                    exp_cfg,
+                    scorer=components.sut.scorer,
+                    text_embedder=components.sut.text_embedder,
+                    redis_client=components.sut.redis_client,
+                )
+            else:
+                sut_thread = components.sut
+            return sut_thread, worker_id, workers
+
+        def _run_pdq_slice(
+            slice_: list[tuple[int, "SeedTriple"]],
+            bundle: tuple[VLMSUT, int, int],
+        ) -> None:
+            sut_thread, worker_id, n_workers = bundle
             self._run_seed_loop(
-                indexed_seeds, sut, image_manip, text_manip, exp_cfg,
-                worker_id=0, n_workers=1,
+                list(slice_),
+                sut_thread,
+                components.image_manip,
+                components.text_manip,
+                worker_id=worker_id,
+                n_workers=n_workers,
             )
-        else:
-            with ThreadPoolExecutor(
-                max_workers=workers, thread_name_prefix="pdqw",
-            ) as ex:
-                futs = []
-                for i in range(workers):
-                    slice_i = indexed_seeds[i::workers]
-                    if not slice_i:
-                        continue
-                    # Per-thread VLMSUT wrapper sharing scorer + embedder.
-                    sut_thread = VLMSUT(
-                        exp_cfg,
-                        scorer=sut.scorer,
-                        text_embedder=sut.text_embedder,
-                        redis_client=sut.redis_client,
-                    )
-                    futs.append(ex.submit(
-                        self._run_seed_loop,
-                        slice_i, sut_thread, image_manip, text_manip, exp_cfg,
-                        worker_id=i, n_workers=workers,
-                    ))
-                for f in futs:
-                    f.result()
+
+        dispatch_workers(
+            workers=workers,
+            indexed_seeds=indexed_seeds,
+            build_bundle=_build_pdq_bundle,
+            run_slice=_run_pdq_slice,
+            thread_name_prefix="pdqw",
+        )
         logger.info("PDQ run complete.")
 
     def _run_seed_loop(
         self,
         indexed_seeds: list[tuple[int, SeedTriple]],
         sut: VLMSUT,
-        image_manip: ImageManipulator,
+        image_manip: ImageBackend,
         text_manip: CompositeTextManipulator,
-        exp_cfg: ExperimentConfig,
         *,
         worker_id: int,
         n_workers: int,
@@ -474,8 +454,14 @@ class PDQRunner:
 
         pbar.set_postfix({"stage": "prep"})
 
-        # 1. Prepare manipulator for this seed.
-        manipulator.prepare(seed.image, cfg.prompt_template)
+        # 1. Prepare manipulator for this seed. L0 target class is
+        #    forwarded so cone-filter mode (when enabled in image config)
+        #    routes through the per-class modal target grid.
+        manipulator.prepare(
+            seed.image,
+            cfg.prompt_template,
+            target_class=seed_target_class(seed),
+        )
 
         # 2. Compute anchor (zero genotype → VQGAN-reconstructed image +
         #    original prompt text).
@@ -499,8 +485,6 @@ class PDQRunner:
         )
         label_anchor = categories[int(anchor_logprobs.argmax().item())]
 
-        pbar.set_postfix({"stage": "S1", "anchor": label_anchor})
-
         # 4. Flush anchor SUT call record.
         sl.append_sut_calls(adapter.pop_records())
         sl.flush_all()
@@ -512,9 +496,6 @@ class PDQRunner:
         sl.save_anchor_prompt(full_anchor_prompt)
 
         # 6. Write JSON metadata.
-        # Stamp the schema version on config.json for redundancy with
-        # the per-parquet file-level marker — a reader that only sees
-        # config.json can still determine the layout.
         cfg_dict = config_to_dict(cfg)
         cfg_dict["schema_version"] = PDQ_SCHEMA_VERSION
         sl.write_config_json(cfg_dict)
@@ -523,266 +504,33 @@ class PDQRunner:
         if cfg.reproducibility.dump_rng_state:
             sl.write_rng_state_json(_rng_state_dict(rng))
 
-        # 7. Stage 1 — flip discovery.
-        anchor_logprobs_list = anchor_logprobs.tolist()
+        # 7. Stage 1 + Stage 2 via shared core function.
         anchor_geno = manipulator.zero_genotype()
-        anchor_image_arr = np.array(anchor_image)
-
-        # Resolve distance functions from config.
-        input_dist_fn = INPUT_DISTANCES.get(cfg.distances.d_i_primary)
-        if input_dist_fn is None:
-            raise ValueError(
-                f"d_i_primary={cfg.distances.d_i_primary!r} is not in "
-                "INPUT_DISTANCES registry"
-            )
-        output_dist_fn = OUTPUT_DISTANCES[cfg.distances.d_o_primary]
-
-        # Anchor sentence embedding in the SUT's own text-embedding space.
-        # The zero-genotype text equals ``prompt_template`` so this yields
-        # a distance of 0 for any all-zero individual by construction.
-        text_embedder = adapter.text_embedder
-        anchor_text_embedding = text_embedder.embed(cfg.prompt_template)
-
-        def _text_distance_fn(rendered_text: str) -> float:
-            return float(
-                text_embedder.cosine_distances_to(
-                    anchor_text_embedding, [rendered_text],
-                )[0]
-            )
-
-        # SUT call closure for Stage 1 — captures manipulator, adapter, prompt.
-        def _sut_call(genotype: np.ndarray) -> tuple[
-            list[float], int, Image.Image, str, float
-        ]:
-            candidate_id = adapter.call_count  # equals upcoming call_id
-            imgs, texts = manipulator.manipulate(
-                candidates=None, weights=genotype.reshape(1, -1),
-            )
-            img, text = imgs[0], texts[0]
-            logprobs_t, call_id = adapter.call(
-                img,
-                text=text + answer_suffix,
-                categories=categories,
-                stage="stage1",
-                candidate_id=candidate_id,
-            )
-            return logprobs_t.tolist(), call_id, img, text, adapter.wall_time_cumulative
-
-        scored = run_stage1(
-            anchor_geno=anchor_geno,
-            anchor_label=label_anchor,
-            anchor_image_arr=anchor_image_arr,
-            gene_bounds=manipulator.gene_bounds,
-            image_dim=manipulator.image_dim,
-            text_distance_fn=_text_distance_fn,
+        counts = run_pdq_core(
+            cfg=cfg,
             seed_idx=seed_idx,
-            strategies=cfg.stage1.strategies,
-            budget=cfg.stage1.budget_sut_calls,
+            seed_id=f"seed_{seed_idx:04d}",
+            run_id=cfg.name,
+            manipulator=manipulator,
+            adapter=adapter,
             rng=rng,
-            sut_call_fn=_sut_call,
-            input_distance_fn=input_dist_fn,
-            output_distance_fn=output_dist_fn,
-            categories=categories,
-            early_stop_cfg=cfg.stage1.early_stop,
-            max_flips=cfg.stage1.max_flips_per_seed,
-            max_distinct_targets=cfg.stage1.max_distinct_targets,
+            sl=sl,
+            pbar=pbar,
+            answer_suffix=answer_suffix,
+            anchor_genotype=anchor_geno,
+            anchor_label=label_anchor,
+            anchor_image=anchor_image,
+            anchor_logprobs=anchor_logprobs.tolist(),
+            flip_id_start=0,
+            pareto_idx=None,
+            evolutionary_gen=None,
+            anchor_source="zero",
         )
 
-        # -- Write Stage-1 results to parquet --------------------------------
-        # Archive rows are NOT written here; they are deferred to after Stage 2
-        # so the archive always contains the minimised (VV) genotype.
-        seed_id = f"seed_{seed_idx:04d}"
-        run_id = cfg.name
-        flip_id = 0
-        seen_targets: set[str] = set()
-        flip_records: list[_FlipRecord] = []
-        stage1_total_calls_at_end = adapter.call_count  # updated below
-
-        for sc in scored:
-            # candidates.parquet — every evaluated candidate
-            sl.append_candidate(_to_candidate_row(sc))
-
-            if sc.flipped:
-                is_first = sc.label not in seen_targets
-                seen_targets.add(sc.label)
-
-                # stage1_flips.parquet
-                sl.append_stage1_flip(
-                    _to_stage1_flip_row(sc, flip_id, label_anchor, is_first)
-                )
-
-                # Defer archive write — collect for Stage 2.
-                flip_records.append(_FlipRecord(
-                    sc=sc,
-                    flip_id=flip_id,
-                    anchor_geno_list=anchor_geno.tolist(),
-                    anchor_logprobs=anchor_logprobs_list,
-                    anchor_label=label_anchor,
-                    stage1_sut_calls=adapter.call_count,
-                ))
-
-                # Save flip image if configured.
-                if cfg.logging.save_flip_images:
-                    sl.save_flip_image(
-                        flip_id=flip_id,
-                        stage="stage1",
-                        image=sc.rendered_image,
-                        meta={
-                            "candidate_id": sc.candidate_id,
-                            "label": sc.label,
-                            "d_i": sc.d_i,
-                            "d_o": sc.d_o,
-                            "pdq": sc.pdq_score,
-                            "strategy": sc.candidate.strategy,
-                        },
-                    )
-
-                flip_id += 1
-
-        stage1_total_calls_at_end = adapter.call_count
-        n_flips = flip_id
-
-        # Drain Stage-1 SUT call records and release accumulated GPU
-        # allocator-pool memory before Stage 2 begins. After 150 Stage-1
-        # calls on a 4B model, the MPS / CUDA allocator pool can hold
-        # several GB of cached KV-cache tensors that are no longer
-        # referenced — force them back to the OS so Stage 2 starts with
-        # a clean memory footprint.
-        sl.append_sut_calls(adapter.pop_records())
-        sl.flush_all()
-        _release_gpu_cache(cfg.device)
-
-        pbar.set_postfix({
-            "stage": "S2",
-            "anchor": label_anchor,
-            "S1_flips": n_flips,
-            "S1_targets": len(seen_targets),
-        })
-
-        # -- Stage 2 — minimisation ------------------------------------------
-        # SUT check closure for Stage 2. Each call also bumps a counter
-        # that triggers periodic GPU allocator-pool flushes mid-flip:
-        # without them the MPS / CUDA allocator pool grows by roughly the
-        # KV-cache size (~15-20 MB on Qwen3.5-4B at N=50 categories) per
-        # call, accumulating tens of GB inside a single 2000-call flip
-        # before the per-flip _release_gpu_cache below has a chance to
-        # reclaim it. With release_every=200, mid-flip RSS growth is
-        # bounded at ~3-4 GB above the post-release baseline.
-        _stage2_call_counter = [0]
-        _STAGE2_RELEASE_EVERY = 200
-
-        def _stage2_check(geno: np.ndarray) -> CheckResult:
-            imgs, texts = manipulator.manipulate(
-                candidates=None, weights=geno.reshape(1, -1),
-            )
-            img, text = imgs[0], texts[0]
-            logprobs_t, call_id = adapter.call(
-                img,
-                text=text + answer_suffix,
-                categories=categories,
-                stage="stage2",
-                candidate_id=-1,
-            )
-            lbl = categories[int(logprobs_t.argmax().item())]
-
-            _stage2_call_counter[0] += 1
-            if _stage2_call_counter[0] >= _STAGE2_RELEASE_EVERY:
-                _release_gpu_cache(cfg.device)
-                _stage2_call_counter[0] = 0
-
-            return CheckResult(lbl != label_anchor, lbl, call_id, adapter.wall_time_cumulative)
-
-        n_stage2_calls = 0
-        n_vv = 0
-        shrink_ratios: list[float] = []
-
-        for fr in flip_records:
-            d_i_before = fr.sc.d_i
-            result = minimise_flip(
-                flipped_geno=fr.sc.candidate.genotype,
-                sut_check_fn=_stage2_check,
-                anchor_label=label_anchor,
-                budget_total=cfg.stage2.budget_sut_calls_per_flip,
-                rng=rng,
-                cfg=cfg.stage2,
-                input_distance_fn=input_dist_fn,
-                stage1_flip_label=fr.sc.label,
-                seed_idx=seed_idx,
-                flip_id=fr.flip_id,
-            )
-            n_stage2_calls += result.sut_calls_used
-            n_vv += 1
-
-            # Track Stage-2 shrinkage — how much smaller is the minimised
-            # d_i vs. the Stage-1 flip's d_i? Median ratio across flips
-            # answers "is Stage 2 actually minimising, and by how much?"
-            if d_i_before > 0:
-                shrink_ratios.append(result.d_i_min / d_i_before)
-            median_shrink = (
-                float(np.median(shrink_ratios)) if shrink_ratios else None
-            )
-            postfix: dict[str, Any] = {
-                "stage": "S2",
-                "anchor": label_anchor,
-                "S1_flips": n_flips,
-                "S2_done": n_vv,
-                "d": f"{d_i_before:.2f}→{result.d_i_min:.2f}",
-            }
-            if median_shrink is not None:
-                postfix["shrink"] = f"{median_shrink:.2f}"
-            pbar.set_postfix(postfix)
-
-            # stage2_trajectories.parquet — one row per SUT call in Stage 2.
-            label_before = fr.sc.label
-            rs_before = fr.sc.total_rank_sum
-            sp_before = fr.sc.total_sparsity
-            for pass_traj in result.trajectory_per_pass.values():
-                for step in pass_traj:
-                    sl.append_stage2_step(_to_stage2_traj_row(
-                        flip_id=fr.flip_id,
-                        step=step,
-                        label_before=label_before,
-                        rank_sum_before_first=rs_before,
-                        sparsity_before_first=sp_before,
-                    ))
-                    if step.get("accepted"):
-                        label_before = step.get("label_after", label_before)
-
-            # archive.parquet — VV row with minimised genotype.
-            append_archive_row_stage2(
-                buffer=sl._bufs["archive.parquet"],  # noqa: SLF001
-                sc=fr.sc,
-                flip_id=fr.flip_id,
-                seed_id=seed_id,
-                run_id=run_id,
-                anchor_geno_list=fr.anchor_geno_list,
-                anchor_logprobs=fr.anchor_logprobs,
-                anchor_label=fr.anchor_label,
-                stage1_sut_calls=fr.stage1_sut_calls,
-                stage2_result=result,
-            )
-
-            # Per-flip housekeeping. Drain SUT call records to disk so
-            # the adapter's in-memory buffer stays bounded at one flip's
-            # worth (~2000 records × ~3 KB ≈ 7 MB) instead of growing to
-            # all flips' worth (~70 MB). Then release the GPU allocator
-            # pool — each flip generates ``budget_sut_calls_per_flip``
-            # new KV-cache tensors that PyTorch's MPS/CUDA allocator
-            # would otherwise retain across the whole seed.
-            sl.append_sut_calls(adapter.pop_records())
-            sl.flush_all()
-            _release_gpu_cache(cfg.device)
-
-        # Final drain (no-op if all flips already drained, but keeps the
-        # invariant that the seed ends with an empty adapter buffer).
-        sl.append_sut_calls(adapter.pop_records())
-        sl.flush_all()
-        _release_gpu_cache(cfg.device)
-
         pbar.set_postfix({
             "anchor": label_anchor,
-            "S1_flips": n_flips,
-            "S2_flips": n_vv,
+            "S1_flips": counts["n_stage1_flips"],
+            "S2_flips": counts["n_stage2_flips"],
             "time": f"{time() - t_start:.1f}s",
         })
 
@@ -794,18 +542,317 @@ class PDQRunner:
             manipulator=manipulator,
             label_anchor=label_anchor,
             anchor_call_id=anchor_call_id,
-            anchor_logprobs=anchor_logprobs_list,
-            n_stage1_candidates=len(scored),
-            n_stage1_flips=n_flips,
-            n_distinct_targets=len(seen_targets),
-            n_stage2_flips=n_vv,
-            n_stage2_sut_calls=n_stage2_calls,
+            anchor_logprobs=anchor_logprobs.tolist(),
+            n_stage1_candidates=counts["n_stage1_candidates"],
+            n_stage1_flips=counts["n_stage1_flips"],
+            n_distinct_targets=counts["n_distinct_targets"],
+            n_stage2_flips=counts["n_stage2_flips"],
+            n_stage2_sut_calls=counts["n_stage2_sut_calls"],
             wall_time_s=time() - t_start,
             git_hash=_git_hash() if cfg.reproducibility.dump_git_hash else None,
             env=_env_dict() if cfg.reproducibility.dump_env else None,
             cache_stats=adapter.cache_stats,
         )
         sl.write_stats_json(stats)
+
+
+# ---------------------------------------------------------------------------
+# Shared per-anchor PDQ core (Stage 1 + Stage 2)
+# ---------------------------------------------------------------------------
+
+
+def run_pdq_core(
+    *,
+    cfg: PDQExperimentConfig,
+    seed_idx: int,
+    seed_id: str,
+    run_id: str,
+    manipulator: VLMManipulator,
+    adapter: SUTAdapter,
+    rng: np.random.Generator,
+    sl: SeedLogger,
+    pbar: tqdm,
+    answer_suffix: str,
+    anchor_genotype: np.ndarray,
+    anchor_label: str,
+    anchor_image: Image.Image,
+    anchor_logprobs: list[float],
+    flip_id_start: int = 0,
+    pareto_idx: int | None = None,
+    evolutionary_gen: int | None = None,
+    anchor_source: str = "zero",
+) -> dict[str, Any]:
+    """Run Stage 1 + Stage 2 for one anchor.
+
+    Decoupled from per-seed setup (manipulator preparation, anchor SUT
+    call, JSON metadata writing) so the boundary-pair pipeline can
+    invoke it once per evolutionary Pareto member, all sharing one
+    :class:`SeedLogger`.
+
+    :param cfg: PDQ experiment config.
+    :param seed_idx: 0-based seed index for logging.
+    :param seed_id: Seed identifier string (used in archive rows).
+    :param run_id: Experiment name (used in archive rows).
+    :param manipulator: Already-prepared VLMManipulator.
+    :param adapter: SUT adapter (accumulates SUT-call records).
+    :param rng: Seeded random generator.
+    :param sl: Shared :class:`SeedLogger` — archive, candidates, flips,
+        trajectories all flow here.
+    :param pbar: Parent tqdm bar (postfix updated for progress).
+    :param answer_suffix: Pre-rendered ``" Answer with…"`` suffix to
+        append after every manipulated prompt before the SUT call.
+    :param anchor_genotype: Reference genotype for Stage 2 minimisation.
+        ``zeros_like(...)`` for canonical PDQ; non-zero evolutionary
+        Pareto genome for the boundary-pair pipeline.
+    :param anchor_label: VLM top-1 label on the anchor.
+    :param anchor_image: Already-rendered anchor image (for Stage-1
+        image-pixel-L2 distance).
+    :param anchor_logprobs: Already-tolist'd anchor logprobs (for archive).
+    :param flip_id_start: Starting flip_id counter — the boundary-pair
+        pipeline increments across Pareto members so all flips for one
+        seed share a contiguous range.
+    :param pareto_idx: Pareto-front index of the anchor in the source
+        evolutionary run.  ``None`` for canonical zero anchor.
+    :param evolutionary_gen: Generation in which the Pareto member
+        appeared.  ``None`` for canonical zero anchor.
+    :param anchor_source: ``"zero"`` for canonical PDQ; ``"evolutionary"``
+        for boundary-pair rows.
+    :returns: Counts dict with ``n_stage1_candidates``,
+        ``n_stage1_flips``, ``n_distinct_targets``, ``n_stage2_flips``,
+        ``n_stage2_sut_calls``, ``next_flip_id``.
+    """
+    categories = cfg.categories
+    anchor_image_arr = np.array(anchor_image)
+
+    # Resolve distance functions from config.
+    input_dist_fn = INPUT_DISTANCES.get(cfg.distances.d_i_primary)
+    if input_dist_fn is None:
+        raise ValueError(
+            f"d_i_primary={cfg.distances.d_i_primary!r} is not in "
+            "INPUT_DISTANCES registry"
+        )
+    output_dist_fn = OUTPUT_DISTANCES[cfg.distances.d_o_primary]
+
+    # Anchor sentence embedding in the SUT's own text-embedding space.
+    text_embedder = adapter.text_embedder
+    anchor_text_embedding = text_embedder.embed(cfg.prompt_template)
+
+    def _text_distance_fn(rendered_text: str) -> float:
+        return float(
+            text_embedder.cosine_distances_to(
+                anchor_text_embedding, [rendered_text],
+            )[0]
+        )
+
+    # SUT call closure for Stage 1 — captures manipulator, adapter, prompt.
+    def _sut_call(genotype: np.ndarray) -> tuple[
+        list[float], int, Image.Image, str, float
+    ]:
+        candidate_id = adapter.call_count  # equals upcoming call_id
+        imgs, texts = manipulator.manipulate(
+            candidates=None, weights=genotype.reshape(1, -1),
+        )
+        img, text = imgs[0], texts[0]
+        logprobs_t, call_id = adapter.call(
+            img,
+            text=text + answer_suffix,
+            categories=categories,
+            stage="stage1",
+            candidate_id=candidate_id,
+        )
+        return logprobs_t.tolist(), call_id, img, text, adapter.wall_time_cumulative
+
+    pbar.set_postfix({"stage": "S1", "anchor": anchor_label})
+
+    scored = run_stage1(
+        anchor_geno=anchor_genotype,
+        anchor_label=anchor_label,
+        anchor_image_arr=anchor_image_arr,
+        gene_bounds=manipulator.gene_bounds,
+        image_dim=manipulator.image_dim,
+        text_distance_fn=_text_distance_fn,
+        seed_idx=seed_idx,
+        strategies=cfg.stage1.strategies,
+        budget=cfg.stage1.budget_sut_calls,
+        rng=rng,
+        sut_call_fn=_sut_call,
+        input_distance_fn=input_dist_fn,
+        output_distance_fn=output_dist_fn,
+        categories=categories,
+        early_stop_cfg=cfg.stage1.early_stop,
+        max_flips=cfg.stage1.max_flips_per_seed,
+        max_distinct_targets=cfg.stage1.max_distinct_targets,
+    )
+
+    # -- Write Stage-1 results to parquet --------------------------------
+    flip_id = flip_id_start
+    seen_targets: set[str] = set()
+    flip_records: list[_FlipRecord] = []
+    anchor_geno_list = anchor_genotype.tolist()
+
+    for sc in scored:
+        sl.append_candidate(_to_candidate_row(sc))
+
+        if sc.flipped:
+            is_first = sc.label not in seen_targets
+            seen_targets.add(sc.label)
+
+            sl.append_stage1_flip(
+                _to_stage1_flip_row(sc, flip_id, anchor_label, is_first)
+            )
+
+            flip_records.append(_FlipRecord(
+                sc=sc,
+                flip_id=flip_id,
+                anchor_geno_list=anchor_geno_list,
+                anchor_logprobs=anchor_logprobs,
+                anchor_label=anchor_label,
+                stage1_sut_calls=adapter.call_count,
+            ))
+
+            if cfg.logging.save_flip_images:
+                sl.save_flip_image(
+                    flip_id=flip_id,
+                    stage="stage1",
+                    image=sc.rendered_image,
+                    meta={
+                        "candidate_id": sc.candidate_id,
+                        "label": sc.label,
+                        "d_i": sc.d_i,
+                        "d_o": sc.d_o,
+                        "pdq": sc.pdq_score,
+                        "strategy": sc.candidate.strategy,
+                        "pareto_idx": pareto_idx,
+                    },
+                )
+
+            flip_id += 1
+
+    n_flips_local = flip_id - flip_id_start
+
+    sl.append_sut_calls(adapter.pop_records())
+    sl.flush_all()
+    _release_gpu_cache(cfg.device)
+
+    pbar.set_postfix({
+        "stage": "S2",
+        "anchor": anchor_label,
+        "S1_flips": n_flips_local,
+        "S1_targets": len(seen_targets),
+    })
+
+    # -- Stage 2 — minimisation ------------------------------------------
+    _stage2_call_counter = [0]
+    _STAGE2_RELEASE_EVERY = 200
+
+    def _stage2_check(geno: np.ndarray) -> CheckResult:
+        imgs, texts = manipulator.manipulate(
+            candidates=None, weights=geno.reshape(1, -1),
+        )
+        img, text = imgs[0], texts[0]
+        logprobs_t, call_id = adapter.call(
+            img,
+            text=text + answer_suffix,
+            categories=categories,
+            stage="stage2",
+            candidate_id=-1,
+        )
+        lbl = categories[int(logprobs_t.argmax().item())]
+
+        _stage2_call_counter[0] += 1
+        if _stage2_call_counter[0] >= _STAGE2_RELEASE_EVERY:
+            _release_gpu_cache(cfg.device)
+            _stage2_call_counter[0] = 0
+
+        return CheckResult(lbl != anchor_label, lbl, call_id, adapter.wall_time_cumulative)
+
+    n_stage2_calls = 0
+    n_vv = 0
+    shrink_ratios: list[float] = []
+
+    for fr in flip_records:
+        d_i_before = fr.sc.d_i
+        result = minimise_flip(
+            flipped_geno=fr.sc.candidate.genotype,
+            sut_check_fn=_stage2_check,
+            anchor_label=anchor_label,
+            budget_total=cfg.stage2.budget_sut_calls_per_flip,
+            rng=rng,
+            cfg=cfg.stage2,
+            input_distance_fn=input_dist_fn,
+            stage1_flip_label=fr.sc.label,
+            seed_idx=seed_idx,
+            flip_id=fr.flip_id,
+            anchor_geno=anchor_genotype,
+        )
+        n_stage2_calls += result.sut_calls_used
+        n_vv += 1
+
+        if d_i_before > 0:
+            shrink_ratios.append(result.d_i_min / d_i_before)
+        median_shrink = (
+            float(np.median(shrink_ratios)) if shrink_ratios else None
+        )
+        postfix: dict[str, Any] = {
+            "stage": "S2",
+            "anchor": anchor_label,
+            "S1_flips": n_flips_local,
+            "S2_done": n_vv,
+            "d": f"{d_i_before:.2f}→{result.d_i_min:.2f}",
+        }
+        if pareto_idx is not None:
+            postfix["par"] = pareto_idx
+        if median_shrink is not None:
+            postfix["shrink"] = f"{median_shrink:.2f}"
+        pbar.set_postfix(postfix)
+
+        label_before = fr.sc.label
+        rs_before = fr.sc.total_rank_sum
+        sp_before = fr.sc.total_sparsity
+        for pass_traj in result.trajectory_per_pass.values():
+            for step in pass_traj:
+                sl.append_stage2_step(_to_stage2_traj_row(
+                    flip_id=fr.flip_id,
+                    step=step,
+                    label_before=label_before,
+                    rank_sum_before_first=rs_before,
+                    sparsity_before_first=sp_before,
+                ))
+                if step.get("accepted"):
+                    label_before = step.get("label_after", label_before)
+
+        append_archive_row_stage2(
+            buffer=sl._bufs["archive.parquet"],  # noqa: SLF001
+            sc=fr.sc,
+            flip_id=fr.flip_id,
+            seed_id=seed_id,
+            run_id=run_id,
+            anchor_geno_list=fr.anchor_geno_list,
+            anchor_logprobs=fr.anchor_logprobs,
+            anchor_label=fr.anchor_label,
+            stage1_sut_calls=fr.stage1_sut_calls,
+            stage2_result=result,
+            pareto_idx=pareto_idx,
+            evolutionary_gen=evolutionary_gen,
+            anchor_source=anchor_source,
+        )
+
+        sl.append_sut_calls(adapter.pop_records())
+        sl.flush_all()
+        _release_gpu_cache(cfg.device)
+
+    sl.append_sut_calls(adapter.pop_records())
+    sl.flush_all()
+    _release_gpu_cache(cfg.device)
+
+    return {
+        "n_stage1_candidates": len(scored),
+        "n_stage1_flips": n_flips_local,
+        "n_distinct_targets": len(seen_targets),
+        "n_stage2_flips": n_vv,
+        "n_stage2_sut_calls": n_stage2_calls,
+        "next_flip_id": flip_id,
+    }
 
 
 # ---------------------------------------------------------------------------
