@@ -46,7 +46,7 @@ profiles:
   # pool depth on par with BAE-style attack budgets.
   full_stack:
     operators:
-      - {name: synonym, severity: 0.55, k_max: 25, device: mps}
+      - {name: synonym, severity: 0.55, k_max: 25}
       - {name: fragmentation, severity: 0.20}
       - {name: character_noise, severity: 0.20, modes: [homoglyph]}
       - {name: saliency, severity: 0.40}
@@ -55,7 +55,7 @@ profiles:
   # corruption. Use to isolate the contribution of semantic perturbation.
   domain_expert:
     operators:
-      - {name: synonym, severity: 0.55, k_max: 25, device: mps}
+      - {name: synonym, severity: 0.55, k_max: 25}
 
   # Surface-only stress test — Boucher-style imperceptible homoglyph +
   # zero-width injection plus aggressive typo budget. No semantic

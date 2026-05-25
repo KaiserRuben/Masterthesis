@@ -69,10 +69,13 @@ cache_dirs:
 #     - model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int4-ov  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
 
 # ===========================================================================
-# Image manipulator (VQGAN codebook swaps)
+# Image manipulator (two backends — VQGAN default, StyleGAN-XL opt-in)
 # ===========================================================================
 
 # image:
+#   backend: vqgan_codebook             # vqgan_codebook (default) | stylegan_xl
+#
+#   # --- VQGAN codebook fields (ignored when backend=stylegan_xl) ----------
 #   preset: f8-16384                    # f16-1024 | f16-16384 | f8-16384
 #   patch_ratio: 0.1                    # Fraction of patches eligible
 #   patch_strategy: FREQUENCY           # FREQUENCY | ALL
@@ -80,6 +83,23 @@ cache_dirs:
 #   candidate_strategy: KNN             # KNN | UNIFORM | KFN
 #   resolution: 256                     # VQGAN input resolution
 #   knn_cache_path: null                # Path to codebook KNN cache (null = recompute)
+#   cone_filter:                        # VQGAN-only cone-filter candidate path
+#     enabled: false                    # Master switch
+#     alpha_deg: 20.0                   # Cone half-angle
+#     target_m: 100                     # Modal-grid sample count per class
+#
+#   # --- StyleGAN-XL fields (ignored when backend=vqgan_codebook) ----------
+#   stylegan:
+#     checkpoint_url: "https://s3.eu-central-1.amazonaws.com/avg-projects/stylegan_xl/models/imagenet256.pkl"
+#     checkpoint_path: "~/.cache/stylegan_xl/imagenet256.pkl"
+#     interpolate: true                 # κ-interpolation between origin and target w
+#     truncation_psi: 1.0               # Mapping-net truncation; 1.0 = full diversity
+#     truncation_cutoff: 0              # Layers above which truncation stops being applied
+#     kappa_quant_levels: 20            # κ ∈ [0, 1] → 21 integer gene levels {0/Q, …, Q/Q}
+#     target_m: 100                     # Class-conditional samples averaged → modal w
+#     sut_precheck_max_attempts: 200    # Maximum origin seeds tried per (origin, target) pair
+#                                       # Acceptance rule: P(origin) > P(target) under the SUT
+#                                       # (see find_pair_dominant_origin_seed).
 
 # ===========================================================================
 # Text manipulator (composite stack — required)
