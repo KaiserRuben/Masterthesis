@@ -1,0 +1,79 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-26 — Targeted-Search 3-Way Comparison: VQGAN-KNN baseline
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# One of three configs in the Exp-26 backend comparison:
+#   * llava_ov_vqgan_baseline.yaml  ← this file (KNN-from-origin candidates)
+#   * llava_ov_vqgan_cone.yaml      (double-cone-filtered candidates)
+#   * llava_ov_stylegan.yaml        (StyleGAN-XL w-space interpolation)
+#
+# All three share SUT, seed selection, modality, budget, sampling tiers, and
+# early-stop. Sole delta: the candidate-construction (and for StyleGAN, the
+# generator). Direct A/B/C anchored on the Exp-24 LLaVA image-only floor 1.4907.
+#
+# H26-1: VQGAN-cone floor < VQGAN-KNN baseline floor  → cone-filter reduces
+#        wasted search radius around the origin codeword.
+# H26-2: StyleGAN floor    < VQGAN-KNN baseline floor → semantic class-axis
+#        in latent space dominates the discrete-codebook approach.
+# H26-3: VQGAN-cone vs StyleGAN — ordering determines whether interpretable
+#        spatial control (VQGAN) or class-coherent semantic traversal (StyleGAN)
+#        is the stronger boundary-search geometry under image_only modality.
+#
+# Output: runs/Exp-26/exp26_llava_ov_vqgan_baseline_seed_83_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp26_llava_ov_vqgan_baseline
+save_dir: runs/Exp-26
+
+modality: image_only
+
+generations: 100
+pop_size: 20
+
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+n_categories: 50
+
+# 3-seed anchor: indices [1, 2, 83]. Seed 83 = junco↔chickadee
+# (Exp-24/Exp-25 baseline); 1 and 2 span additional gap_filter pairs.
+seeds:
+  mode: gap_filter
+  filter_indices: [1, 2, 83]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: false              # ← baseline: no cone, classic KNN-from-origin
+
+# text section omitted — modality=image_only forces profile=noop at runtime.
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null

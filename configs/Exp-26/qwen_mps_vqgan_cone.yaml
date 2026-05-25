@@ -1,0 +1,70 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-26 — Targeted-Search 3-Way Comparison: VQGAN-Cone-Filter
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Cone-filter variant of the VQGAN backend. Per-patch candidates are restricted
+# to codebook entries inside the double-cone around the segment from the
+# origin codeword to the class-modal target codeword, ordered by axial
+# projection (origin → target). Single tuning knob: α (half-angle in degrees).
+#
+# Sole delta vs qwen_mps_vqgan_baseline.yaml:
+#   image.cone_filter.enabled: true
+#
+# See Diary entry 2026-05-21-Targeted-Cone-Search-Design for the geometric
+# rationale and the rejected alternatives (per-eval target resampling,
+# weighted-mean target, global class centroid).
+#
+# Output: runs/Exp-26/exp26_qwen_mps_vqgan_cone_seed_83_<unix-ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp26_qwen_mps_vqgan_cone
+save_dir: runs/Exp-26
+
+modality: image_only
+
+generations: 100
+pop_size: 20
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [1, 2, 83]
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true               # ← cone path active
+    alpha_deg: 20.0             # double-cone half-angle, geometric tuning knob
+    target_m: 10               # exemplars per class for modal-grid construction
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null
