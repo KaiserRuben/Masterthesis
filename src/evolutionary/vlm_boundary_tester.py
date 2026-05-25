@@ -33,7 +33,11 @@ from torch import Tensor
 from tqdm import tqdm
 
 from src import distlock
-from src.common import apply_seed_filter, build_context_meta
+from src.common import (
+    apply_seed_filter,
+    build_context_meta,
+    seed_target_class,
+)
 from src.common.artifacts import EVOLUTIONARY_SCHEMA_VERSION, ParquetBuffer
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import CriterionCollection
@@ -345,11 +349,52 @@ class VLMBoundaryTester(SMOO):
     # Per-seed loop
     # ------------------------------------------------------------------
 
+    def run_one_seed(
+        self,
+        seed_idx: int,
+        seed: SeedTriple,
+        run_dir: Path | None = None,
+        reset_optimizer: bool = False,
+    ) -> list:
+        """Run optimisation for a single seed; return Pareto candidates.
+
+        Combined-pipeline entry point: lets the main runner interleave
+        the evolutionary stage with PDQ on a per-seed basis without
+        spinning up a fresh tester each time.
+
+        :param seed_idx: 0-based seed index.
+        :param seed: Seed triple.
+        :param run_dir: Output directory override. ``None`` falls back to
+            the legacy ``save_dir/<name>_seed_<i>_<ts>`` layout.
+        :param reset_optimizer: When True, resets optimiser state and
+            cleans up before returning (matches legacy ``test()`` flow).
+            Combined-pipeline callers leave this False so they can read
+            the Pareto front and reset themselves after the handoff.
+        :returns: List of Pareto candidates from
+            :attr:`optimizer.best_candidates`.
+        """
+        pbar = tqdm(
+            total=self._config.generations,
+            unit="gen",
+            position=0,
+            desc=f"seed_{seed_idx} {seed.class_a} vs {seed.class_b}",
+        )
+        try:
+            self._run_seed(seed_idx, seed, pbar, run_dir=run_dir)
+        finally:
+            pbar.close()
+        pareto = list(self._optimizer.best_candidates)
+        if reset_optimizer:
+            self._optimizer.reset()
+            self._cleanup()
+        return pareto
+
     def _run_seed(
         self,
         seed_idx: int,
         seed: SeedTriple,
         pbar: tqdm,
+        run_dir: Path | None = None,
     ) -> None:
         start_time = time()
 
@@ -379,9 +424,17 @@ class VLMBoundaryTester(SMOO):
             scored_categories = pair
             target_classes = (0, 1)
 
-        # 1. Prepare manipulator with just the question prompt.
+        # 1. Prepare manipulator with just the question prompt. The
+        #    seed's L0 target class is forwarded so cone-filter mode can
+        #    route through the per-class modal target grid. Legacy KNN
+        #    mode ignores the value but still records it on the context
+        #    for trace metadata.
+        target_class = seed_target_class(seed)
         self._manipulator.prepare(
-            seed.image, self._config.prompt_template,
+            seed.image,
+            self._config.prompt_template,
+            target_class=target_class,
+            origin_class=seed.class_a,
         )
 
         # 1b. Anchor sentence embedding for TextEmbeddingDistance. The
@@ -436,20 +489,21 @@ class VLMBoundaryTester(SMOO):
         #    (modality=text_only). _run_generation will short-circuit the
         #    per-individual tensor conversion in that case.
         if self._has_matrix_dist:
-            zero_geno = self._manipulator.zero_genotype().reshape(1, -1)
-            baseline_imgs, _ = self._manipulator.manipulate(
-                candidates=None, weights=zero_geno,
-            )
-            origin_tensor = pil_to_tensor(baseline_imgs[0])
+            # κ=0 reference for MatrixDistance. Delegated to the backend
+            # so StyleGAN can reuse its precheck-cached origin image and
+            # VQGAN can do its single decode — no batched manipulate
+            # call, no SMOO batch>=2 quirk.
+            origin_tensor = pil_to_tensor(self._manipulator.baseline_image())
         else:
             origin_tensor = None
 
         # 5. Output directory created up-front so incremental writers can
         #    target it. Previously created at end-of-seed by _save_seed_results.
-        run_dir = (
-            self._config.save_dir
-            / f"{self._config.name}_seed_{seed_idx}_{int(start_time)}"
-        )
+        if run_dir is None:
+            run_dir = (
+                self._config.save_dir
+                / f"{self._config.name}_seed_{seed_idx}_{int(start_time)}"
+            )
         run_dir.mkdir(parents=True, exist_ok=True)
 
         # File-level metadata stamped onto every parquet this seed produces.
@@ -766,25 +820,40 @@ class VLMBoundaryTester(SMOO):
         :param runtime: Wall-clock seconds spent on this seed.
         """
         # -- Pareto-optimal candidates ------------------------------------
-        for i, cand in enumerate(self._optimizer.best_candidates):
-            genotype = cand.solution.astype(np.int64).reshape(1, -1)
-            imgs, txts = self._manipulator.manipulate(
-                candidates=None, weights=genotype,
+        # Batched manipulate over all Pareto candidates — one synthesis
+        # forward instead of N batch=1 calls. Edge case: if the front
+        # degenerates to a single candidate, pad to two and discard the
+        # duplicate (SMOO's manipulate asserts `cond[1]` and IndexErrors
+        # at batch=1; we accept one wasted render in this rare path
+        # rather than skipping the save).
+        candidates_list = list(self._optimizer.best_candidates)
+        if candidates_list:
+            genotypes = np.stack(
+                [c.solution.astype(np.int64) for c in candidates_list]
             )
-            imgs[0].save(run_dir / f"pareto_{i}.png")
-            with open(run_dir / f"pareto_{i}.json", "w") as f:
-                json.dump(
-                    {
-                        "genotype": genotype[0].tolist(),
-                        "fitness": cand.fitness.tolist()
-                        if isinstance(cand.fitness, np.ndarray)
-                        else list(cand.fitness),
-                        "text": txts[0],
-                        "full_prompt": txts[0] + answer_suffix,
-                    },
-                    f,
-                    indent=2,
-                )
+            n_keep = len(candidates_list)
+            if n_keep == 1:
+                genotypes = np.tile(genotypes, (2, 1))
+            imgs, txts = self._manipulator.manipulate(
+                candidates=None, weights=genotypes,
+            )
+            for i, (cand, img, txt) in enumerate(
+                zip(candidates_list, imgs[:n_keep], txts[:n_keep])
+            ):
+                img.save(run_dir / f"pareto_{i}.png")
+                with open(run_dir / f"pareto_{i}.json", "w") as f:
+                    json.dump(
+                        {
+                            "genotype": cand.solution.astype(np.int64).tolist(),
+                            "fitness": cand.fitness.tolist()
+                            if isinstance(cand.fitness, np.ndarray)
+                            else list(cand.fitness),
+                            "text": txt,
+                            "full_prompt": txt + answer_suffix,
+                        },
+                        f,
+                        indent=2,
+                    )
 
         # -- Origin image -------------------------------------------------
         seed.image.save(run_dir / "origin.png")

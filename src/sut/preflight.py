@@ -169,7 +169,13 @@ def preflight_cost_check(
         "Preflight: preparing manipulator on seed class_a=%s class_b=%s",
         seed.class_a, seed.class_b,
     )
-    manipulator.prepare(seed.image, prompt_template)
+    from src.common import seed_target_class
+
+    manipulator.prepare(
+        seed.image,
+        prompt_template,
+        target_class=seed_target_class(seed),
+    )
 
     gene_bounds = manipulator.gene_bounds
     n_genes = len(gene_bounds)

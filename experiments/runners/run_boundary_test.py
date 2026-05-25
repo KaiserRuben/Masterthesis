@@ -17,7 +17,7 @@ import dataclasses
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -27,10 +27,17 @@ import numpy as np
 import yaml
 
 from src import distlock
+from src.common import (
+    apply_seed_filter,
+    init_shared_components,
+    precompute_image_backend,
+    prepare_pipeline_seeds,
+)
 from src.config import ExperimentConfig, resolve_categories
 from src.data import ImageNetCache
-from src.manipulator.image.manipulator import ImageManipulator
+from src.evolutionary import VLMBoundaryTester
 from src.manipulator.image.types import CandidateStrategy, PatchStrategy
+from src.manipulator.image_backend import ImageBackend
 from src.manipulator.text.composite import CompositeTextManipulator
 from src.manipulator.vlm_manipulator import VLMManipulator
 from src.objectives import (
@@ -41,13 +48,6 @@ from src.objectives import (
 )
 from src.optimizer.discrete_pymoo_optimizer import DiscretePymooOptimizer
 from src.sut import VLMSUT, preflight_cost_check
-from src.common import apply_seed_filter
-from src.evolutionary import VLMBoundaryTester
-from src.common import (
-    combinatorial_pairs,
-    generate_seeds,
-    roster_seeds,
-)
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -143,91 +143,27 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     data_source = ImageNetCache(dirs=exp.cache_dirs)
     exp = resolve_categories(exp, data_source.labels())
 
-    # -- Parallel init: text manipulator, image manipulator, SUT ------------
-    pool = ThreadPoolExecutor(max_workers=3)
-
-    logger.info(
-        "Composite text manipulator starting (profile=%s)...",
-        exp.text.composite.profile,
-    )
-    text_fut: Future = pool.submit(
-        CompositeTextManipulator.from_config,
-        text_config=exp.text,
-        device=exp.device,
-        redis_url=exp.sut.redis_url,
-    )
-
-    logger.info(f"Image manipulator starting...  preset={exp.image.preset}")
-    image_fut: Future[ImageManipulator] = pool.submit(
-        ImageManipulator.from_preset, device=exp.device, config=exp.image,
-    )
-
-    sut_device = (
-        exp.sut.ov_device if exp.sut.backend == "openvino" else exp.device
-    )
-    logger.info(f"SUT starting...  {exp.sut.model_id} on {sut_device}")
-    sut_fut: Future[VLMSUT] = pool.submit(VLMSUT, exp)
-
-    # -- Objectives & optimizer (cheap, run on main thread) ----------------
-    # Pareto dimensionality follows ``exp.modality``: drop the criterion
-    # whose modality-side genome is fixed at zero. TargetedBalance is
-    # always retained — it is the boundary signal.
-    crits: list = []
-    if exp.modality != "text_only":
-        crits.append(MatrixDistance())
-    if exp.modality != "image_only":
-        crits.append(TextEmbeddingDistance())
-    crits.append(TargetedBalance())
-    objectives = CriterionCollection(*crits)
-    logger.info(
-        "modality=%s → %d objectives: %s",
-        exp.modality,
-        len(crits),
-        ", ".join(type(c).__name__ for c in crits),
-    )
-
-    # Single-worker optimizer (only used when parallel.workers == 1).
-    optimizer = DiscretePymooOptimizer(
-        gene_bounds=np.zeros(1, dtype=np.int64),  # updated per-seed
-        num_objectives=len(crits),
-        pop_size=exp.pop_size,
-    )
-
-    # -- Collect parallel results ------------------------------------------
-    # SUT needed first for seed generation; manipulators can keep loading.
-    sut = sut_fut.result()
-    logger.info("SUT loaded")
-
-    if exp.seeds.mode == "gap_filter":
-        logger.info("Generating seeds (gap_filter: scoring all category pairs)")
-        seeds = generate_seeds(sut, exp, data_source)
-    elif exp.seeds.mode == "roster":
-        logger.info(
-            "Generating seeds (roster: %d classes × %d seeds, "
-            "combinatorial abstraction expansion)",
-            len(exp.seeds.roster.class_list),
-            exp.seeds.roster.seeds_per_class,
-        )
-        seed_images = roster_seeds(sut, exp, data_source)
-        seeds = combinatorial_pairs(
-            seed_images,
-            exp.seeds.roster.class_list,
-            exp.seeds.roster.abstraction,
-        )
-    else:  # pragma: no cover — guarded by SeedConfig.__post_init__
-        raise ValueError(f"Unknown seeds.mode={exp.seeds.mode!r}")
-
-    image_manip = image_fut.result()
-    logger.info("Image manipulator loaded")
-
-    text_manip = text_fut.result()
-    logger.info("Text manipulator loaded")
-
-    pool.shutdown(wait=False)
-
+    # -- Shared component init + seed gen + backend precompute ---------------
+    components = init_shared_components(exp, data_source)
+    seeds = prepare_pipeline_seeds(components, exp)
     if not seeds:
         logger.warning("No seeds passed filters — nothing to test.")
         return
+    precompute_image_backend(components, seeds, exp)
+
+    # -- Objectives spec (per-worker collection built below) ---------------
+    crit_types: list = []
+    if exp.modality != "text_only":
+        crit_types.append(MatrixDistance)
+    if exp.modality != "image_only":
+        crit_types.append(TextEmbeddingDistance)
+    crit_types.append(TargetedBalance)
+    logger.info(
+        "modality=%s → %d objectives: %s",
+        exp.modality,
+        len(crit_types),
+        ", ".join(c.__name__ for c in crit_types),
+    )
 
     workers = max(1, exp.parallel.workers)
     logger.info(
@@ -237,32 +173,34 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     )
 
     if preflight:
-        _run_preflight(exp, sut, image_manip, text_manip, seeds)
+        _run_preflight(
+            exp, components.sut, components.image_manip,
+            components.text_manip, seeds,
+        )
 
+    # -- Worker fanout (tester.test() handles its own round-robin slicing
+    # via worker_id/worker_stride args, so dispatch_workers' slicing
+    # would be redundant — we keep this small block instead).
     if workers == 1:
-        tester = _build_tester(exp, sut, image_manip, text_manip, objectives)
+        tester = _build_tester(
+            exp, components.sut, components.image_manip, components.text_manip,
+            CriterionCollection(*[c() for c in crit_types]),
+        )
         tester.test(seeds)
         return
 
-    # -- Multi-thread fan-out -------------------------------------------
-    # Build N independent tester bundles, all referencing the same
-    # underlying VQGAN / VLM scorer / text embedder. Each thread owns
-    # its own VLMSUT wrapper (counters, last_call_cached), VLMManipulator
-    # (per-seed contexts), optimizer (per-seed reset state), objectives
-    # collection (per-call .results buffer), and tester. Round-robin
-    # seed slicing happens inside ``tester.test``.
     bundles = [
         _build_tester(
             exp,
             VLMSUT(
                 exp,
-                scorer=sut.scorer,
-                text_embedder=sut.text_embedder,
-                redis_client=sut.redis_client,
+                scorer=components.sut.scorer,
+                text_embedder=components.sut.text_embedder,
+                redis_client=components.sut.redis_client,
             ),
-            image_manip,
-            text_manip,
-            CriterionCollection(*[type(c)() for c in crits]),
+            components.image_manip,
+            components.text_manip,
+            CriterionCollection(*[c() for c in crit_types]),
         )
         for _ in range(workers)
     ]
@@ -279,7 +217,7 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
 def _build_tester(
     exp: ExperimentConfig,
     sut: VLMSUT,
-    image_manip: ImageManipulator,
+    image_manip: ImageBackend,
     text_manip: CompositeTextManipulator,
     objectives: CriterionCollection,
 ) -> VLMBoundaryTester:
@@ -302,7 +240,7 @@ def _build_tester(
 def _run_preflight(
     exp: ExperimentConfig,
     sut: VLMSUT,
-    image_manip: ImageManipulator,
+    image_manip: ImageBackend,
     text_manip: CompositeTextManipulator,
     seeds,
 ) -> None:
