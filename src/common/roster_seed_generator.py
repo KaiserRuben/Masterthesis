@@ -229,6 +229,7 @@ def roster_seeds(
             else:
                 obs_summary = "no candidate ever ranked GT as top-1"
             mis_summary = ""
+            attractor_note = ""
             if misclass_targets:
                 top_mistakes = ", ".join(
                     f"{lbl!r}×{n}" for lbl, n in misclass_targets.most_common()
@@ -243,18 +244,39 @@ def roster_seeds(
                     f" Misclassified-as histogram: {top_mistakes}. "
                     f"{gt_when_mis}."
                 )
+                # Flag dominant attractor: one target receives >=80% of misclasses.
+                # That pattern is SUT-structural, not a vocab-scope issue.
+                top_target, top_count = misclass_targets.most_common(1)[0]
+                if top_count / max(n_misclass, 1) >= 0.8:
+                    attractor_note = (
+                        f"\n\nDominant-attractor pattern: {top_count}/{n_misclass} "
+                        f"({100 * top_count / n_misclass:.0f}%) of misclasses "
+                        f"collapse to {top_target!r}. This is a within-roster "
+                        f"argmax failure — scoring is ALREADY restricted to the "
+                        f"roster classes ({len(scoring_cats)} categories: "
+                        f"{list(scoring_cats)}), not the full 1000-class "
+                        f"ImageNet vocabulary. SUT structurally prefers "
+                        f"{top_target!r} over {cls!r} even in this narrow "
+                        f"contrast. Raising min_anchor_confidence does NOT fix "
+                        f"this (the GT-top-1 check is orthogonal to the logprob "
+                        f"threshold)."
+                    )
             raise RuntimeError(
                 f"Roster pool exhaustion for class {cls!r}: "
                 f"examined {n_examined} candidates "
                 f"(misclassified={n_misclass}, "
                 f"below threshold (logprob < {logprob_floor:.2f})={n_low_conf}), "
                 f"accepted only {accepted}/{seeds_per_class}. "
-                f"{obs_summary}.{mis_summary} "
-                f"Either raise min_anchor_confidence "
-                f"(currently {threshold}; larger = more lenient), "
-                f"swap the class for a more VLM-friendly sibling in the "
-                f"same L2 bucket, or increase the validation cache for "
-                f"this class."
+                f"{obs_summary}.{mis_summary}"
+                f"{attractor_note}\n\n"
+                f"Recommended fix: swap {cls!r} for a sibling in the same L2 "
+                f"bucket whose argmax survives the roster contrast. Use "
+                f"`tools/probe_class.py` to sanity-check candidate swaps "
+                f"before committing to a roster. Last-resort fallbacks: "
+                f"increase the validation cache for {cls!r}, or raise "
+                f"min_anchor_confidence (currently {threshold}; only helps "
+                f"when GT IS top-1 but logprob is below threshold — does "
+                f"NOT help with misclass-driven failures)."
             )
         logger.info(
             "Roster: %s — %d/%d accepted "
