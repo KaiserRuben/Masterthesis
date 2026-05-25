@@ -98,17 +98,25 @@ class AbstractionConfig:
     """Abstraction-level configuration for the ``roster`` seed-selection mode.
 
     Controls the combinatorial expansion over taxonomy levels for each
-    class pair. Levels are 0-indexed per :mod:`src.data.taxonomy`: 0 =
-    fine ("Junco"), 1 = mid ("songbird"), 2 = super ("bird"). The
-    generator enumerates the Cartesian product
-    ``levels_anchor × levels_target`` and, when *apply_disjointness* is
-    ``True``, retains only cells (L_a, L_b) satisfying
-    ``max(L_a, L_b) < common_ancestor_level(x_anchor, x_target)``.
+    class pair. Levels are 0-indexed per :mod:`src.data.taxonomy`:
+    ``-1`` = concrete (the raw ImageNet label, e.g. "hammerhead shark"),
+    ``0`` = fine (L0 cluster, e.g. "shark"),
+    ``1`` = mid (e.g. "cartilaginous fish"),
+    ``2`` = super (e.g. "fish"). The generator enumerates the Cartesian
+    product ``levels_anchor × levels_target`` and, when *apply_disjointness*
+    is ``True``, retains only cells (L_a, L_b) satisfying
+    ``max(L_a, L_b) < common_ancestor_level(x_anchor, x_target)``
+    (with cancestor ``None`` treated as ``+inf`` — concretely-disjoint pairs
+    keep every cell).
 
-    :param levels_anchor: Taxonomy levels at which the anchor label is
-        expressed in the prompt. Any subset of ``(0, 1, 2)``.
-    :param levels_target: Taxonomy levels at which the target label is
-        expressed in the prompt. Any subset of ``(0, 1, 2)``.
+    Use ``-1`` (concrete) to pair-lock at the ImageNet label, bypassing
+    the taxonomy substitution — e.g. when reproducing a gap_filter-style
+    pair across SUTs.
+
+    :param levels_anchor: Levels at which the anchor label is expressed
+        in the prompt. Any subset of ``(-1, 0, 1, 2)``.
+    :param levels_target: Levels at which the target label is expressed
+        in the prompt. Any subset of ``(-1, 0, 1, 2)``.
     :param apply_disjointness: Filter cells where the abstracted anchor
         and target labels are not semantically disjoint (prevents
         "Is this a Junco or a bird?" style prompts).
@@ -125,14 +133,14 @@ class AbstractionConfig:
 
     def __post_init__(self) -> None:
         for lvl in self.levels_anchor:
-            if lvl not in (0, 1, 2):
+            if lvl not in (-1, 0, 1, 2):
                 raise ValueError(
-                    f"levels_anchor entries must be in (0, 1, 2); got {lvl}"
+                    f"levels_anchor entries must be in (-1, 0, 1, 2); got {lvl}"
                 )
         for lvl in self.levels_target:
-            if lvl not in (0, 1, 2):
+            if lvl not in (-1, 0, 1, 2):
                 raise ValueError(
-                    f"levels_target entries must be in (0, 1, 2); got {lvl}"
+                    f"levels_target entries must be in (-1, 0, 1, 2); got {lvl}"
                 )
         if self.directions not in ("both", "forward", "reverse"):
             raise ValueError(

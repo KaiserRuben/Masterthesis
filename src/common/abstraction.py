@@ -55,15 +55,21 @@ def validate_class_list(class_list: Iterable[str]) -> None:
 def resolve_label(class_concrete: str, level: int) -> str:
     """Return the cluster label of *class_concrete* at *level*.
 
-    :param class_concrete: A concrete (L0) ImageNet class name. Must
-        have been validated via :func:`validate_class_list` (or otherwise
-        be known to have a full path); we still defensively check here
-        and raise on any None return from the underlying API.
-    :param level: 0 (fine), 1 (mid) or 2 (super).
-    :returns: The cluster label string verbatim from the taxonomy.
+    :param class_concrete: An ImageNet class name (lookup key into the
+        taxonomy). Must have been validated via :func:`validate_class_list`
+        (or otherwise be known to have a full path); we still defensively
+        check here and raise on any None return from the underlying API.
+    :param level: ``-1`` (concrete = the ImageNet class name itself,
+        bypassing the taxonomy), ``0`` (fine), ``1`` (mid) or ``2`` (super).
+        ``-1`` is the right choice when you want the prompt to use the
+        raw ImageNet label (e.g. "hammerhead shark") rather than its
+        coarser L0 cluster ("shark").
+    :returns: The label string for use in the prompt.
     :raises ValueError: If the class has no label at the requested level.
     :raises KeyError: If the class is unknown to the taxonomy.
     """
+    if level == -1:
+        return class_concrete
     label = cluster_of(class_concrete, level=level)
     if label is None:
         raise ValueError(

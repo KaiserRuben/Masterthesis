@@ -18,11 +18,17 @@ class TestResolveLabel:
         assert resolve_label("junco", 1) == "songbird"
         assert resolve_label("junco", 2) == "bird"
 
+    def test_concrete_level_returns_input(self) -> None:
+        # level=-1 = concrete: bypass taxonomy, return the input as-is.
+        # Used to pair-lock on ImageNet labels (e.g. "hammerhead shark")
+        # without falling through to the coarser L0 cluster ("shark").
+        assert resolve_label("junco", -1) == "junco"
+        assert resolve_label("hammerhead shark", -1) == "hammerhead shark"
+        assert resolve_label("spotted salamander", -1) == "spotted salamander"
+
     def test_invalid_level_raises(self) -> None:
         with pytest.raises(ValueError, match="level must be in"):
             resolve_label("junco", 3)
-        with pytest.raises(ValueError, match="level must be in"):
-            resolve_label("junco", -1)
 
     def test_unknown_class_raises(self) -> None:
         with pytest.raises(KeyError, match="unknown class"):
