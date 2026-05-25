@@ -7,7 +7,22 @@ separately with a model checkpoint.
 
 import numpy as np
 import pytest
+from PIL import Image
 
+from src.manipulator.image.cone_candidates import ConeCandidateFilter
+from src.manipulator.image.manipulator import (
+    ConeFilterConfig,
+    ImageConfig,
+    ImageManipulator,
+    apply_genotype,
+)
+from src.manipulator.image.selection import (
+    build_codebook_knn,
+    build_cone_patch_selection,
+    build_patch_selection,
+    select_candidates,
+    select_patches,
+)
 from src.manipulator.image.types import (
     CandidateStrategy,
     CodeGrid,
@@ -15,13 +30,6 @@ from src.manipulator.image.types import (
     PatchSelection,
     PatchStrategy,
 )
-from src.manipulator.image.selection import (
-    build_codebook_knn,
-    build_patch_selection,
-    select_candidates,
-    select_patches,
-)
-from src.manipulator.image.manipulator import apply_genotype
 
 
 # ---------------------------------------------------------------------------
@@ -338,3 +346,397 @@ class TestBuildPatchSelection:
         assert sel.n_patches == 5  # 3 patches for code 3 + 2 for code 0
         for pos, code in zip(sel.positions, sel.original_codes):
             assert code in (0, 3)
+
+
+# ---------------------------------------------------------------------------
+# Cone-filter candidate path
+# ---------------------------------------------------------------------------
+
+
+def _stripe_codebook(n_codes: int = 8) -> np.ndarray:
+    """Codebook on the 2-D x-axis: codeword i sits at (float(i), 0).
+
+    Picking ``p_c = codebook[i]`` and ``p_t = codebook[j]`` for ``i < j``
+    means the cone axis points along +x and on-axis codewords between
+    them survive any non-degenerate alpha.
+    """
+    cb = np.zeros((n_codes, 2), dtype=np.float32)
+    cb[:, 0] = np.arange(n_codes, dtype=np.float32)
+    return cb
+
+
+class TestBuildConePatchSelection:
+    def setup_method(self):
+        # 2x2 origin grid; codeword indices 0..3 sit on the x-axis.
+        self.codebook = _stripe_codebook(n_codes=8)
+        self.grid = CodeGrid(np.array([[0, 2], [4, 5]], dtype=np.int64))
+        self.cone = ConeCandidateFilter(alpha_deg=45.0)
+
+    def test_per_position_candidates_match_axis_geometry(self):
+        # Target grid: every cell points at codeword 7 (the far end of the
+        # stripe). For position (0, 0) the segment goes 0 -> 7 and admits
+        # codewords [0..7] in tau order.
+        target_grid = np.full((2, 2), 7, dtype=np.int64)
+        sel = build_cone_patch_selection(
+            grid=self.grid,
+            target_grid=target_grid,
+            codebook=self.codebook,
+            cone_filter=self.cone,
+            patch_strategy=PatchStrategy.ALL,
+            patch_ratio=1.0,
+        )
+
+        assert sel.n_patches == 4
+
+        # Map (row, col) -> candidate list for clarity.
+        cand_by_pos: dict[tuple[int, int], np.ndarray] = {}
+        for (r, c), cands in zip(sel.positions, sel.candidates):
+            cand_by_pos[(int(r), int(c))] = cands
+
+        # Position (0, 0): origin=0, target=7. tau-sorted survivors: 0..7.
+        np.testing.assert_array_equal(
+            cand_by_pos[(0, 0)],
+            np.array([0, 1, 2, 3, 4, 5, 6, 7], dtype=np.int64),
+        )
+        # Position (1, 1): origin=5, target=7. tau-sorted: 5, 6, 7.
+        np.testing.assert_array_equal(
+            cand_by_pos[(1, 1)],
+            np.array([5, 6, 7], dtype=np.int64),
+        )
+
+    def test_degenerate_axis_gives_empty_candidates(self):
+        # All target == origin → every position is degenerate → gene_bounds
+        # must be 1 (only "keep origin" is valid).
+        target_grid = self.grid.indices.copy()
+        sel = build_cone_patch_selection(
+            grid=self.grid,
+            target_grid=target_grid,
+            codebook=self.codebook,
+            cone_filter=self.cone,
+            patch_strategy=PatchStrategy.ALL,
+            patch_ratio=1.0,
+        )
+        for cands in sel.candidates:
+            assert cands.size == 0
+        np.testing.assert_array_equal(sel.gene_bounds, np.ones(4, dtype=np.int64))
+
+    def test_mixed_degenerate_and_active_positions(self):
+        # Two positions degenerate (0 == 0, 5 == 5), two active.
+        target_grid = np.array([[0, 7], [3, 5]], dtype=np.int64)
+        sel = build_cone_patch_selection(
+            grid=self.grid,
+            target_grid=target_grid,
+            codebook=self.codebook,
+            cone_filter=self.cone,
+            patch_strategy=PatchStrategy.ALL,
+            patch_ratio=1.0,
+        )
+        bounds = sel.gene_bounds
+        # bounds = len(candidates) + 1; degenerate -> 1, active -> > 1.
+        assert bounds.shape == (4,)
+        # Find each (row, col) and check.
+        pos = [tuple(int(x) for x in p) for p in sel.positions]
+        order = {p: i for i, p in enumerate(pos)}
+        assert bounds[order[(0, 0)]] == 1  # degenerate
+        assert bounds[order[(1, 1)]] == 1  # degenerate
+        assert bounds[order[(0, 1)]] > 1   # active: 2 -> 7
+        assert bounds[order[(1, 0)]] > 1   # active: 4 -> 3
+
+    def test_shape_mismatch_raises(self):
+        bad_target = np.zeros((3, 3), dtype=np.int64)
+        with pytest.raises(ValueError, match="shape"):
+            build_cone_patch_selection(
+                grid=self.grid,
+                target_grid=bad_target,
+                codebook=self.codebook,
+                cone_filter=self.cone,
+                patch_strategy=PatchStrategy.ALL,
+                patch_ratio=1.0,
+            )
+
+    def test_zero_positions_gives_empty_selection(self):
+        target_grid = np.full((2, 2), 7, dtype=np.int64)
+        sel = build_cone_patch_selection(
+            grid=self.grid,
+            target_grid=target_grid,
+            codebook=self.codebook,
+            cone_filter=self.cone,
+            patch_strategy=PatchStrategy.FREQUENCY,
+            patch_ratio=0.0,
+        )
+        assert sel.n_patches == 0
+
+
+# ---------------------------------------------------------------------------
+# ImageManipulator.prepare() routing — knn vs cone
+# ---------------------------------------------------------------------------
+
+
+class _FakeCodec:
+    """Tiny in-memory codec that maps PIL images to a hand-crafted grid.
+
+    Bypasses VQGAN entirely so manipulator tests stay fast and offline.
+    """
+
+    def __init__(self, codebook: np.ndarray, grid: CodeGrid) -> None:
+        self._codebook = codebook.astype(np.float32)
+        self._grid = grid
+        self._grid_size = grid.shape
+
+    @property
+    def codebook(self) -> np.ndarray:
+        return self._codebook
+
+    @property
+    def grid_size(self) -> tuple[int, int]:
+        return self._grid_size
+
+    def encode(self, image: Image.Image) -> CodeGrid:
+        return self._grid
+
+    def decode_batch(self, grids):
+        return [Image.new("RGB", (4, 4)) for _ in grids]
+
+
+class _FixedModalBuilder:
+    """Modal-builder stub returning a pre-computed grid for any class."""
+
+    def __init__(self, target_grid: np.ndarray) -> None:
+        self._target_grid = target_grid.astype(np.int64)
+        self.ensure_calls: list[str] = []
+
+    def ensure(self, class_name: str) -> np.ndarray:
+        self.ensure_calls.append(class_name)
+        return self._target_grid
+
+    def populate_many(self, class_names) -> None:
+        for name in class_names:
+            self.ensure(name)
+
+
+class TestImageManipulatorKNNPath:
+    """Legacy KNN path: prepare(image) without target_class still works."""
+
+    def setup_method(self):
+        # 2x2 grid uniquely populated so FREQUENCY selects everything.
+        self.codebook = _stripe_codebook(n_codes=8)
+        grid = CodeGrid(np.array([[0, 1], [2, 3]], dtype=np.int64))
+        self.codec = _FakeCodec(self.codebook, grid)
+        self.config = ImageConfig(
+            patch_strategy=PatchStrategy.ALL,
+            patch_ratio=1.0,
+            n_candidates=3,
+            candidate_strategy=CandidateStrategy.KNN,
+        )
+        self.manipulator = ImageManipulator(self.codec, self.config)
+
+    def test_legacy_config_round_trips(self):
+        # ImageConfig() default doesn't enable cone_filter; manipulator
+        # should construct without a builder.
+        m = ImageManipulator(self.codec, ImageConfig())
+        assert not m.cone_filter_enabled
+        assert m.modal_builder is None
+
+    def test_prepare_without_target_class_uses_knn(self):
+        ctx = self.manipulator.prepare(Image.new("RGB", (4, 4)))
+        assert ctx.candidate_strategy == "knn"
+        assert ctx.target_class is None
+        # Gene bounds are n_candidates + 1 since KNN truncates to k.
+        assert (ctx.gene_bounds == 4).all()
+
+    def test_prepare_with_target_class_records_metadata_on_knn_path(self):
+        # Even on the legacy path, the target_class is propagated to the
+        # context for trace metadata.
+        ctx = self.manipulator.prepare(Image.new("RGB", (4, 4)), target_class="junco")
+        assert ctx.candidate_strategy == "knn"
+        assert ctx.target_class == "junco"
+
+
+class TestImageManipulatorConePath:
+    def setup_method(self):
+        self.codebook = _stripe_codebook(n_codes=8)
+        # Origin grid: all zeros so cone axis is 0 -> target codeword.
+        grid = CodeGrid(np.zeros((2, 2), dtype=np.int64))
+        self.codec = _FakeCodec(self.codebook, grid)
+        self.modal_grid = np.full((2, 2), 7, dtype=np.int64)
+        self.builder = _FixedModalBuilder(self.modal_grid)
+        self.config = ImageConfig(
+            patch_strategy=PatchStrategy.ALL,
+            patch_ratio=1.0,
+            cone_filter=ConeFilterConfig(enabled=True, alpha_deg=45.0),
+        )
+        self.manipulator = ImageManipulator(
+            self.codec,
+            self.config,
+            modal_builder=self.builder,
+            target_classes=("junco",),
+        )
+
+    def test_prepopulates_target_class_in_constructor(self):
+        # Constructor should call builder.populate_many on the target class.
+        assert "junco" in self.builder.ensure_calls
+
+    def test_cone_filter_enabled_property(self):
+        assert self.manipulator.cone_filter_enabled
+
+    def test_prepare_routes_through_cone(self):
+        ctx = self.manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        assert ctx.candidate_strategy == "cone_filter"
+        assert ctx.target_class == "junco"
+
+    def test_cone_candidates_are_tau_sorted(self):
+        ctx = self.manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        # Each patch has origin=0, target=7, expected survivors [0..7].
+        for cands in ctx.selection.candidates:
+            np.testing.assert_array_equal(
+                cands, np.array([0, 1, 2, 3, 4, 5, 6, 7], dtype=np.int64),
+            )
+
+    def test_gene_zero_keeps_origin(self):
+        ctx = self.manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        zero = ctx.zero_genotype()
+        mutated = apply_genotype(ctx.original_grid, ctx.selection, zero)
+        np.testing.assert_array_equal(mutated.indices, ctx.original_grid.indices)
+
+    def test_gene_one_picks_first_cone_survivor(self):
+        ctx = self.manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        gene = np.ones(ctx.genotype_dim, dtype=np.int64)
+        mutated = apply_genotype(ctx.original_grid, ctx.selection, gene)
+        # First survivor (k=1) for every (0->7) cone is codeword 0
+        # — which equals origin. So the result equals origin.
+        np.testing.assert_array_equal(
+            mutated.indices, ctx.original_grid.indices,
+        )
+
+    def test_gene_max_picks_last_cone_survivor(self):
+        ctx = self.manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        # max valid gene per position is gene_bounds - 1; here all bounds = 9.
+        gene = ctx.gene_bounds.astype(np.int64) - 1
+        mutated = apply_genotype(ctx.original_grid, ctx.selection, gene)
+        # Every position now points at the last τ entry, which is the
+        # target codeword (7).
+        assert (mutated.indices == 7).all()
+
+    def test_out_of_bound_gene_raises(self):
+        ctx = self.manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        # Gene = bound is out of range; bound is exclusive.
+        bad_gene = ctx.gene_bounds.astype(np.int64)
+        with pytest.raises(IndexError):
+            apply_genotype(ctx.original_grid, ctx.selection, bad_gene)
+
+    def test_target_class_required_when_cone_enabled(self):
+        with pytest.raises(ValueError, match="target_class"):
+            self.manipulator.prepare(Image.new("RGB", (4, 4)))
+
+    def test_cone_path_with_degenerate_target(self):
+        # Build a manipulator whose target grid equals the origin grid
+        # — every position is degenerate → gene_bounds all 1.
+        degenerate_grid = np.zeros((2, 2), dtype=np.int64)
+        builder = _FixedModalBuilder(degenerate_grid)
+        manipulator = ImageManipulator(
+            self.codec,
+            self.config,
+            modal_builder=builder,
+        )
+        ctx = manipulator.prepare(
+            Image.new("RGB", (4, 4)), target_class="junco",
+        )
+        np.testing.assert_array_equal(ctx.gene_bounds, np.ones(4, dtype=np.int64))
+
+
+class TestImageManipulatorAttachBuilder:
+    def setup_method(self):
+        self.codebook = _stripe_codebook(n_codes=8)
+        grid = CodeGrid(np.zeros((2, 2), dtype=np.int64))
+        self.codec = _FakeCodec(self.codebook, grid)
+        self.config = ImageConfig(
+            patch_strategy=PatchStrategy.ALL,
+            patch_ratio=1.0,
+            cone_filter=ConeFilterConfig(enabled=True, alpha_deg=45.0),
+        )
+
+    def test_attach_modal_builder_late_binding(self):
+        # Build without a builder, then attach + precompute later — used
+        # when seed generation runs in parallel with manipulator init.
+        manipulator = ImageManipulator(self.codec, self.config)
+        assert manipulator.modal_builder is None
+        builder = _FixedModalBuilder(np.full((2, 2), 7, dtype=np.int64))
+        manipulator.attach_modal_builder(builder)
+        manipulator.precompute_targets(("junco",))
+        assert "junco" in builder.ensure_calls
+
+    def test_precompute_no_op_without_builder(self):
+        # Default ImageConfig (no cone filter) — precompute should be silent.
+        manipulator = ImageManipulator(self.codec, ImageConfig())
+        manipulator.precompute_targets(("junco",))  # no exception expected
+
+    def test_cone_enabled_without_builder_raises_on_prepare(self):
+        manipulator = ImageManipulator(self.codec, self.config)
+        with pytest.raises(RuntimeError, match="modal_builder"):
+            manipulator.prepare(
+                Image.new("RGB", (4, 4)), target_class="junco",
+            )
+
+
+# ---------------------------------------------------------------------------
+# Legacy ImageConfig YAML round-trip
+# ---------------------------------------------------------------------------
+
+
+class TestLegacyConfigRoundTrip:
+    """Legacy YAML configs (no ``image.cone_filter``) must still load."""
+
+    def test_default_image_config_has_disabled_cone(self):
+        cfg = ImageConfig()
+        assert not cfg.cone_filter.enabled
+        assert cfg.cone_filter.alpha_deg == 20.0
+        assert cfg.cone_filter.target_m == 100
+
+    def test_dacite_yaml_load_without_cone_section(self):
+        # Mirrors the runner's dacite usage on a minimal YAML override.
+        import dacite
+
+        from src.config import ExperimentConfig
+
+        raw = {
+            "name": "legacy_test",
+            "categories": ["a", "b"],
+            "image": {"patch_ratio": 0.25},
+        }
+        exp = dacite.from_dict(ExperimentConfig, raw, config=dacite.Config(cast=[tuple, frozenset]))
+        assert exp.image.patch_ratio == 0.25
+        # The cone_filter sub-block fills with defaults; cone path remains off.
+        assert not exp.image.cone_filter.enabled
+
+    def test_dacite_yaml_load_with_cone_section(self):
+        import dacite
+
+        from src.config import ExperimentConfig
+
+        raw = {
+            "name": "cone_test",
+            "categories": ["a", "b"],
+            "image": {
+                "cone_filter": {
+                    "enabled": True,
+                    "alpha_deg": 15.5,
+                    "target_m": 50,
+                },
+            },
+        }
+        exp = dacite.from_dict(ExperimentConfig, raw, config=dacite.Config(cast=[tuple, frozenset]))
+        assert exp.image.cone_filter.enabled
+        assert exp.image.cone_filter.alpha_deg == 15.5
+        assert exp.image.cone_filter.target_m == 50

@@ -142,10 +142,18 @@ class ManipulationContext:
 
     Created once via ``ImageManipulator.prepare()``, then reused
     across all genotype evaluations for that seed.
+
+    ``target_class`` carries the seed's target identity for trace metadata
+    and the cone-filter candidate path. It is ``None`` on the legacy
+    KNN-from-origin path. ``candidate_strategy`` records which path built
+    the candidate lists (``"knn"`` or ``"cone_filter"``) so downstream
+    artefacts can faithfully describe the genome semantics they observed.
     """
 
     original_grid: CodeGrid
     selection: PatchSelection
+    target_class: str | None = None
+    candidate_strategy: str = "knn"
 
     @property
     def genotype_dim(self) -> int:

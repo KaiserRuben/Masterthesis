@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
+from .cone_candidates import ConeCandidateFilter
 from .types import (
     CandidateStrategy,
     CodeGrid,
@@ -211,4 +212,78 @@ def build_patch_selection(
         positions=positions,
         candidates=candidates,
         original_codes=original_codes,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cone-filter candidate construction
+# ---------------------------------------------------------------------------
+
+
+def build_cone_patch_selection(
+    grid: CodeGrid,
+    target_grid: NDArray[np.int64],
+    codebook: NDArray[np.float32],
+    cone_filter: ConeCandidateFilter,
+    patch_strategy: PatchStrategy,
+    patch_ratio: float,
+) -> PatchSelection:
+    """Build a PatchSelection using the origin→target double-cone filter.
+
+    For each selected patch position ``(i, j)``:
+
+    * ``p_c`` = ``codebook[grid[i, j]]``
+    * ``p_t`` = ``codebook[target_grid[i, j]]``
+    * candidates = ``cone_filter(p_c, p_t, codebook)`` — τ-sorted survivors.
+
+    Positions where ``p_c == p_t`` (degenerate axis) yield an empty
+    candidate list and a per-gene bound of 1 ("keep origin" is the only
+    valid value). All other positions get a strictly positive bound.
+
+    :param grid: Origin (seed) code grid.
+    :param target_grid: Modal target grid (same H×W as ``grid``).
+    :param codebook: Codebook matrix ``(n_codes, embed_dim)``.
+    :param cone_filter: Configured cone-candidate filter.
+    :param patch_strategy: Patch-selection strategy (FREQUENCY / ALL).
+    :param patch_ratio: Fraction passed to the patch-selection step.
+    :returns: A :class:`PatchSelection` matching the cone-filter genome.
+    :raises ValueError: If ``target_grid.shape`` does not match
+        ``grid.shape``.
+    """
+    if target_grid.shape != grid.shape:
+        raise ValueError(
+            f"target_grid shape {target_grid.shape} does not match "
+            f"grid shape {grid.shape}"
+        )
+
+    positions = select_patches(grid, patch_strategy, patch_ratio)
+
+    if len(positions) == 0:
+        return PatchSelection(
+            positions=positions,
+            candidates=(),
+            original_codes=np.array([], dtype=np.int64),
+        )
+
+    rows = positions[:, 0]
+    cols = positions[:, 1]
+    origin_codes = grid.indices[rows, cols].astype(np.int64)
+    target_codes = target_grid[rows, cols].astype(np.int64)
+
+    candidates_list: list[NDArray[np.int64]] = []
+    for o, t in zip(origin_codes, target_codes):
+        if o == t:
+            # Degenerate axis (origin == target). Survivors are empty;
+            # gene bound becomes 1 → "keep origin" is the only choice.
+            candidates_list.append(np.array([], dtype=np.int64))
+            continue
+        p_c = codebook[o]
+        p_t = codebook[t]
+        survivors = cone_filter(p_c, p_t, codebook)
+        candidates_list.append(survivors.astype(np.int64, copy=False))
+
+    return PatchSelection(
+        positions=positions,
+        candidates=tuple(candidates_list),
+        original_codes=origin_codes,
     )

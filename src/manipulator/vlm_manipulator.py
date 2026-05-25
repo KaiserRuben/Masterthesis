@@ -4,11 +4,17 @@ Bridges the two-phase (prepare / apply) lifecycle of the individual
 manipulators with SMOO's ``Manipulator`` interface. The optimizer works
 with a single concatenated genotype ``[image_genes | text_genes]`` and
 this class splits and dispatches.
+
+The image side is duck-typed via :class:`ImageBackend` so VQGAN
+(:class:`src.manipulator.image.ImageManipulator`) and StyleGAN-XL
+(:class:`src.manipulator.image_stylegan.StyleGANImageManipulator`)
+both plug in unchanged. No per-call branches on backend identity —
+the protocol surfaces are identical.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,10 +22,10 @@ from PIL import Image
 from smoo.manipulator import Manipulator
 
 from .image.manipulator import ImageManipulator
+from .image_backend import ImageBackend, ImageManipulationContextLike
 from .text.composite import CompositeTextManipulator
 
 if TYPE_CHECKING:
-    from .image.types import ManipulationContext as ImageManipulationContext
     from .text.composite import CompositeManipulationContext
 
 
@@ -33,16 +39,21 @@ class VLMManipulator(Manipulator):
 
         # In optimizer loop:
         images, texts = manipulator.manipulate(candidates=None, weights=genotypes)
+
+    The ``image_manipulator`` argument is typed as
+    :class:`ImageBackend` (a :class:`typing.Protocol`); either the VQGAN
+    :class:`ImageManipulator` or the StyleGAN
+    :class:`StyleGANImageManipulator` may be passed.
     """
 
     def __init__(
         self,
-        image_manipulator: ImageManipulator,
+        image_manipulator: Union[ImageBackend, ImageManipulator],
         text_manipulator: CompositeTextManipulator,
     ) -> None:
-        self._image = image_manipulator
+        self._image: ImageBackend = image_manipulator
         self._text = text_manipulator
-        self._image_ctx: ImageManipulationContext | None = None
+        self._image_ctx: ImageManipulationContextLike | None = None
         self._text_ctx: CompositeManipulationContext | None = None
 
     # -- lifecycle -----------------------------------------------------------
@@ -52,6 +63,8 @@ class VLMManipulator(Manipulator):
         image: Image.Image,
         text: str,
         exclude_words: frozenset[str] | None = None,
+        target_class: str | None = None,
+        origin_class: str | None = None,
     ) -> None:
         """Prepare both manipulators for a seed (image, text) pair.
 
@@ -62,8 +75,17 @@ class VLMManipulator(Manipulator):
         :param exclude_words: Words to protect from text mutation
             (case-insensitive). Typically the category labels so the
             optimizer cannot trivially remove the correct answer.
+        :param target_class: Concrete L0 class name the cone filter aims
+            toward, when ``image.cone_filter.enabled`` is True. Forwarded
+            to the image sub-manipulator and recorded in the image
+            context's metadata.
+        :param origin_class: Seed's "from" L0 class. Required by the
+            StyleGAN backend (drives the pairwise origin-seed cache);
+            ignored by VQGAN.
         """
-        self._image_ctx = self._image.prepare(image)
+        self._image_ctx = self._image.prepare(
+            image, target_class=target_class, origin_class=origin_class,
+        )
         self._text_ctx = self._text.prepare(text, exclude_words=exclude_words)
 
     # -- properties ----------------------------------------------------------
@@ -92,14 +114,28 @@ class VLMManipulator(Manipulator):
         ])
 
     @property
-    def image_manipulator(self) -> ImageManipulator:
+    def image_manipulator(self) -> ImageBackend:
         """Underlying image sub-manipulator. Exposed for samplers that
-        need access to the VQGAN codebook (e.g. embedding-FPS init)."""
+        need access to backend-specific structures (e.g. VQGAN codebook
+        for embedding-FPS init). Callers must isinstance-check before
+        using backend-specific surfaces."""
         return self._image
 
     @property
-    def image_context(self) -> ImageManipulationContext:
+    def image_context(self) -> ImageManipulationContextLike:
         return self._image_ctx
+
+    def baseline_image(self) -> Image.Image:
+        """Return the image at the all-zeros genotype.
+
+        Delegates to the underlying image backend's
+        :meth:`ImageBackend.baseline_image`. StyleGAN returns the
+        precheck-cached origin image (no synthesis); VQGAN runs a
+        single decode (no batched manipulate needed).
+        """
+        if self._image_ctx is None:
+            raise RuntimeError("Call prepare() before baseline_image().")
+        return self._image.baseline_image(self._image_ctx)
 
     @property
     def text_context(self) -> CompositeManipulationContext:

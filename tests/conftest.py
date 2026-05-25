@@ -108,8 +108,35 @@ class _FakeSynonymOperator:
 class FakeImageManipulator:
     """Minimal image manipulator for testing."""
 
-    def prepare(self, image: Image.Image) -> ImageManipulationContext:
-        return make_image_context()
+    def prepare(
+        self,
+        image: Image.Image,
+        target_class: str | None = None,
+        origin_class: str | None = None,
+    ) -> ImageManipulationContext:
+        # Build a context that mirrors the real manipulator's surface:
+        # target_class + candidate_strategy propagate to trace metadata.
+        from src.manipulator.image.types import (
+            CodeGrid,
+            ManipulationContext as _Ctx,
+            PatchSelection,
+        )
+
+        grid = CodeGrid(np.array([[10, 20], [30, 40]], dtype=np.int64))
+        selection = PatchSelection(
+            positions=np.array([[0, 0], [1, 1]], dtype=np.intp),
+            candidates=(
+                np.array([11, 12, 13], dtype=np.int64),
+                np.array([41, 42], dtype=np.int64),
+            ),
+            original_codes=np.array([10, 40], dtype=np.int64),
+        )
+        return _Ctx(
+            original_grid=grid,
+            selection=selection,
+            target_class=target_class,
+            candidate_strategy="knn",
+        )
 
     def apply(self, ctx: ImageManipulationContext, genotype) -> Image.Image:
         apply_image_genotype(ctx.original_grid, ctx.selection, genotype)
@@ -122,6 +149,9 @@ class FakeImageManipulator:
         genotypes,
     ) -> list[Image.Image]:
         return [self.apply(ctx, g) for g in genotypes]
+
+    def baseline_image(self, ctx: ImageManipulationContext) -> Image.Image:
+        return self.apply(ctx, np.zeros(ctx.genotype_dim, dtype=np.int64))
 
 
 class FakeCompositeTextManipulator:

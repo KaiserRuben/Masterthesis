@@ -19,7 +19,22 @@ logger = logging.getLogger(__name__)
 # Each pipeline maintains its own schema-version counter. They happen to
 # be at the same value today but can evolve independently — a bump to
 # one does not imply a bump to the other.
-EVOLUTIONARY_SCHEMA_VERSION = 2
+#
+# v3 (2026-05-21): cone-filter candidate strategy. When
+# ``image.cone_filter.enabled`` is True the per-gene candidate lists are
+# τ-sorted cone survivors instead of the legacy KNN-from-origin list;
+# context.json records the strategy under ``image_candidate_strategy``
+# so a reader can interpret gene values correctly even without inspecting
+# the config.
+#
+# v4 (2026-05-21): StyleGAN-XL image backend. The ``image_backend`` field
+# now appears on context.json, taking values ``"vqgan_codebook"`` or
+# ``"stylegan_xl"``. Under ``"stylegan_xl"`` the genes are per-layer
+# κ-quantised levels; the legacy ``image_patch_positions`` /
+# ``image_original_codes`` / ``image_candidates`` fields are
+# replaced by StyleGAN-specific bookkeeping (``image_origin_class``,
+# ``image_target_class``, ``image_num_ws``, ``image_kappa_quant_levels``).
+EVOLUTIONARY_SCHEMA_VERSION = 4
 PDQ_SCHEMA_VERSION = 2
 
 
