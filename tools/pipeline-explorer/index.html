@@ -1,0 +1,2370 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pipeline. · VLM boundary-test explorer</title>
+    <meta
+      name="description"
+      content="Interactive explorer for the VLM boundary-testing pipelines (evolutionary AGE-MOEA-II and PDQ directed search)."
+    />
+
+    <!-- ── Fonts: Inter Variable + JetBrains Mono ────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+
+    <!-- ── Tailwind via CDN, configured inline ─────────────────────
+         Tailwind utilities are used sparingly on top of the design
+         tokens. Tokens always win; utilities are for one-off
+         offsets and responsive helpers only. -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: ["class", '[data-theme="dark"]'],
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ["Inter", "ui-sans-serif", "system-ui"],
+              body: ["Inter", "ui-sans-serif", "system-ui"],
+              mono: ["JetBrains Mono", "ui-monospace", "Menlo"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- ── Project stylesheets ─────────────────────────────────── -->
+    <link rel="stylesheet" href="assets/fonts.css" />
+    <link rel="stylesheet" href="assets/styles.css" />
+    <link rel="stylesheet" href="assets/components.css" />
+
+    <!-- ── Runtime libraries ───────────────────────────────────── -->
+    <script src="https://cdn.jsdelivr.net/npm/motion@10.18.0/dist/motion.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <!-- ── Project scripts (load order matters) ──────────────────
+         store.js must register the Alpine store BEFORE Alpine boots;
+         every other module attaches behaviour to that store. -->
+    <script src="assets/store.js"></script>
+    <script src="assets/canvas.js"></script>
+    <script src="assets/widgets.js"></script>
+    <script src="assets/vizzes.js"></script>
+    <script src="assets/yaml-editor.js"></script>
+    <script src="assets/step.js"></script>
+    <script src="assets/playground.js"></script>
+
+    <!-- Final polish — entry choreography, KaTeX, drawer, keyboard, theme. -->
+    <script defer src="assets/polish.js"></script>
+
+    <!-- Alpine last so all alpine:init listeners are registered. -->
+    <script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
+  </head>
+
+  <body>
+    <!-- Skip-link: visible only on keyboard focus. Jumps past top bar. -->
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <div class="app-shell" x-data>
+      <!-- ════════════════════════════════════════════════════════ -->
+      <!-- TOP BAR                                                  -->
+      <!-- ════════════════════════════════════════════════════════ -->
+      <header class="topbar" id="topbar" x-data="topBar()">
+        <div class="topbar__left">
+          <span class="wordmark"
+            ><span>pipeline</span><span class="wordmark__dot">.</span></span
+          >
+          <span class="wordmark__sub">v0.1</span>
+        </div>
+
+        <!-- Pipeline mode toggle (Evolutionary / PDQ).
+             Swaps the entire canvas — wired in canvas.js. -->
+        <div class="topbar__center">
+          <div
+            class="segmented segmented--lg"
+            role="tablist"
+            aria-label="Pipeline selection"
+          >
+            <button
+              class="segmented__item"
+              :class="{ 'segmented__item--active': $store.explorer.pipeline === 'evolutionary' }"
+              @click="togglePipeline('evolutionary')"
+              role="tab"
+              :aria-selected="$store.explorer.pipeline === 'evolutionary'"
+            >
+              Evolutionary
+            </button>
+            <button
+              class="segmented__item"
+              :class="{ 'segmented__item--active': $store.explorer.pipeline === 'pdq' }"
+              @click="togglePipeline('pdq')"
+              role="tab"
+              :aria-selected="$store.explorer.pipeline === 'pdq'"
+            >
+              PDQ
+            </button>
+          </div>
+        </div>
+
+        <div class="topbar__right">
+          <!-- View mode toggle (canvas / step) -->
+          <div
+            class="segmented"
+            role="tablist"
+            aria-label="View mode"
+          >
+            <button
+              class="segmented__item"
+              :class="{ 'segmented__item--active': $store.explorer.mode === 'canvas' }"
+              @click="toggleMode('canvas')"
+              role="tab"
+              :aria-selected="$store.explorer.mode === 'canvas'"
+            >
+              Canvas
+            </button>
+            <button
+              class="segmented__item"
+              :class="{ 'segmented__item--active': $store.explorer.mode === 'step' }"
+              @click="toggleMode('step')"
+              role="tab"
+              :aria-selected="$store.explorer.mode === 'step'"
+            >
+              Step
+            </button>
+          </div>
+
+          <!-- Theme toggle. Flip [data-theme] on <html> to switch. -->
+          <button
+            class="button--icon"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+            @click="toggleTheme()"
+          >
+            <!-- lucide:sun -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="m4.93 4.93 1.41 1.41" />
+              <path d="m17.66 17.66 1.41 1.41" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="m6.34 17.66-1.41 1.41" />
+              <path d="m19.07 4.93-1.41 1.41" />
+            </svg>
+          </button>
+
+          <button
+            class="button--icon"
+            id="settings-gear"
+            aria-label="Settings"
+            title="Settings (open drawer)"
+            aria-haspopup="dialog"
+            aria-controls="settings-drawer"
+          >
+            <!-- lucide:settings -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- ════════════════════════════════════════════════════════ -->
+      <!-- WORKAREA                                                 -->
+      <!-- ════════════════════════════════════════════════════════ -->
+      <main class="workarea" id="main" tabindex="-1">
+        <!-- ─ Editorial title block (single-line compact hero) ──── -->
+        <section class="page-hero page-hero--compact">
+          <div class="page-hero__text">
+            <h1 class="page-hero__title">
+              Two pipelines, one
+              <span class="accent-text">decision boundary</span>.
+            </h1>
+            <p class="page-hero__tagline">
+              Search-based VLM boundary testing — evolutionary Pareto envelope · PDQ per-flip minima.
+            </p>
+          </div>
+          <div class="page-hero__ctas">
+            <button class="button--primary">
+              <!-- lucide:play -->
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon points="6 3 20 12 6 21 6 3" />
+              </svg>
+              Open canvas
+            </button>
+            <button class="button--ghost">
+              Read the manual
+              <!-- lucide:arrow-right -->
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- CANVAS MODE                                             -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- toggled via x-show; step.js owns the inverse region -->
+        <section class="canvas-mode" id="canvas-mode" aria-label="Canvas workspace"
+          x-show="$store.explorer.mode === 'canvas'"
+          x-cloak>
+          <!-- ─ Pipeline canvas panel ────────────────────────────── -->
+          <section class="panel" aria-label="Pipeline graph">
+            <div class="panel__head">
+              <div>
+                <h2 x-text="$store.explorer.pipeline === 'pdq' ? 'PDQ pipeline' : 'Evolutionary pipeline'">Evolutionary pipeline</h2>
+                <p
+                  class="mono muted"
+                  style="margin-top: 2px; font-size: var(--text-mono-sm)"
+                  x-text="$store.explorer.pipeline === 'pdq' ? 'Two-stage directed search · 10 nodes · 2 feedback edges' : 'AGE-MOEA-II · 9 nodes · 1 feedback edge'"
+                >
+                  AGE-MOEA-II · 7 nodes · 1 feedback edge
+                </p>
+              </div>
+              <div class="flex gap-2 items-center">
+                <span class="chip chip--joint"
+                  ><span class="chip__dot"></span>modality: joint</span
+                >
+                <span class="chip"
+                  ><span class="chip__dot"></span>workers: 2</span
+                >
+              </div>
+            </div>
+
+            <div class="panel__body panel__body--tight">
+              <div class="pipeline-canvas" id="pipeline-canvas" x-data="canvasApp()">
+                <div class="pipeline-canvas__grid"></div>
+
+                <!-- ╔════════════════════════════════════════════════╗
+                     ║ DYNAMIC SVG — edges + particles + glow         ║
+                     ║ Rendered once $store.explorer.ready === true.  ║
+                     ╚════════════════════════════════════════════════╝ -->
+                <svg
+                  class="pipeline-canvas__svg pipeline-canvas__svg--dynamic"
+                  viewBox="0 0 1400 480"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  :aria-label="`Pipeline diagram. ${visibleNodes().length} nodes.`"
+                  x-show="$store.explorer.ready"
+                  x-cloak
+                >
+                  <defs>
+                    <radialGradient id="glow-dyn" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45" />
+                      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+                    </radialGradient>
+                    <marker
+                      id="arrow-feedback"
+                      viewBox="0 0 10 10"
+                      refX="8"
+                      refY="5"
+                      markerWidth="6"
+                      markerHeight="6"
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--state-expensive)" />
+                    </marker>
+                    <filter id="cnode-glow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="6" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  <!-- Edges render below nodes so node bodies cover the
+                       edge stubs. Both groups are populated by canvas.js
+                       (Alpine <template x-for> doesn't work inside <svg>). -->
+                  <g id="dyn-edges"></g>
+                  <g id="dyn-nodes"></g>
+                </svg>
+
+                <!-- ╔════════════════════════════════════════════════╗
+                     ║ STATIC FALLBACK SVG — used until ready.        ║
+                     ║ Identical to the pre-phase-3 hand-tuned layout.║
+                     ╚════════════════════════════════════════════════╝ -->
+                <svg
+                  class="pipeline-canvas__svg"
+                  viewBox="0 0 800 580"
+                  preserveAspectRatio="xMidYMid meet"
+                  aria-hidden="true"
+                  x-show="!$store.explorer.ready"
+                >
+                  <defs>
+                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                      <stop
+                        offset="0%"
+                        stop-color="var(--accent)"
+                        stop-opacity="0.45"
+                      />
+                      <stop
+                        offset="100%"
+                        stop-color="var(--accent)"
+                        stop-opacity="0"
+                      />
+                    </radialGradient>
+                  </defs>
+
+                  <!-- Soft glow behind the focused Manipulator cluster -->
+                  <circle
+                    cx="400"
+                    cy="280"
+                    r="180"
+                    fill="url(#glow)"
+                    opacity="0.7"
+                  />
+
+                  <!-- config → seeds (top-left curve) -->
+                  <path
+                    class="edge"
+                    d="M 130 110 C 200 130, 220 180, 200 230"
+                  />
+                  <!-- config → sut (long curve across the top) -->
+                  <path
+                    class="edge"
+                    d="M 165 95 C 360 60, 580 60, 670 130"
+                  />
+                  <!-- seeds → manipulator_image (focused edge) -->
+                  <path
+                    class="edge edge--focused"
+                    d="M 240 260 C 290 268, 320 250, 340 232"
+                  />
+                  <!-- seeds → manipulator_text -->
+                  <path
+                    class="edge edge--focused"
+                    d="M 240 295 C 295 308, 318 320, 340 332"
+                  />
+                  <!-- image → vlm bridge -->
+                  <path
+                    class="edge"
+                    d="M 432 232 C 460 244, 472 260, 480 278"
+                  />
+                  <!-- text → vlm bridge -->
+                  <path
+                    class="edge"
+                    d="M 432 332 C 460 320, 472 304, 480 286"
+                  />
+                  <!-- vlm bridge → sut -->
+                  <path
+                    class="edge"
+                    d="M 555 282 C 600 274, 640 232, 660 192"
+                  />
+                  <!-- sut → objectives -->
+                  <path
+                    class="edge"
+                    d="M 695 200 C 720 280, 685 360, 605 405"
+                  />
+                  <!-- objectives → optimizer -->
+                  <path
+                    class="edge"
+                    d="M 510 432 C 430 460, 320 460, 240 430"
+                  />
+                  <!-- optimizer → artifacts -->
+                  <path
+                    class="edge"
+                    d="M 165 410 C 110 470, 105 530, 130 555"
+                  />
+                  <!-- feedback: optimizer → manipulator_vlm  -->
+                  <path
+                    class="edge edge--feedback"
+                    d="M 200 388 C 290 360, 380 320, 480 295"
+                  />
+
+                  <!-- Static particles distributed along edges.
+                       Phase 8 will animate these along the path. -->
+                  <circle class="particle" cx="190" cy="170" r="2.4" />
+                  <circle class="particle" cx="305" cy="252" r="2.4" />
+                  <circle class="particle" cx="312" cy="320" r="2.4" />
+                  <circle class="particle" cx="450" cy="252" r="2" />
+                  <circle class="particle" cx="448" cy="312" r="2" />
+                  <circle class="particle" cx="600" cy="232" r="2.4" />
+                  <circle class="particle" cx="652" cy="320" r="2.4" />
+                  <circle class="particle" cx="425" cy="455" r="2.4" />
+                  <circle class="particle" cx="135" cy="468" r="2.4" />
+                  <circle class="particle" cx="370" cy="335" r="2" opacity="0.55" />
+                  <circle class="particle" cx="285" cy="372" r="2" opacity="0.55" />
+
+                  <!-- arrowhead markers — drawn manually so we avoid
+                       SVG marker quirks across renderers. -->
+                  <polygon
+                    class="particle"
+                    points="668,128 660,118 660,138"
+                    opacity="0.9"
+                  />
+                  <polygon
+                    class="particle"
+                    points="660,194 650,184 650,204"
+                    opacity="0.9"
+                  />
+                  <polygon
+                    class="particle"
+                    points="240,432 226,428 232,442"
+                    opacity="0.9"
+                  />
+                </svg>
+
+                <!-- Nodes render programmatically into <g id="dyn-nodes"> inside the dynamic canvas SVG above. Static node cards were removed in favour of a single coordinate system shared with the edges. -->
+                <!-- Hover tooltip — floats above the hovered node -->
+                <div
+                  class="glass canvas-tooltip"
+                  :data-visible="tip.visible"
+                  :style="`left: ${tip.x}px; top: ${tip.y}px;`"
+                  x-cloak
+                >
+                  <div class="canvas-tooltip__label" x-text="tip.label"></div>
+                  <div class="canvas-tooltip__summary" x-text="tip.summary"></div>
+                  <div class="canvas-tooltip__hint">click to focus</div>
+                </div>
+              </div>
+
+              <!-- Canvas footer info row -->
+              <div
+                class="flex items-center justify-between"
+                style="margin-top: var(--space-3);"
+              >
+                <p class="mono muted" style="font-size: var(--text-mono-sm)">
+                  click a node to focus · tab/arrows to navigate
+                </p>
+                <div class="flex gap-2 items-center">
+                  <span class="chip"
+                    x-text="$store.explorer.activeKnobCount() + ' leaf knobs'"
+                    >109 leaf knobs</span
+                  >
+                  <span class="chip"
+                    x-text="$store.explorer.activeSubsystemCount() + ' subsystems'"
+                    >7 subsystems</span
+                  >
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ─ Detail panel — dynamic via Alpine `detailPanel` ─────
+               Phase 4 owns: title / summary / provenance / knob loop.
+               Phase 5 fills hero micro-vizzes via [data-viz-slot].
+               Phase 9 fills the KaTeX equation block. -->
+          <section
+            class="panel"
+            :aria-label="(currentLabel || 'detail') + ' detail'"
+            id="detail-panel"
+            x-data="detailPanel"
+          >
+            <div class="panel__head">
+              <div>
+                <span class="eyebrow">focused subsystem</span>
+                <h2 style="margin-top: 4px;" x-text="currentLabel">Manipulator</h2>
+              </div>
+              <div class="flex gap-2 items-center" style="margin-left: auto;">
+                <span class="chip chip--accent"
+                  ><span class="chip__dot"></span>focused</span
+                >
+                <button
+                  type="button"
+                  class="button--ghost detail-yaml-toggle"
+                  id="yaml-drawer-toggle"
+                  @click="$store.explorer.toggleYaml()"
+                  :aria-expanded="$store.explorer.yamlOpen ? 'true' : 'false'"
+                  :aria-label="$store.explorer.yamlOpen ? 'Close YAML editor' : 'Open YAML editor'"
+                  :title="$store.explorer.yamlOpen ? 'Close YAML (⌘+Y)' : 'Open YAML (⌘+Y)'"
+                >
+                  <span x-text="$store.explorer.yamlOpen ? 'Close YAML' : 'Open YAML'">Open YAML</span>
+                  <span aria-hidden="true" x-text="$store.explorer.yamlOpen ? '↘' : '↗'">↗</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="panel__body">
+              <!-- Hero illustration + summary stats.
+                   Each node gets its own SVG group toggled via x-show;
+                   nodes without bespoke art render the generic icon
+                   block beneath. Keep all SVG markup intact (phase 5
+                   may decorate; phase 9 may animate). -->
+              <div class="detail-hero">
+                <!-- manipulator_image hero · 32×32 patch grid -->
+                <svg class="detail-hero__grid" viewBox="0 0 256 256"
+                  style="width: 220px; margin: 0 auto; display: block;"
+                  aria-hidden="true"
+                  x-show="focusNode === 'manipulator_image'"
+                >
+                  <rect width="256" height="256" fill="var(--bg-base)" rx="6"/>
+                  <g stroke="var(--border-subtle)" stroke-width="0.5">
+                    <line x1="0" y1="0" x2="0" y2="256"/>
+                    <line x1="0" y1="0" x2="256" y2="0"/>
+                    <line x1="8" y1="0" x2="8" y2="256"/>
+                    <line x1="0" y1="8" x2="256" y2="8"/>
+                    <line x1="16" y1="0" x2="16" y2="256"/>
+                    <line x1="0" y1="16" x2="256" y2="16"/>
+                    <line x1="24" y1="0" x2="24" y2="256"/>
+                    <line x1="0" y1="24" x2="256" y2="24"/>
+                    <line x1="32" y1="0" x2="32" y2="256"/>
+                    <line x1="0" y1="32" x2="256" y2="32"/>
+                    <line x1="40" y1="0" x2="40" y2="256"/>
+                    <line x1="0" y1="40" x2="256" y2="40"/>
+                    <line x1="48" y1="0" x2="48" y2="256"/>
+                    <line x1="0" y1="48" x2="256" y2="48"/>
+                    <line x1="56" y1="0" x2="56" y2="256"/>
+                    <line x1="0" y1="56" x2="256" y2="56"/>
+                    <line x1="64" y1="0" x2="64" y2="256"/>
+                    <line x1="0" y1="64" x2="256" y2="64"/>
+                    <line x1="72" y1="0" x2="72" y2="256"/>
+                    <line x1="0" y1="72" x2="256" y2="72"/>
+                    <line x1="80" y1="0" x2="80" y2="256"/>
+                    <line x1="0" y1="80" x2="256" y2="80"/>
+                    <line x1="88" y1="0" x2="88" y2="256"/>
+                    <line x1="0" y1="88" x2="256" y2="88"/>
+                    <line x1="96" y1="0" x2="96" y2="256"/>
+                    <line x1="0" y1="96" x2="256" y2="96"/>
+                    <line x1="104" y1="0" x2="104" y2="256"/>
+                    <line x1="0" y1="104" x2="256" y2="104"/>
+                    <line x1="112" y1="0" x2="112" y2="256"/>
+                    <line x1="0" y1="112" x2="256" y2="112"/>
+                    <line x1="120" y1="0" x2="120" y2="256"/>
+                    <line x1="0" y1="120" x2="256" y2="120"/>
+                    <line x1="128" y1="0" x2="128" y2="256"/>
+                    <line x1="0" y1="128" x2="256" y2="128"/>
+                    <line x1="136" y1="0" x2="136" y2="256"/>
+                    <line x1="0" y1="136" x2="256" y2="136"/>
+                    <line x1="144" y1="0" x2="144" y2="256"/>
+                    <line x1="0" y1="144" x2="256" y2="144"/>
+                    <line x1="152" y1="0" x2="152" y2="256"/>
+                    <line x1="0" y1="152" x2="256" y2="152"/>
+                    <line x1="160" y1="0" x2="160" y2="256"/>
+                    <line x1="0" y1="160" x2="256" y2="160"/>
+                    <line x1="168" y1="0" x2="168" y2="256"/>
+                    <line x1="0" y1="168" x2="256" y2="168"/>
+                    <line x1="176" y1="0" x2="176" y2="256"/>
+                    <line x1="0" y1="176" x2="256" y2="176"/>
+                    <line x1="184" y1="0" x2="184" y2="256"/>
+                    <line x1="0" y1="184" x2="256" y2="184"/>
+                    <line x1="192" y1="0" x2="192" y2="256"/>
+                    <line x1="0" y1="192" x2="256" y2="192"/>
+                    <line x1="200" y1="0" x2="200" y2="256"/>
+                    <line x1="0" y1="200" x2="256" y2="200"/>
+                    <line x1="208" y1="0" x2="208" y2="256"/>
+                    <line x1="0" y1="208" x2="256" y2="208"/>
+                    <line x1="216" y1="0" x2="216" y2="256"/>
+                    <line x1="0" y1="216" x2="256" y2="216"/>
+                    <line x1="224" y1="0" x2="224" y2="256"/>
+                    <line x1="0" y1="224" x2="256" y2="224"/>
+                    <line x1="232" y1="0" x2="232" y2="256"/>
+                    <line x1="0" y1="232" x2="256" y2="232"/>
+                    <line x1="240" y1="0" x2="240" y2="256"/>
+                    <line x1="0" y1="240" x2="256" y2="240"/>
+                    <line x1="248" y1="0" x2="248" y2="256"/>
+                    <line x1="0" y1="248" x2="256" y2="248"/>
+                    <line x1="256" y1="0" x2="256" y2="256"/>
+                    <line x1="0" y1="256" x2="256" y2="256"/>
+                  </g>
+                  <rect x="16" y="32" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="16" y="176" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="24" y="120" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="32" y="8" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="32" y="224" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="48" y="56" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="48" y="72" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="56" y="64" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="64" y="56" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="64" y="72" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="64" y="144" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="72" y="64" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="80" y="88" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="88" y="176" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="88" y="184" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="96" y="176" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="104" y="176" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="104" y="184" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="112" y="120" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="112" y="176" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="120" y="16" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="120" y="176" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="120" y="184" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="136" y="232" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="152" y="104" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="152" y="112" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="160" y="96" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="160" y="112" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="160" y="120" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="168" y="96" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="168" y="104" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="168" y="120" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="176" y="64" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="192" y="160" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="200" y="40" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="216" y="200" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="224" y="24" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="232" y="144" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <rect x="240" y="72" width="8" height="8" fill="var(--accent)" rx="1"/>
+                  <circle cx="160" cy="116" r="28" fill="var(--accent)" opacity="0.10"/>
+                </svg>
+
+                <!-- Generic hero fallback · shown for every node except
+                     manipulator_image (which has the bespoke patch grid
+                     above). Phase 5 may replace with per-node art. -->
+                <div class="hero-generic"
+                  x-show="focusNode !== 'manipulator_image'"
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="8" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 2v3" />
+                    <path d="M12 19v3" />
+                    <path d="M2 12h3" />
+                    <path d="M19 12h3" />
+                  </svg>
+                </div>
+
+                <div class="detail-hero__title">
+                  <div>
+                    <span class="eyebrow"
+                      x-text="(currentNode?.kind || 'subsystem')"
+                    >subsystem</span>
+                    <h3
+                      class="display display--md"
+                      style="font-weight: 720; margin-top: 4px;"
+                      x-text="currentLabel"
+                    >
+                      [ image | text ]
+                    </h3>
+                  </div>
+                  <div class="callout" style="text-align: right;">
+                    <span class="callout__value tabular"
+                      x-text="knobCount">0</span>
+                    <span class="callout__sub">active knobs</span>
+                  </div>
+                </div>
+
+                <div
+                  class="flex gap-3"
+                  style="margin-top: var(--space-4); flex-wrap: wrap;"
+                >
+                  <!-- Provenance line · suppressed when the node lacks
+                       a manual_page. Repo URL + commit come from the
+                       manifest; copy button writes the manual path to
+                       the clipboard. -->
+                  <span class="provenance"
+                    x-show="!!currentManualPage"
+                    ><span class="provenance__path"
+                      x-text="currentManualPage"
+                      >docs/manual/...</span
+                    >
+                    <!-- lucide:copy -->
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      role="button"
+                      tabindex="0"
+                      title="Copy path"
+                      @click="copyProvenance()"
+                      @keydown.enter.prevent="copyProvenance()"
+                    >
+                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                      <path
+                        d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+                      />
+                    </svg>
+                    <!-- lucide:external-link · only shown when the
+                         active manual-target setting yields a real URL.
+                         Default ("none") hides the anchor so the file
+                         label reads as plain text. -->
+                    <a :href="provenanceHref" target="_blank"
+                      rel="noopener"
+                      :title="provenanceHref && provenanceHref.startsWith('obsidian://')
+                              ? 'Open in Obsidian' : 'Open external link'"
+                      x-show="!!provenanceHref"
+                      style="color: inherit; display: inline-flex;"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                        />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" x2="21" y1="14" y2="3" />
+                      </svg>
+                    </a>
+                  </span>
+                  <!-- Equation block · KaTeX-rendered by polish.js once
+                       the library loads. The fallback inline glyphs render
+                       cleanly even if KaTeX never arrives. -->
+                  <span class="kx katex-mock"
+                    x-show="focusNode === 'manipulator_image' || focusNode === 'manipulator_text' || focusNode === 'manipulator_vlm'"
+                  >[\text{image\_genes}_{\,d_i} \mid \text{text\_genes}_{\,d_t}]</span>
+                  <!-- Seeds-specific gap formula. -->
+                  <span class="kx katex-mock"
+                    x-show="focusNode === 'seeds'"
+                  >\text{gap}(c_i, c_j) = \text{lp}(c_i) - \text{lp}(c_j)</span>
+                  <!-- PDQ metric · d_o / d_i ratio. -->
+                  <span class="kx katex-mock"
+                    x-show="focusNode === 'pdq_metric'"
+                  >\text{PDQ} = \dfrac{d_o(L_{\text{anchor}}, L_{\min})}{d_i(g_0, g_{\min}) + \varepsilon}</span>
+                </div>
+              </div>
+
+              <!-- Narrative · `summary` pulled from the focused node.
+                   `text-wrap: pretty` keeps line breaks tidy on Blink. -->
+              <div class="flex-col gap-3">
+                <p x-show="currentSummary" x-text="currentSummary"
+                  style="text-wrap: pretty;"
+                >…</p>
+                <p x-show="!currentSummary" class="muted">
+                  No summary available.
+                </p>
+              </div>
+
+              <!-- Configuration heading + auto-generated knob list.
+                   Static markup replaced by Alpine templates fed from
+                   $store.explorer.activeKnobs(focusNode). Tiers split
+                   into hero / standard, with `advanced` collapsed
+                   inside a <details> at the bottom of the panel. -->
+              <div class="flex-col gap-1">
+                <div class="config-heading">
+                  <h3>Configuration</h3>
+                  <span class="config-heading__count">
+                    <span x-text="knobCount">0</span>
+                    <span>&nbsp;keys</span>
+                  </span>
+                </div>
+
+                <!-- Hero + standard tier widgets render inline. -->
+                <template
+                  x-for="leaf in [...heroKnobs, ...standardKnobs]"
+                  :key="leaf.path"
+                >
+                  <div
+                    class="knob"
+                    :class="{ 'knob--hover': $store.explorer.hoverKnob === leaf.path }"
+                    :data-path="leaf.path"
+                    :data-tier="leaf.tier"
+                    @mouseenter="hoverIn(leaf)"
+                    @mouseleave="hoverOut()"
+                    x-transition.duration.240ms
+                  >
+                    <div class="knob__label">
+                      <span class="name" x-text="leaf.name"></span>
+                      <span class="desc" x-text="leaf.description"></span>
+                    </div>
+
+                    <!-- ───── Widget body · branches on widget kind ───── -->
+                    <div class="knob__widget">
+                      <!-- toggle -->
+                      <template x-if="kind(leaf) === 'toggle'">
+                        <button type="button"
+                          class="toggle-pill"
+                          :aria-pressed="String(!!val(leaf))"
+                          @click="flipToggle(leaf)"
+                        ></button>
+                      </template>
+
+                      <!-- slider · int or float, bounded -->
+                      <template x-if="kind(leaf) === 'slider_int' || kind(leaf) === 'slider_float'">
+                        <div style="display: inline-flex; align-items: center; gap: var(--space-2);">
+                          <input type="range"
+                            class="slider-native"
+                            :min="leaf.min" :max="leaf.max"
+                            :step="sliderStep(leaf)"
+                            :value="val(leaf)"
+                            :aria-label="leaf.name"
+                            :style="`--fill: ${fillPct(leaf)}%`"
+                            @input="setVal(leaf, kind(leaf) === 'slider_int'
+                              ? Number.parseInt($event.target.value, 10)
+                              : Number.parseFloat($event.target.value))"
+                          />
+                          <span class="knob__value tabular"
+                            x-text="readout(leaf)"></span>
+                        </div>
+                      </template>
+
+                      <!-- number input · unbounded int/float -->
+                      <template x-if="kind(leaf) === 'number_int' || kind(leaf) === 'number_float'">
+                        <input type="number"
+                          class="input-inline"
+                          :step="kind(leaf) === 'number_int' ? 1 : 'any'"
+                          :value="val(leaf)"
+                          :aria-label="leaf.name"
+                          @change="onNumberInput(leaf, $event)"
+                        />
+                      </template>
+
+                      <!-- dropdown · enum_* + str-with-enum -->
+                      <template x-if="kind(leaf) === 'enum'">
+                        <div class="dropdown-root" data-dropdown-root>
+                          <button type="button"
+                            class="dropdown-trigger"
+                            :aria-expanded="String(isOpen(leaf.path))"
+                            :aria-label="leaf.name"
+                            @click.stop="toggleDropdown(leaf.path)"
+                          >
+                            <span x-text="val(leaf) ?? '—'"></span>
+                            <svg class="dropdown__chevron"
+                              viewBox="0 0 24 24" width="14" height="14"
+                              fill="none" stroke="currentColor"
+                              stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </button>
+                          <div class="dropdown-panel"
+                            x-show="isOpen(leaf.path)"
+                            x-transition.opacity.duration.150ms
+                            @click.stop
+                          >
+                            <template x-for="opt in options(leaf)" :key="opt">
+                              <button type="button"
+                                class="dropdown-option"
+                                :class="{ 'dropdown-option--active': opt === val(leaf) }"
+                                @click="pickOption(leaf, opt)"
+                                x-text="opt"
+                              ></button>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+
+                      <!-- path · monospace text input -->
+                      <template x-if="kind(leaf) === 'path'">
+                        <input type="text"
+                          class="input-inline input-inline--path"
+                          placeholder="(unset)"
+                          :value="val(leaf) ?? ''"
+                          @change="setVal(leaf, $event.target.value || null)"
+                          :aria-label="leaf.name"
+                        />
+                      </template>
+
+                      <!-- plain text (str fallback) -->
+                      <template x-if="kind(leaf) === 'text'">
+                        <input type="text"
+                          class="input-inline"
+                          :value="val(leaf) ?? ''"
+                          @change="setVal(leaf, $event.target.value)"
+                          :aria-label="leaf.name"
+                        />
+                      </template>
+
+                      <!-- tuple_* / set_str · comma-separated -->
+                      <template x-if="kind(leaf) === 'tuple'">
+                        <input type="text"
+                          class="input-inline input-inline--wide"
+                          :class="{ 'input-inline--invalid': !tupleValid(leaf) }"
+                          :value="tupleRaw(leaf)"
+                          @input="onTupleInput(leaf, $event)"
+                          @blur="onTupleBlur(leaf)"
+                          :aria-label="leaf.name"
+                          placeholder="a, b, c"
+                        />
+                      </template>
+                    </div>
+
+                    <!-- Hero-tier micro-viz slot (phase 5 fills). -->
+                    <template x-if="leaf.tier === 'hero'">
+                      <div class="knob__viz" :data-viz-slot="true"
+                        :data-path="leaf.path"></div>
+                    </template>
+
+                    <!-- Tuple chip row · visual parse confirmation.
+                         Hidden for tuple_str / set_str where the chips
+                         duplicate the input text. -->
+                    <template x-if="kind(leaf) === 'tuple'
+                      && (leaf.type === 'tuple_int' || leaf.type === 'tuple_float')
+                      && tupleChips(leaf).length > 0
+                    ">
+                      <div class="knob__viz">
+                        <div class="tuple-chips">
+                          <template x-for="(c, i) in tupleChips(leaf)" :key="i">
+                            <span class="tuple-chip" x-text="c"></span>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- tuple_dataclass · repeatable item cards.
+                         Each card walks the leaf's item_schema, evaluates
+                         dependsOn locally, and renders nested widgets
+                         (slider / enum / tuple) as needed. -->
+                    <template x-if="kind(leaf) === 'items'">
+                      <div class="item-group">
+                        <template x-for="(item, idx) in items(leaf)" :key="idx">
+                          <div class="item-card">
+                            <div class="item-card__head">
+                              <span class="item-card__title"
+                                x-text="(leaf.name || 'item') + ' ' + idx"
+                              ></span>
+                              <button type="button"
+                                class="item-card__remove"
+                                @click="removeItem(leaf, idx)"
+                                :title="'Remove ' + leaf.name + ' ' + idx"
+                              >×</button>
+                            </div>
+                            <template x-for="field in itemActiveFields(leaf, idx)" :key="field.name">
+                              <div class="item-card__field">
+                                <span class="name" x-text="field.name"></span>
+                                <!-- Nested widget · slider/enum/tuple -->
+                                <template x-if="itemKind(field) === 'slider_int' || itemKind(field) === 'slider_float'">
+                                  <div style="display: inline-flex; gap: var(--space-2); align-items: center;">
+                                    <input type="range"
+                                      class="slider-native"
+                                      :min="field.min" :max="field.max"
+                                      :step="itemKind(field) === 'slider_int' ? 1 : 0.001"
+                                      :value="getItemField(leaf, idx, field.name) ?? field.min"
+                                      :style="`--fill: ${itemFillPct(field, getItemField(leaf, idx, field.name))}%`"
+                                      @input="setItemField(leaf, idx, field.name,
+                                        itemKind(field) === 'slider_int'
+                                          ? Number.parseInt($event.target.value, 10)
+                                          : Number.parseFloat($event.target.value))"
+                                    />
+                                    <span class="knob__value tabular"
+                                      x-text="getItemField(leaf, idx, field.name) ?? '—'"></span>
+                                  </div>
+                                </template>
+                                <template x-if="itemKind(field) === 'enum'">
+                                  <div class="dropdown-root" data-dropdown-root>
+                                    <button type="button"
+                                      class="dropdown-trigger"
+                                      :aria-expanded="String(isOpen(leaf.path + '#' + idx + '.' + field.name))"
+                                      @click.stop="toggleDropdown(leaf.path + '#' + idx + '.' + field.name)"
+                                    >
+                                      <span x-text="getItemField(leaf, idx, field.name) ?? '—'"></span>
+                                      <svg class="dropdown__chevron"
+                                        viewBox="0 0 24 24" width="14" height="14"
+                                        fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6" />
+                                      </svg>
+                                    </button>
+                                    <div class="dropdown-panel"
+                                      x-show="isOpen(leaf.path + '#' + idx + '.' + field.name)"
+                                      x-transition.opacity.duration.150ms
+                                      @click.stop
+                                    >
+                                      <template x-for="opt in options(field)" :key="opt">
+                                        <button type="button"
+                                          class="dropdown-option"
+                                          :class="{ 'dropdown-option--active': opt === getItemField(leaf, idx, field.name) }"
+                                          @click="setItemField(leaf, idx, field.name, opt); openDropdown = null"
+                                          x-text="opt"
+                                        ></button>
+                                      </template>
+                                    </div>
+                                  </div>
+                                </template>
+                                <template x-if="itemKind(field) === 'tuple'">
+                                  <input type="text"
+                                    class="input-inline input-inline--wide"
+                                    :value="Array.isArray(getItemField(leaf, idx, field.name))
+                                      ? getItemField(leaf, idx, field.name).join(', ')
+                                      : ''"
+                                    @change="setItemField(leaf, idx, field.name,
+                                      $event.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                        .map(s => field.type === 'tuple_float'
+                                          ? Number.parseFloat(s)
+                                          : field.type === 'tuple_int'
+                                            ? Number.parseInt(s, 10) : s)
+                                        .filter(v => v === v))"
+                                    placeholder="a, b, c"
+                                  />
+                                </template>
+                                <template x-if="itemKind(field) === 'number_int' || itemKind(field) === 'number_float'">
+                                  <input type="number"
+                                    class="input-inline"
+                                    :step="itemKind(field) === 'number_int' ? 1 : 'any'"
+                                    :value="getItemField(leaf, idx, field.name) ?? ''"
+                                    @change="setItemField(leaf, idx, field.name,
+                                      itemKind(field) === 'number_int'
+                                        ? Number.parseInt($event.target.value, 10)
+                                        : Number.parseFloat($event.target.value))"
+                                  />
+                                </template>
+                                <template x-if="itemKind(field) === 'text' || itemKind(field) === 'path'">
+                                  <input type="text"
+                                    class="input-inline"
+                                    :class="{ 'input-inline--path': itemKind(field) === 'path' }"
+                                    :value="getItemField(leaf, idx, field.name) ?? ''"
+                                    @change="setItemField(leaf, idx, field.name, $event.target.value)"
+                                  />
+                                </template>
+                                <template x-if="itemKind(field) === 'toggle'">
+                                  <button type="button"
+                                    class="toggle-pill"
+                                    :aria-pressed="String(!!getItemField(leaf, idx, field.name))"
+                                    @click="setItemField(leaf, idx, field.name,
+                                      !getItemField(leaf, idx, field.name))"
+                                  ></button>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                        <button type="button"
+                          class="item-add"
+                          @click="addItem(leaf)"
+                        >+ add <span x-text="leaf.name || 'item'"></span></button>
+                      </div>
+                    </template>
+
+                    <!-- dict · read-only JSON preview (fallback). -->
+                    <template x-if="kind(leaf) === 'json'">
+                      <pre class="json-preview" x-text="jsonPreview(leaf)"></pre>
+                    </template>
+
+                    <!-- Runtime side-effect note (modality overrides). -->
+                    <template x-if="sideEffectNote(leaf)">
+                      <p class="knob__note" x-text="sideEffectNote(leaf)"></p>
+                    </template>
+                  </div>
+                </template>
+
+                <!-- Empty-state message when no knobs match the filter. -->
+                <p class="muted mono"
+                  x-show="activeKnobs.length === 0"
+                  style="font-size: var(--text-mono-sm); padding: var(--space-3) 0;"
+                >No configurable knobs for this node.</p>
+
+                <!-- Advanced disclosure · collapsed by default. -->
+                <details class="advanced-group"
+                  x-show="advancedKnobs.length > 0"
+                >
+                  <summary>
+                    Advanced <span x-text="'(' + advancedKnobs.length + ' hidden)'"></span>
+                  </summary>
+                  <template x-for="leaf in advancedKnobs" :key="leaf.path">
+                    <div class="knob"
+                      :class="{ 'knob--hover': $store.explorer.hoverKnob === leaf.path }"
+                      :data-path="leaf.path"
+                      :data-tier="leaf.tier"
+                      @mouseenter="hoverIn(leaf)"
+                      @mouseleave="hoverOut()"
+                    >
+                      <div class="knob__label">
+                        <span class="name" x-text="leaf.name"></span>
+                        <span class="desc" x-text="leaf.description"></span>
+                      </div>
+                      <div class="knob__widget">
+                        <template x-if="kind(leaf) === 'toggle'">
+                          <button type="button" class="toggle-pill"
+                            :aria-pressed="String(!!val(leaf))"
+                            @click="flipToggle(leaf)"></button>
+                        </template>
+                        <template x-if="kind(leaf) === 'slider_int' || kind(leaf) === 'slider_float'">
+                          <div style="display: inline-flex; align-items: center; gap: var(--space-2);">
+                            <input type="range" class="slider-native"
+                              :min="leaf.min" :max="leaf.max"
+                              :step="sliderStep(leaf)"
+                              :value="val(leaf)"
+                              :style="`--fill: ${fillPct(leaf)}%`"
+                              @input="setVal(leaf, kind(leaf) === 'slider_int'
+                                ? Number.parseInt($event.target.value, 10)
+                                : Number.parseFloat($event.target.value))"
+                            />
+                            <span class="knob__value tabular"
+                              x-text="readout(leaf)"></span>
+                          </div>
+                        </template>
+                        <template x-if="kind(leaf) === 'number_int' || kind(leaf) === 'number_float'">
+                          <input type="number" class="input-inline"
+                            :step="kind(leaf) === 'number_int' ? 1 : 'any'"
+                            :value="val(leaf)"
+                            @change="onNumberInput(leaf, $event)"
+                          />
+                        </template>
+                        <template x-if="kind(leaf) === 'enum'">
+                          <div class="dropdown-root" data-dropdown-root>
+                            <button type="button" class="dropdown-trigger"
+                              :aria-expanded="String(isOpen(leaf.path))"
+                              @click.stop="toggleDropdown(leaf.path)"
+                            >
+                              <span x-text="val(leaf) ?? '—'"></span>
+                              <svg class="dropdown__chevron"
+                                viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round"
+                              ><path d="m6 9 6 6 6-6" /></svg>
+                            </button>
+                            <div class="dropdown-panel"
+                              x-show="isOpen(leaf.path)"
+                              x-transition.opacity.duration.150ms
+                              @click.stop
+                            >
+                              <template x-for="opt in options(leaf)" :key="opt">
+                                <button type="button" class="dropdown-option"
+                                  :class="{ 'dropdown-option--active': opt === val(leaf) }"
+                                  @click="pickOption(leaf, opt)"
+                                  x-text="opt"></button>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+                        <template x-if="kind(leaf) === 'path'">
+                          <input type="text"
+                            class="input-inline input-inline--path"
+                            placeholder="(unset)"
+                            :value="val(leaf) ?? ''"
+                            @change="setVal(leaf, $event.target.value || null)"
+                          />
+                        </template>
+                        <template x-if="kind(leaf) === 'text'">
+                          <input type="text" class="input-inline"
+                            :value="val(leaf) ?? ''"
+                            @change="setVal(leaf, $event.target.value)"
+                          />
+                        </template>
+                        <template x-if="kind(leaf) === 'tuple'">
+                          <input type="text"
+                            class="input-inline input-inline--wide"
+                            :class="{ 'input-inline--invalid': !tupleValid(leaf) }"
+                            :value="tupleRaw(leaf)"
+                            @input="onTupleInput(leaf, $event)"
+                            @blur="onTupleBlur(leaf)"
+                            placeholder="a, b, c"
+                          />
+                        </template>
+                        <template x-if="kind(leaf) === 'json'">
+                          <pre class="json-preview"
+                            x-text="jsonPreview(leaf)"></pre>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </details>
+              </div>
+            </div>
+          </section>
+
+          <!-- Backdrop for the YAML drawer · dims content behind. -->
+          <div
+            class="yaml-drawer-backdrop"
+            id="yaml-drawer-backdrop"
+            :class="{ 'is-visible': $store.explorer.yamlOpen }"
+            @click="$store.explorer.closeYaml()"
+            aria-hidden="true"
+          ></div>
+
+          <!-- ─ YAML editor — slide-in drawer (phase 6 · live two-way) ─
+               Pinned right via `position: fixed`. Toggled by:
+                 • the Open/Close YAML button in the detail panel head
+                 • Cmd/Ctrl+Y keyboard shortcut
+                 • Esc (when open)
+                 • clicking the backdrop or the × button
+               Backdrop sibling lives just below this element. -->
+          <section
+            class="panel yaml-drawer"
+            aria-label="Live YAML editor"
+            id="yaml-drawer"
+            role="dialog"
+            aria-modal="false"
+            :class="{ 'yaml-drawer--open': $store.explorer.yamlOpen }"
+            :aria-hidden="$store.explorer.yamlOpen ? 'false' : 'true'"
+          >
+            <button
+              type="button"
+              class="yaml-drawer__close"
+              id="yaml-drawer-close"
+              @click="$store.explorer.closeYaml()"
+              aria-label="Close YAML editor"
+              title="Close (Esc)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+              </svg>
+            </button>
+            <div class="panel__head">
+              <div>
+                <span class="eyebrow">live config</span>
+                <h2 style="margin-top: 4px;">config.yaml</h2>
+              </div>
+              <span
+                id="yaml-line-count"
+                class="mono muted"
+                style="font-size: var(--text-mono-sm); margin-right: 36px;"
+                >0 lines</span
+              >
+            </div>
+
+            <div class="yaml-editor" id="yaml-editor-root">
+              <div class="yaml-gutter" id="yaml-gutter" aria-hidden="true"></div>
+              <div class="yaml-stack">
+                <pre
+                  class="yaml-highlight"
+                  id="yaml-highlight"
+                  aria-hidden="true"
+                ></pre>
+                <textarea
+                  class="yaml-input"
+                  id="yaml-input"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  autocomplete="off"
+                  wrap="off"
+                  aria-label="Configuration YAML"
+                ></textarea>
+              </div>
+            </div>
+
+            <div
+              id="yaml-error-bar"
+              class="yaml-error-bar"
+              role="alert"
+              hidden
+            ></div>
+
+            <div class="yaml-toolbar">
+              <button class="button--primary" id="yaml-download-btn">
+                <!-- lucide:download -->
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" x2="12" y1="15" y2="3" />
+                </svg>
+                Download
+              </button>
+              <button class="button--ghost" id="yaml-validate-btn">
+                Validate
+              </button>
+              <label class="yaml-filter-toggle" title="Strip keys not used by the active pipeline before download">
+                <input type="checkbox" id="yaml-filter-toggle" />
+                <span>filter to active</span>
+              </label>
+              <span class="pill-valid" id="yaml-status-pill">
+                <span class="pill-valid__dot"></span>
+                <span class="pill-valid__label" id="yaml-status-label">valid</span>
+              </span>
+            </div>
+          </section>
+
+          <!-- ─ Genotype playground (phase 8 · deterministic g→ph) ─── -->
+          <section
+            class="playground"
+            aria-label="Genotype playground"
+            x-data="playground"
+            x-show="$store.explorer.mode === 'canvas'"
+            x-cloak
+          >
+            <!-- Anchor badge: visible only when every gene is zero -->
+            <span
+              class="playground__anchor-badge"
+              :class="{
+                'playground__anchor-badge--visible': isAnchor,
+                'playground__anchor-badge--pulse':   anchorPulse,
+              }"
+              aria-hidden="true"
+            >anchor genotype · gen 0</span>
+
+            <!-- Header: display title + view toggle -->
+            <div class="playground__head">
+              <div>
+                <h2 class="playground__title">
+                  genotype<span class="playground__title-dot">.</span>
+                </h2>
+                <p class="playground__sub">
+                  deterministic render · no SUT call · no outcome prediction
+                </p>
+              </div>
+              <div class="playground__head-right">
+                <span class="playground__count">
+                  <strong x-text="mutatedCount"></strong>
+                  /
+                  <span x-text="IMAGE_DIM + TEXT_DIM"></span>
+                  genes mutated
+                </span>
+                <div class="segmented" role="tablist" aria-label="Display form">
+                  <button
+                    class="segmented__item"
+                    :class="{ 'segmented__item--active': view === 'schematic' }"
+                    @click="setView('schematic')"
+                    role="tab"
+                    :aria-selected="view === 'schematic'"
+                  >Schematic</button>
+                  <button
+                    class="segmented__item"
+                    :class="{ 'segmented__item--active': view === 'svg' }"
+                    @click="setView('svg')"
+                    role="tab"
+                    :aria-selected="view === 'svg'"
+                  >SVG</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Workspace: image grid (left) | text genes (right) -->
+            <div class="playground__workspace">
+              <!-- Image genes -->
+              <div class="playground__panel">
+                <div class="playground__panel-head">
+                  <span class="playground__panel-title">image genes</span>
+                  <span class="playground__panel-meta" x-text="strategyLabel"></span>
+                </div>
+
+                <!-- Schematic view: 8x8 clickable cells -->
+                <div
+                  class="playground__grid"
+                  x-show="view === 'schematic'"
+                  @mouseleave="clearHover()"
+                >
+                  <template x-for="i in IMAGE_DIM" :key="'cell-' + (i - 1)">
+                    <div
+                      class="playground__cell"
+                      :style="cellStyle(i - 1)"
+                      :title="'patch ' + (i - 1) + ' · gene=' + imageGene(i - 1)"
+                      @click="bumpImage(i - 1, $event)"
+                      @mouseenter="setHover(i - 1)"
+                    >
+                      <span
+                        class="playground__cell-dot"
+                        x-show="imageGene(i - 1) !== 0"
+                      ></span>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- SVG view: 8x8 pattern-rotated cells with hue/pattern shift -->
+                <div class="playground__svg-wrap" x-show="view === 'svg'">
+                  <svg
+                    class="playground__svg"
+                    :viewBox="'0 0 ' + (8 * 20) + ' ' + (8 * 20)"
+                    preserveAspectRatio="xMidYMid meet"
+                    @mouseleave="clearHover()"
+                  >
+                    <defs>
+                      <!-- Five swatches of internal pattern. Each is a tiny
+                           composition over the cell colour: bucket 0 = flat,
+                           1..4 progressively dense. -->
+                      <pattern
+                        id="pg-pat-0"
+                        patternUnits="userSpaceOnUse"
+                        width="20" height="20"
+                      >
+                        <rect width="20" height="20" fill="currentColor" />
+                      </pattern>
+                      <pattern
+                        id="pg-pat-1"
+                        patternUnits="userSpaceOnUse"
+                        width="20" height="20"
+                      >
+                        <rect width="20" height="20" fill="currentColor" />
+                        <circle cx="10" cy="10" r="3" fill="rgba(255,255,255,0.18)" />
+                      </pattern>
+                      <pattern
+                        id="pg-pat-2"
+                        patternUnits="userSpaceOnUse"
+                        width="20" height="20"
+                      >
+                        <rect width="20" height="20" fill="currentColor" />
+                        <path d="M0 10 L20 10" stroke="rgba(255,255,255,0.22)" stroke-width="2" />
+                      </pattern>
+                      <pattern
+                        id="pg-pat-3"
+                        patternUnits="userSpaceOnUse"
+                        width="20" height="20"
+                      >
+                        <rect width="20" height="20" fill="currentColor" />
+                        <path d="M0 0 L20 20 M20 0 L0 20" stroke="rgba(255,255,255,0.22)" stroke-width="1.5" />
+                      </pattern>
+                      <pattern
+                        id="pg-pat-4"
+                        patternUnits="userSpaceOnUse"
+                        width="20" height="20"
+                      >
+                        <rect width="20" height="20" fill="currentColor" />
+                        <rect x="5" y="5" width="10" height="10" fill="rgba(255,255,255,0.25)" />
+                      </pattern>
+                    </defs>
+                    <!-- 8x8 cells rendered programmatically by playground.js —
+                         Alpine <template x-for> does not work inside <svg>. -->
+                    <g id="playground-svg-cells"></g>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Text genes -->
+              <div class="playground__panel">
+                <div class="playground__panel-head">
+                  <span class="playground__panel-title">text genes</span>
+                  <span class="playground__panel-meta" x-text="textProfileLabel"></span>
+                </div>
+                <div class="playground__tokens">
+                  <template x-for="(token, ti) in TOKENS" :key="'tok-' + ti">
+                    <div
+                      class="playground__token"
+                      :class="{
+                        'playground__token--mutated': textGeneVec(ti).some(v => v !== 0),
+                        'playground__token--hover':   hoverIdx !== null && hoverIdx >= IMAGE_DIM && Math.floor((hoverIdx - IMAGE_DIM) / 4) === ti,
+                      }"
+                      @mouseleave="clearHover()"
+                    >
+                      <div
+                        class="playground__token-chip"
+                        :class="{ 'playground__token-chip--mutated': textGeneVec(ti).some(v => v !== 0) }"
+                        :title="'source: ' + token"
+                        @mouseenter="setHover(IMAGE_DIM + ti * 4)"
+                      >
+                        <span x-text="renderedToken(ti)"></span>
+                        <span
+                          class="accent-dot"
+                          x-show="textGeneVec(ti).some(v => v !== 0)"
+                        ></span>
+                      </div>
+                      <div class="playground__op-grid">
+                        <template x-for="(op, si) in OPERATORS" :key="'op-' + ti + '-' + si">
+                          <div class="playground__op">
+                            <span
+                              class="playground__op-label"
+                              x-text="OP_LABEL[op]"
+                            ></span>
+                            <div class="playground__op-row">
+                              <input
+                                type="range"
+                                class="playground__op-slider"
+                                min="0"
+                                :max="K_MAX"
+                                step="1"
+                                :value="textGene(ti, si)"
+                                @input="setTextGene(ti, si, parseInt($event.target.value, 10))"
+                                @mouseenter="setHover(IMAGE_DIM + ti * 4 + si)"
+                                :aria-label="token + ' · ' + OP_LABEL[op]"
+                              />
+                              <span
+                                class="playground__op-val"
+                                x-text="textGene(ti, si)"
+                              ></span>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live phenotype preview -->
+            <div class="playground__preview">
+              <div>
+                <div class="playground__preview-eyebrow">phenotype · image</div>
+                <!-- Preview cells rendered programmatically by playground.js
+                     for consistency with the SVG path (and to avoid future
+                     surprises if this grid ever becomes an SVG). -->
+                <div
+                  id="playground-preview-cells"
+                  class="playground__preview-grid"
+                  aria-hidden="true"
+                ></div>
+              </div>
+              <div>
+                <div class="playground__preview-eyebrow">phenotype · prompt</div>
+                <div class="playground__preview-text" x-text="renderedPrompt"></div>
+              </div>
+            </div>
+
+            <!-- Genotype dump + actions -->
+            <div class="playground__dump">
+              <div
+                class="playground__dump-row"
+                :class="{ 'playground__dump-row--hover': imageDumpHovered() }"
+              >
+                <span class="playground__dump-key">image</span>
+                <span class="playground__dump-vals" x-html="imageDumpHTML()"></span>
+              </div>
+              <div
+                class="playground__dump-row"
+                :class="{ 'playground__dump-row--hover': textDumpHovered() }"
+              >
+                <span class="playground__dump-key">text</span>
+                <span class="playground__dump-vals" x-html="textDumpHTML()"></span>
+              </div>
+
+              <div class="playground__actions">
+                <button class="playground__btn" @click="reset()" type="button">
+                  Reset
+                </button>
+                <button
+                  class="playground__btn playground__btn--primary"
+                  @click="randomize()"
+                  type="button"
+                >Randomize</button>
+                <button class="playground__btn" @click="anchor()" type="button">
+                  All-zero anchor
+                </button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- STEP MODE (phase 7 · 5-cluster red thread)              -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <section
+          class="step-mode step-shell--v2"
+          id="step-mode"
+          aria-label="Step mode wizard"
+          x-data="stepMode"
+          x-show="$store.explorer.mode === 'step'"
+          x-cloak
+        >
+          <span class="section-eyebrow"
+            ><span class="section-eyebrow__dot"></span>step mode</span
+          >
+
+          <!-- Left: 5-cluster sticky stepper sidebar -->
+          <aside
+            class="stepper stepper--v2"
+            role="navigation"
+            aria-label="Cluster steps"
+          >
+            <template x-for="entry in stepEntries" :key="entry.id">
+              <div
+                class="step"
+                :class="{
+                  'step--complete': isComplete(entry.id),
+                  'step--active':   $store.explorer.step === entry.id,
+                  'step--muted':    !isComplete(entry.id) && $store.explorer.step !== entry.id,
+                }"
+                @click="jumpTo(entry.id)"
+                role="button"
+                tabindex="0"
+                @keydown.enter.prevent="jumpTo(entry.id)"
+                @keydown.space.prevent="jumpTo(entry.id)"
+              >
+                <span class="step__dot" :data-step-bullet="entry.id">
+                  <template x-if="isComplete(entry.id) && $store.explorer.step !== entry.id">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14" height="14"
+                      fill="none" stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round" stroke-linejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </template>
+                  <template x-if="!(isComplete(entry.id) && $store.explorer.step !== entry.id)">
+                    <span class="step__index"
+                      x-text="String(entry.id).padStart(2, '0')"
+                    ></span>
+                  </template>
+                </span>
+                <div class="step__label">
+                  <span class="step__title" x-text="entry.label"></span>
+                  <span class="step__desc" x-text="entry.intro"></span>
+                </div>
+              </div>
+            </template>
+
+            <!-- Active-cluster config-impact summary -->
+            <div class="stepper__intro" aria-live="polite">
+              <p class="stepper__intro-meta mono">
+                <span x-text="currentKeyCount">0</span> keys in this step
+              </p>
+              <p
+                class="stepper__intro-hint"
+                x-text="currentCluster.intro"
+              ></p>
+            </div>
+          </aside>
+
+          <!-- Right: cluster content (fades in on step change) -->
+          <div class="step-content step-content--v2" x-ref="stepContent">
+            <header class="step-content__head">
+              <span class="eyebrow"
+                x-text="'Step ' + String($store.explorer.step).padStart(2, '0') + ' · ' + currentCluster.label.toLowerCase()"
+              >Step</span>
+              <h2
+                class="display display--lg step-content__title"
+                x-text="currentCluster.intro"
+              >Heading</h2>
+              <p
+                class="section-desc"
+                x-text="currentCluster.explainer"
+                style="text-wrap: pretty;"
+              >Lead text…</p>
+            </header>
+
+            <!-- ═══ Cluster panel · groups + widgets ═══════════════ -->
+            <div
+              class="cluster-panel"
+              x-data="clusterPanel"
+            >
+              <div class="cluster-grid">
+                <template x-for="group in currentGroups" :key="group.label">
+                  <section
+                    class="cluster-group"
+                    :class="{ 'cluster-group--span-2': group.items.some(it => it.__special === 'pipeline') }"
+                  >
+                    <header class="cluster-group__head">
+                      <h3
+                        class="cluster-group__title"
+                        x-text="group.label"
+                      >Group</h3>
+                      <span
+                        class="cluster-group__count mono"
+                        x-show="group.items.filter(it => !it.__special).length"
+                      >
+                        <span
+                          x-text="group.items.filter(it => !it.__special).length"
+                        >0</span>
+                        <span>&nbsp;keys</span>
+                      </span>
+                    </header>
+
+                    <div class="cluster-group__body">
+                      <template x-for="leaf in group.items" :key="leaf.__special ? '__special_' + leaf.__special : leaf.path">
+                        <div class="cluster-group__row">
+                        <!-- ── Pipeline switcher (special hero) ───── -->
+                        <template x-if="leaf.__special === 'pipeline'">
+                          <div class="pipeline-hero">
+                            <div
+                              class="segmented segmented--lg pipeline-hero__seg"
+                              role="tablist"
+                              aria-label="Pipeline selection (step 1)"
+                            >
+                              <button
+                                type="button"
+                                class="segmented__item"
+                                :class="{ 'segmented__item--active': $store.explorer.pipeline === 'evolutionary' }"
+                                @click="$store.explorer.switchPipeline('evolutionary')"
+                                role="tab"
+                                :aria-selected="$store.explorer.pipeline === 'evolutionary'"
+                              >
+                                <span class="segmented__title">Evolutionary</span>
+                                <span class="segmented__sub mono">AGE-MOEA-II</span>
+                              </button>
+                              <button
+                                type="button"
+                                class="segmented__item"
+                                :class="{ 'segmented__item--active': $store.explorer.pipeline === 'pdq' }"
+                                @click="$store.explorer.switchPipeline('pdq')"
+                                role="tab"
+                                :aria-selected="$store.explorer.pipeline === 'pdq'"
+                              >
+                                <span class="segmented__title">PDQ</span>
+                                <span class="segmented__sub mono">two-stage directed</span>
+                              </button>
+                            </div>
+                            <p
+                              class="pipeline-hero__caption"
+                              x-show="$store.explorer.pipeline === 'evolutionary'"
+                            >Population-based multi-objective search over discrete genotypes; maps the (image, text, balance) Pareto envelope.</p>
+                            <p
+                              class="pipeline-hero__caption"
+                              x-show="$store.explorer.pipeline === 'pdq'"
+                            >Directed two-stage search: stage 1 hunts flips broadly, stage 2 minimises each flip with directed passes.</p>
+                          </div>
+                        </template>
+
+                        <!-- ── Regular knob row ─────────────────────── -->
+                        <template x-if="!leaf.__special">
+                          <div
+                            class="knob knob--cluster"
+                            :class="{ 'knob--hover': $store.explorer.hoverKnob === leaf.path }"
+                            :data-path="leaf.path"
+                            :data-tier="leaf.tier"
+                            @mouseenter="hoverIn(leaf)"
+                            @mouseleave="hoverOut()"
+                          >
+                            <div class="knob__label">
+                              <span class="name" x-text="leaf.name"></span>
+                              <span class="desc" x-text="leaf.description"></span>
+                            </div>
+
+                            <div class="knob__widget">
+                              <template x-if="kind(leaf) === 'toggle'">
+                                <button type="button" class="toggle-pill"
+                                  :aria-pressed="String(!!val(leaf))"
+                                  @click="flipToggle(leaf)"></button>
+                              </template>
+
+                              <template x-if="kind(leaf) === 'slider_int' || kind(leaf) === 'slider_float'">
+                                <div style="display: inline-flex; align-items: center; gap: var(--space-2);">
+                                  <input type="range" class="slider-native"
+                                    :min="leaf.min" :max="leaf.max"
+                                    :step="sliderStep(leaf)"
+                                    :value="val(leaf)"
+                                    :aria-label="leaf.name"
+                                    :style="`--fill: ${fillPct(leaf)}%`"
+                                    @input="setVal(leaf, kind(leaf) === 'slider_int'
+                                      ? Number.parseInt($event.target.value, 10)
+                                      : Number.parseFloat($event.target.value))"
+                                  />
+                                  <span class="knob__value tabular"
+                                    x-text="readout(leaf)"></span>
+                                </div>
+                              </template>
+
+                              <template x-if="kind(leaf) === 'number_int' || kind(leaf) === 'number_float'">
+                                <input type="number" class="input-inline"
+                                  :step="kind(leaf) === 'number_int' ? 1 : 'any'"
+                                  :value="val(leaf)"
+                                  :aria-label="leaf.name"
+                                  @change="onNumberInput(leaf, $event)"
+                                />
+                              </template>
+
+                              <template x-if="kind(leaf) === 'enum'">
+                                <div class="dropdown-root" data-dropdown-root>
+                                  <button type="button" class="dropdown-trigger"
+                                    :aria-expanded="String(isOpen(leaf.path))"
+                                    :aria-label="leaf.name"
+                                    @click.stop="toggleDropdown(leaf.path)"
+                                  >
+                                    <span x-text="val(leaf) ?? '—'"></span>
+                                    <svg class="dropdown__chevron"
+                                      viewBox="0 0 24 24" width="14" height="14"
+                                      fill="none" stroke="currentColor"
+                                      stroke-width="2" stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                    ><path d="m6 9 6 6 6-6" /></svg>
+                                  </button>
+                                  <div class="dropdown-panel"
+                                    x-show="isOpen(leaf.path)"
+                                    x-transition.opacity.duration.150ms
+                                    @click.stop
+                                  >
+                                    <template x-for="opt in options(leaf)" :key="opt">
+                                      <button type="button" class="dropdown-option"
+                                        :class="{ 'dropdown-option--active': opt === val(leaf) }"
+                                        @click="pickOption(leaf, opt)"
+                                        x-text="opt"></button>
+                                    </template>
+                                  </div>
+                                </div>
+                              </template>
+
+                              <template x-if="kind(leaf) === 'path'">
+                                <input type="text"
+                                  class="input-inline input-inline--path"
+                                  placeholder="(unset)"
+                                  :value="val(leaf) ?? ''"
+                                  :aria-label="leaf.name"
+                                  @change="setVal(leaf, $event.target.value || null)"
+                                />
+                              </template>
+
+                              <template x-if="kind(leaf) === 'text'">
+                                <input type="text" class="input-inline"
+                                  :value="val(leaf) ?? ''"
+                                  :aria-label="leaf.name"
+                                  @change="setVal(leaf, $event.target.value)"
+                                />
+                              </template>
+
+                              <template x-if="kind(leaf) === 'tuple'">
+                                <input type="text"
+                                  class="input-inline input-inline--wide"
+                                  :class="{ 'input-inline--invalid': !tupleValid(leaf) }"
+                                  :value="tupleRaw(leaf)"
+                                  :aria-label="leaf.name"
+                                  @input="onTupleInput(leaf, $event)"
+                                  @blur="onTupleBlur(leaf)"
+                                  placeholder="a, b, c"
+                                />
+                              </template>
+
+                              <template x-if="kind(leaf) === 'json'">
+                                <pre class="json-preview"
+                                  x-text="jsonPreview(leaf)"></pre>
+                              </template>
+                            </div>
+
+                            <!-- tuple chips (visual parse confirmation) -->
+                            <template x-if="kind(leaf) === 'tuple'
+                              && (leaf.type === 'tuple_int' || leaf.type === 'tuple_float')
+                              && tupleChips(leaf).length > 0
+                            ">
+                              <div class="knob__viz">
+                                <div class="tuple-chips">
+                                  <template x-for="(c, i) in tupleChips(leaf)" :key="i">
+                                    <span class="tuple-chip" x-text="c"></span>
+                                  </template>
+                                </div>
+                              </div>
+                            </template>
+
+                            <!-- tuple_dataclass · repeatable cards -->
+                            <template x-if="kind(leaf) === 'items'">
+                              <div class="item-group">
+                                <template x-for="(item, idx) in items(leaf)" :key="idx">
+                                  <div class="item-card">
+                                    <div class="item-card__head">
+                                      <span class="item-card__title"
+                                        x-text="(leaf.name || 'item') + ' ' + idx"
+                                      ></span>
+                                      <button type="button"
+                                        class="item-card__remove"
+                                        @click="removeItem(leaf, idx)"
+                                        :title="'Remove ' + leaf.name + ' ' + idx"
+                                      >×</button>
+                                    </div>
+                                    <template x-for="field in itemActiveFields(leaf, idx)" :key="field.name">
+                                      <div class="item-card__field">
+                                        <span class="name" x-text="field.name"></span>
+                                        <template x-if="itemKind(field) === 'slider_int' || itemKind(field) === 'slider_float'">
+                                          <div style="display: inline-flex; gap: var(--space-2); align-items: center;">
+                                            <input type="range" class="slider-native"
+                                              :min="field.min" :max="field.max"
+                                              :step="itemKind(field) === 'slider_int' ? 1 : 0.001"
+                                              :value="getItemField(leaf, idx, field.name) ?? field.min"
+                                              :style="`--fill: ${itemFillPct(field, getItemField(leaf, idx, field.name))}%`"
+                                              @input="setItemField(leaf, idx, field.name,
+                                                itemKind(field) === 'slider_int'
+                                                  ? Number.parseInt($event.target.value, 10)
+                                                  : Number.parseFloat($event.target.value))"
+                                            />
+                                            <span class="knob__value tabular"
+                                              x-text="getItemField(leaf, idx, field.name) ?? '—'"></span>
+                                          </div>
+                                        </template>
+                                        <template x-if="itemKind(field) === 'enum'">
+                                          <div class="dropdown-root" data-dropdown-root>
+                                            <button type="button" class="dropdown-trigger"
+                                              :aria-expanded="String(isOpen(leaf.path + '#' + idx + '.' + field.name))"
+                                              @click.stop="toggleDropdown(leaf.path + '#' + idx + '.' + field.name)"
+                                            >
+                                              <span x-text="getItemField(leaf, idx, field.name) ?? '—'"></span>
+                                              <svg class="dropdown__chevron"
+                                                viewBox="0 0 24 24" width="14" height="14"
+                                                fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                              ><path d="m6 9 6 6 6-6" /></svg>
+                                            </button>
+                                            <div class="dropdown-panel"
+                                              x-show="isOpen(leaf.path + '#' + idx + '.' + field.name)"
+                                              x-transition.opacity.duration.150ms
+                                              @click.stop
+                                            >
+                                              <template x-for="opt in options(field)" :key="opt">
+                                                <button type="button" class="dropdown-option"
+                                                  :class="{ 'dropdown-option--active': opt === getItemField(leaf, idx, field.name) }"
+                                                  @click="setItemField(leaf, idx, field.name, opt); openDropdown = null"
+                                                  x-text="opt"></button>
+                                              </template>
+                                            </div>
+                                          </div>
+                                        </template>
+                                        <template x-if="itemKind(field) === 'tuple'">
+                                          <input type="text" class="input-inline input-inline--wide"
+                                            :value="Array.isArray(getItemField(leaf, idx, field.name))
+                                              ? getItemField(leaf, idx, field.name).join(', ')
+                                              : ''"
+                                            @change="setItemField(leaf, idx, field.name,
+                                              $event.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                                .map(s => field.type === 'tuple_float'
+                                                  ? Number.parseFloat(s)
+                                                  : field.type === 'tuple_int'
+                                                    ? Number.parseInt(s, 10) : s)
+                                                .filter(v => v === v))"
+                                            placeholder="a, b, c"
+                                          />
+                                        </template>
+                                        <template x-if="itemKind(field) === 'number_int' || itemKind(field) === 'number_float'">
+                                          <input type="number" class="input-inline"
+                                            :step="itemKind(field) === 'number_int' ? 1 : 'any'"
+                                            :value="getItemField(leaf, idx, field.name) ?? ''"
+                                            @change="setItemField(leaf, idx, field.name,
+                                              itemKind(field) === 'number_int'
+                                                ? Number.parseInt($event.target.value, 10)
+                                                : Number.parseFloat($event.target.value))"
+                                          />
+                                        </template>
+                                        <template x-if="itemKind(field) === 'text' || itemKind(field) === 'path'">
+                                          <input type="text" class="input-inline"
+                                            :class="{ 'input-inline--path': itemKind(field) === 'path' }"
+                                            :value="getItemField(leaf, idx, field.name) ?? ''"
+                                            @change="setItemField(leaf, idx, field.name, $event.target.value)"
+                                          />
+                                        </template>
+                                        <template x-if="itemKind(field) === 'toggle'">
+                                          <button type="button" class="toggle-pill"
+                                            :aria-pressed="String(!!getItemField(leaf, idx, field.name))"
+                                            @click="setItemField(leaf, idx, field.name,
+                                              !getItemField(leaf, idx, field.name))"
+                                          ></button>
+                                        </template>
+                                      </div>
+                                    </template>
+                                  </div>
+                                </template>
+                                <button type="button"
+                                  class="item-add"
+                                  @click="addItem(leaf)"
+                                >+ add <span x-text="leaf.name || 'item'"></span></button>
+                              </div>
+                            </template>
+
+                            <!-- runtime side-effect note (modality overrides) -->
+                            <template x-if="sideEffectNote(leaf)">
+                              <p class="knob__note" x-text="sideEffectNote(leaf)"></p>
+                            </template>
+                          </div>
+                        </template>
+                        </div>
+                      </template>
+
+                      <!-- Empty-state per group -->
+                      <p
+                        class="muted mono cluster-group__empty"
+                        x-show="group.items.filter(it => !it.__special).length === 0
+                          && !group.items.some(it => it.__special)"
+                      >No keys in this group for the active pipeline.</p>
+                    </div>
+                  </section>
+                </template>
+              </div>
+
+              <!-- Derived consequence row (full-width, accent-soft card) -->
+              <div
+                class="cluster-derived"
+                x-show="currentDerived"
+                x-transition.opacity.duration.200ms
+              >
+                <span class="cluster-derived__icon" aria-hidden="true">→</span>
+                <p class="cluster-derived__text" x-text="currentDerived">…</p>
+              </div>
+            </div>
+
+            <!-- Step actions -->
+            <div class="step-actions">
+              <div class="flex gap-2 items-center">
+                <button class="button--ghost"
+                  @click="back()"
+                  :disabled="$store.explorer.step <= 1"
+                  :style="$store.explorer.step <= 1 ? 'opacity: 0.4; pointer-events: none;' : ''"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14"
+                    fill="none" stroke="currentColor"
+                    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+                  >
+                    <path d="M19 12H5" />
+                    <path d="m12 19-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+                <button class="button--ghost" @click="skip()">Skip</button>
+              </div>
+              <div class="flex gap-3 items-center">
+                <span
+                  class="mono muted"
+                  style="font-size: var(--text-mono-sm)"
+                  x-text="$store.explorer.step + ' of ' + stepEntries.length"
+                >0 of 0</span>
+                <button class="button--primary" @click="advance()">
+                  <span x-text="$store.explorer.step >= stepEntries.length ? 'Finish' : 'Continue'">Continue</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14" height="14"
+                    fill="none" stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round" stroke-linejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini pipeline preview (chip row, sticky bottom of step pane) -->
+          <div
+            class="mini-pipeline mini-pipeline--v2"
+            aria-label="Mini pipeline preview"
+          >
+            <template x-for="(chip, idx) in miniChips" :key="chip.node">
+              <div class="mini-pipeline__cell"
+                style="display: contents;"
+              >
+                <span
+                  class="mini-pipeline__node"
+                  :class="{
+                    'mini-pipeline__node--active':   chip.touched,
+                    'mini-pipeline__node--complete': chip.completed,
+                  }"
+                  x-text="chip.label"
+                  @click="chip.step && jumpTo(chip.step)"
+                  :style="chip.step ? 'cursor: pointer;' : ''"
+                  :title="chip.node"
+                ></span>
+                <span
+                  class="mini-pipeline__edge"
+                  x-show="idx < miniChips.length - 1"
+                ></span>
+              </div>
+            </template>
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- ════════════════════════════════════════════════════════ -->
+      <!-- FOOTER · provenance line wired to $store.explorer.manifest -->
+      <!-- ════════════════════════════════════════════════════════ -->
+      <footer class="footer" id="footer">
+        <span>
+          commit
+          <span class="accent-text"
+            x-text="$store.explorer.manifest?.commit?.slice(0, 7) || '—'"
+            >—</span>
+          · schema v<span x-text="$store.explorer.manifest?.version || '1'">1</span>
+          · <span x-text="$store.explorer.activeKnobCount() + ' leaf knobs'">109 leaf knobs</span>
+        </span>
+        <a
+          :href="$store.explorer.manifest?.repo_url || '#'"
+          target="_blank"
+          rel="noopener"
+          style="color: var(--fg-secondary);"
+        >
+          <span
+            x-text="($store.explorer.manifest?.repo_url || 'github.com/KaiserRuben/Masterthesis').replace('https://github.com/', '')"
+            >github.com/KaiserRuben/Masterthesis</span>
+          <!-- lucide:arrow-up-right -->
+          <svg
+            viewBox="0 0 24 24"
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="display: inline-block; vertical-align: -1px;"
+          >
+            <path d="M7 7h10v10" />
+            <path d="M7 17 17 7" />
+          </svg>
+        </a>
+      </footer>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- SETTINGS DRAWER · slides in from the right (polish.js).        -->
+    <!-- Hidden by default; .is-open is added by initSettingsDrawer().  -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div
+      class="drawer-backdrop"
+      id="settings-backdrop"
+      aria-hidden="true"
+    ></div>
+    <aside
+      class="settings-drawer"
+      id="settings-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-drawer-title"
+      hidden
+    >
+      <header class="settings-drawer__head">
+        <h2 id="settings-drawer-title">Settings</h2>
+        <button
+          type="button"
+          class="button--icon"
+          id="settings-drawer-close"
+          aria-label="Close settings"
+          title="Close (Esc)"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <section class="settings-drawer__section">
+        <span class="eyebrow">theme</span>
+        <div class="settings-radio-group" role="radiogroup" aria-label="Theme">
+          <label class="settings-radio">
+            <input type="radio" name="setting-theme" value="auto" />
+            <span>Auto</span>
+          </label>
+          <label class="settings-radio">
+            <input type="radio" name="setting-theme" value="dark" />
+            <span>Dark</span>
+          </label>
+          <label class="settings-radio">
+            <input type="radio" name="setting-theme" value="light" />
+            <span>Light</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-drawer__section">
+        <span class="eyebrow">provenance link target</span>
+        <div class="settings-radio-group" role="radiogroup"
+          aria-label="Provenance link target">
+          <label class="settings-radio">
+            <input type="radio" name="setting-prov" value="text" />
+            <span>Text only</span>
+          </label>
+          <label class="settings-radio">
+            <input type="radio" name="setting-prov" value="github" />
+            <span>GitHub</span>
+          </label>
+          <label class="settings-radio">
+            <input type="radio" name="setting-prov" value="vscode" />
+            <span>vscode://</span>
+          </label>
+        </div>
+        <p class="settings-drawer__hint">
+          Persists across sessions. Affects every provenance link in the
+          detail panel.
+        </p>
+      </section>
+
+      <section class="settings-drawer__section">
+        <span class="eyebrow">manual link target</span>
+        <div class="settings-radio-group" role="radiogroup"
+          aria-label="Manual link target">
+          <label class="settings-radio">
+            <input type="radio" name="setting-manual" value="none" />
+            <span>None (text only)</span>
+          </label>
+          <label class="settings-radio">
+            <input type="radio" name="setting-manual" value="obsidian" />
+            <span>obsidian://</span>
+          </label>
+        </div>
+        <p class="settings-drawer__hint">
+          Manual pages live in Obsidian, not git, so the external GitHub link
+          404s. Default renders the filename as plain text. Opt-in to
+          <span class="mono">obsidian://</span> opens the page in the local
+          vault.
+        </p>
+      </section>
+
+      <section class="settings-drawer__section">
+        <span class="eyebrow">animation</span>
+        <label class="settings-switch">
+          <input type="checkbox" id="setting-reduced-motion" />
+          <span>Reduced motion</span>
+        </label>
+        <p class="settings-drawer__hint">
+          When on, all Motion One animations skip to their final state.
+          Defaults to <span class="mono">prefers-reduced-motion</span>.
+        </p>
+      </section>
+
+      <section class="settings-drawer__section">
+        <span class="eyebrow">about</span>
+        <p class="settings-drawer__hint" style="margin-top: var(--space-2)">
+          pipeline. · v0.1
+        </p>
+        <p class="settings-drawer__hint mono">
+          manual: ~/Obsidian/Notizen/01 - Active Projects/Master
+          Thesis/Knowledge/README.md
+        </p>
+      </section>
+    </aside>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- KEYBOARD HELP OVERLAY · ? to toggle (polish.js).               -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <div
+      class="kbd-overlay"
+      id="kbd-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="kbd-overlay-title"
+      hidden
+    >
+      <div class="kbd-overlay__backdrop" data-kbd-backdrop></div>
+      <div class="glass kbd-overlay__card">
+        <header class="kbd-overlay__head">
+          <h2 id="kbd-overlay-title">Keyboard shortcuts</h2>
+          <button type="button" class="button--icon"
+            id="kbd-overlay-close" aria-label="Close help"
+            title="Close (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </header>
+        <div class="kbd-overlay__cols">
+          <section>
+            <span class="eyebrow">navigation</span>
+            <dl class="kbd-list">
+              <dt><kbd>Tab</kbd></dt>
+              <dd>walk through canvas nodes</dd>
+              <dt><kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd></dt>
+              <dd>spatial neighbour in canvas</dd>
+              <dt><kbd>Enter</kbd> <kbd>Space</kbd></dt>
+              <dd>focus current node</dd>
+              <dt><kbd>Esc</kbd></dt>
+              <dd>clear focus / close overlays</dd>
+            </dl>
+          </section>
+          <section>
+            <span class="eyebrow">jump</span>
+            <dl class="kbd-list">
+              <dt><kbd>g</kbd> <kbd>o</kbd></dt><dd>objectives</dd>
+              <dt><kbd>g</kbd> <kbd>p</kbd></dt><dd>pdq metric</dd>
+              <dt><kbd>g</kbd> <kbd>m</kbd></dt><dd>manipulator</dd>
+              <dt><kbd>g</kbd> <kbd>s</kbd></dt><dd>seeds</dd>
+              <dt><kbd>g</kbd> <kbd>u</kbd></dt><dd>sut</dd>
+              <dt><kbd>g</kbd> <kbd>c</kbd></dt><dd>optimizer</dd>
+              <dt><kbd>g</kbd> <kbd>a</kbd></dt><dd>artifacts</dd>
+            </dl>
+          </section>
+          <section>
+            <span class="eyebrow">general</span>
+            <dl class="kbd-list">
+              <dt><kbd>?</kbd></dt><dd>this overlay</dd>
+              <dt><kbd>t</kbd></dt><dd>toggle theme</dd>
+              <dt><kbd>/</kbd></dt><dd>focus YAML editor</dd>
+              <dt><kbd>⌘</kbd> <kbd>Y</kbd></dt><dd>toggle YAML drawer</dd>
+              <dt><kbd>1</kbd> – <kbd>6</kbd></dt><dd>jump to step (step mode)</dd>
+            </dl>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme-crossfade overlay (used by polish.js layer 5). -->
+    <div class="theme-overlay" id="theme-overlay" aria-hidden="true"></div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- YAML drawer + manual-link extras (small inline glue).         -->
+    <!-- Avoids touching polish.js / step.js / canvas.js / etc.        -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <script>
+      (function () {
+        "use strict";
+
+        // ── Cmd/Ctrl+Y toggles the YAML drawer · Esc closes when open ──
+        document.addEventListener("keydown", function (e) {
+          const store = window.Alpine && window.Alpine.store
+            ? window.Alpine.store("explorer") : null;
+          if (!store) return;
+          const inField = e.target && (
+            e.target.tagName === "INPUT" ||
+            e.target.tagName === "TEXTAREA" ||
+            e.target.isContentEditable
+          );
+
+          // Cmd/Ctrl+Y — toggle. Allowed even from input fields so
+          // the user can dismiss while inside the YAML textarea.
+          if ((e.metaKey || e.ctrlKey) && (e.key === "y" || e.key === "Y")) {
+            e.preventDefault();
+            store.toggleYaml();
+            return;
+          }
+
+          // Escape · close when open. Defer to other Esc handlers if
+          // store.focusNode is set OR an overlay is already open —
+          // polish.js owns those.
+          if (e.key === "Escape" && store.yamlOpen && !inField) {
+            const overlay = document.getElementById("kbd-overlay");
+            if (overlay && overlay.classList.contains("is-open")) return;
+            store.closeYaml();
+            return;
+          }
+          if (e.key === "Escape" && store.yamlOpen && inField) {
+            // From inside the YAML textarea, Esc still closes the drawer.
+            store.closeYaml();
+            e.target.blur();
+            return;
+          }
+        });
+
+        // ── Manual link target setting ────────────────────────────────
+        // Defaults to "none" (render manual_page as plain text).
+        // User can switch to "obsidian" (deep-link via obsidian://).
+        // Storage + URL construction logic lives in widgets.js; this
+        // script only wires the settings-drawer radio inputs to
+        // localStorage + dispatches a custom event so detailPanel
+        // re-renders.
+        const MANUAL_KEY = "pipex.manualTarget";
+
+        function initManualSetting() {
+          const radios = document.querySelectorAll('input[name="setting-manual"]');
+          if (!radios.length) {
+            setTimeout(initManualSetting, 120);
+            return;
+          }
+          const current = localStorage.getItem(MANUAL_KEY) || "none";
+          radios.forEach(function (r) {
+            r.checked = r.value === current;
+            r.addEventListener("change", function () {
+              localStorage.setItem(MANUAL_KEY, r.value);
+              window.dispatchEvent(new CustomEvent("pipex:manual-target-changed", {
+                detail: r.value,
+              }));
+            });
+          });
+        }
+        initManualSetting();
+      })();
+    </script>
+  </body>
+</html>

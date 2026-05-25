@@ -1,0 +1,35 @@
+/* ─────────────────────────────────────────────────────────────────────
+   fonts.css
+   Typography stack imports. Inter Variable for display + body,
+   JetBrains Mono for config / code / numerical values.
+   Loaded from Google Fonts; no @font-face fallback because the explorer
+   is meant to run online next to the live Tailwind CDN.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Imports are issued from index.html via <link rel="preconnect"> +
+   <link rel="stylesheet"> for parallel download. This file declares the
+   font-family stacks so component styles never spell out raw family
+   names. */
+
+:root {
+  --font-display: "Inter", "Inter Variable", ui-sans-serif, system-ui,
+    -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Inter", "Inter Variable", ui-sans-serif, system-ui,
+    -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "JetBrains Mono Variable", ui-monospace,
+    SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+/* Number cells (config values, gene-bound rows, line numbers) all opt
+   into tabular-nums so columns visually line up at 1px precision. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1, "zero" 1;
+}
+
+/* Display weight uses the variable-font slant axis at -8 for a slight
+   editorial italic-tension that reads as deliberate, not generic. */
+.display-weight {
+  font-variation-settings: "wght" 760, "slnt" 0;
+}

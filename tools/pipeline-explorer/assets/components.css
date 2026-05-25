@@ -1,0 +1,3101 @@
+/* ─────────────────────────────────────────────────────────────────────
+   components.css  ·  component-level styles
+   All styles in this file reference tokens declared in styles.css.
+   Components are grouped by region of use, top-down: surfaces, top-bar
+   controls, pipeline canvas, detail panel, knob widgets, YAML editor,
+   step mode, footer.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Alpine x-cloak — hides elements until Alpine has hydrated. */
+[x-cloak] { display: none !important; }
+
+/* ═══ Surfaces ═══════════════════════════════════════════════════════ */
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-low);
+}
+
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-mid);
+}
+
+.panel {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-low);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 560px;
+}
+
+.panel__head {
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panel__head h2 {
+  font-size: var(--text-h3);
+  font-weight: 640;
+}
+
+.panel__body {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  flex: 1;
+}
+
+.panel__body--tight { padding: var(--space-4); }
+
+/* ═══ Wordmark (top-bar logo) ════════════════════════════════════════ */
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  font-size: 1.375rem;
+  color: var(--fg-primary);
+  display: flex;
+  align-items: baseline;
+}
+
+.wordmark__dot { color: var(--accent); }
+
+.wordmark__sub {
+  margin-left: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+/* ═══ Segmented control ══════════════════════════════════════════════ */
+
+.segmented {
+  display: inline-flex;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented__item {
+  font-family: var(--font-body);
+  font-weight: 520;
+  font-size: var(--text-small);
+  letter-spacing: 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+  border: 0;
+  background: transparent;
+}
+
+.segmented__item:hover { color: var(--fg-primary); }
+
+.segmented__item--active {
+  background: var(--fg-primary);
+  color: var(--bg-base);
+}
+
+/* The pipeline-toggle segmented variant is slightly larger because it
+   represents a heavy mode switch (the whole canvas swaps). */
+.segmented--lg .segmented__item {
+  padding: 8px 18px;
+  font-size: var(--text-body);
+}
+
+/* ═══ Buttons ════════════════════════════════════════════════════════ */
+
+.button--primary,
+.button--ghost,
+.button--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: 540;
+  font-size: var(--text-small);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+}
+
+.button--primary {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  font-weight: 600;
+}
+.button--primary:hover { background: var(--accent-hover); }
+
+.button--ghost {
+  padding: 10px 16px;
+  background: transparent;
+  color: var(--fg-secondary);
+  border-color: var(--border-default);
+}
+.button--ghost:hover {
+  color: var(--fg-primary);
+  border-color: var(--border-emphasis);
+}
+
+.button--icon {
+  padding: 8px;
+  background: transparent;
+  color: var(--fg-secondary);
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.button--icon:hover {
+  color: var(--fg-primary);
+  border-color: var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.button--icon svg { width: 18px; height: 18px; }
+
+/* ═══ Chips ══════════════════════════════════════════════════════════ */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+  letter-spacing: 0.02em;
+}
+
+.chip--accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: rgba(124, 250, 156, 0.28);
+}
+
+[data-theme="light"] .chip--accent {
+  border-color: rgba(20, 184, 99, 0.32);
+}
+
+.chip--joint   { color: var(--state-modality-joint); }
+.chip--image   { color: var(--state-modality-image); }
+.chip--text    { color: var(--state-modality-text); }
+.chip--success {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: rgba(124, 250, 156, 0.3);
+}
+
+.chip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ═══ Pipeline canvas ════════════════════════════════════════════════ */
+
+.pipeline-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 580px;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(124, 250, 156, 0.05) 0%,
+      transparent 60%
+    ),
+    var(--bg-base);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+[data-theme="light"] .pipeline-canvas {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(20, 184, 99, 0.06) 0%,
+      transparent 60%
+    ),
+    #faf7ef;
+}
+
+.pipeline-canvas__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* The static fallback SVG is decorative — pointer events stay off
+     by default. The dynamic SVG (which owns the interactive nodes)
+     re-enables them via the --dynamic modifier below. */
+  pointer-events: none;
+}
+
+.pipeline-canvas__svg--dynamic {
+  /* Interactive node groups live inside this SVG; opt back in.
+     The .cnode groups themselves catch pointer events; edges and
+     particle circles set pointer-events: none individually. */
+  pointer-events: auto;
+}
+
+/* Particle trails — give them a subtle glow via filter blur to
+   read as flowing data rather than dots. */
+.particle--flow {
+  filter: drop-shadow(0 0 4px var(--accent-soft));
+}
+
+/* Edge transitions: thicker stroke + accent brightening on focus. */
+.edge-path {
+  transition:
+    stroke var(--duration-base) var(--ease-standard),
+    stroke-width var(--duration-base) var(--ease-standard),
+    opacity var(--duration-base) var(--ease-standard);
+}
+
+.pipeline-canvas__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      var(--border-subtle) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--border-subtle) 1px,
+      transparent 1px
+    );
+  background-size: 32px 32px;
+  opacity: 0.4;
+  pointer-events: none;
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    black 30%,
+    transparent 80%
+  );
+}
+
+/* Pipeline node — base. node--focused gets the accent glow + heavier
+   border. node--muted is dimmed for non-focused state. node--active
+   is between the two (active in the flow). */
+.node {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-low);
+  transition:
+    border-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+  /* min-width is set inline per-node to allow editorial irregular
+     widths — different illustrations want different aspect ratios. */
+}
+
+.node__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.node__title {
+  font-family: var(--font-display);
+  font-weight: 620;
+  font-size: 0.9375rem;
+  color: var(--fg-primary);
+  letter-spacing: -0.01em;
+}
+
+.node--muted {
+  opacity: 0.62;
+}
+
+.node--active {
+  border-color: var(--border-emphasis);
+}
+
+.node--focused {
+  border-color: var(--accent);
+  box-shadow:
+    var(--shadow-mid),
+    0 0 0 1px var(--accent),
+    0 0 36px -6px var(--accent-soft);
+}
+
+.node--focused .node__label { color: var(--accent); }
+
+/* Hover state — brighter border, slight elevation, no fill shift.
+   Applied when the cursor is over a non-focused node. */
+.node--hover {
+  border-color: var(--accent-muted);
+  box-shadow:
+    var(--shadow-mid),
+    0 0 0 1px var(--accent-muted);
+}
+
+/* Make every dynamic node keyboard- and pointer-reachable. */
+.node[tabindex] { cursor: pointer; outline: none; }
+.node[tabindex]:focus-visible {
+  box-shadow:
+    var(--shadow-mid),
+    0 0 0 2px var(--accent);
+}
+
+/* Floating tooltip card — uses the existing .glass surface so it
+   reads as part of the design system. Pointer-events: none so it
+   never blocks the underlying node from receiving events. */
+.canvas-tooltip {
+  position: fixed;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  min-width: 160px;
+  max-width: 240px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+  border-color: var(--accent-muted);
+}
+.canvas-tooltip[data-visible="true"] { opacity: 1; }
+.canvas-tooltip__label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--fg-primary);
+  letter-spacing: -0.01em;
+}
+.canvas-tooltip__summary {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--fg-secondary);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.canvas-tooltip__hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Cluster wraps the three manipulator sub-nodes with a thin dashed
+   container so the "Manipulator" surface reads as one composite. */
+.cluster {
+  position: absolute;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: rgba(20, 22, 28, 0.4);
+}
+
+[data-theme="light"] .cluster { background: rgba(255, 255, 255, 0.4); }
+
+.cluster__label {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: var(--bg-base);
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent);
+}
+
+/* Edge style for SVG <path>. Particles are static <circle>s on the
+   path. Feedback edges get a dashed stroke + warm accent. */
+.edge {
+  fill: none;
+  stroke: var(--border-emphasis);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.edge--feedback {
+  stroke: var(--state-expensive);
+  stroke-dasharray: 4 6;
+  opacity: 0.85;
+}
+
+.edge--focused {
+  stroke: var(--accent);
+  stroke-width: 1.8;
+}
+
+.particle {
+  fill: var(--accent);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ═══ Programmatic SVG canvas node (cnode) ════════════════════════
+   Replaces the old absolute-positioned .node HTML cards. Each cnode
+   is one <g> group rendered by canvas.js, translated to a centre
+   point in viewBox coords. The group catches pointer events; its
+   background rect supplies the fill + stroke, and child <text>
+   elements supply the eyebrow / title labels.                       */
+
+.cnode { cursor: pointer; }
+
+.cnode__bg {
+  fill: var(--bg-elevated);
+  stroke: var(--border-default);
+  stroke-width: 1;
+  transition:
+    stroke var(--duration-base) var(--ease-standard),
+    stroke-width var(--duration-base) var(--ease-standard);
+}
+
+.cnode__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--fg-muted);
+}
+
+.cnode__title {
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  fill: var(--fg-primary);
+}
+
+.cnode--muted { opacity: 0.45; }
+.cnode--active .cnode__bg { stroke: var(--border-emphasis); }
+
+.cnode--hover .cnode__bg {
+  stroke: var(--accent-muted);
+  stroke-width: 1.4;
+}
+
+.cnode--focused .cnode__bg {
+  stroke: var(--accent);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 14px var(--accent-soft));
+}
+.cnode--focused .cnode__eyebrow { fill: var(--accent); }
+
+.cnode:focus { outline: none; }
+.cnode:focus-visible .cnode__bg {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+/* ─── Bespoke node illustrations (inline SVG inside .cnode) ─────── */
+
+.node-viz .viz-bg {
+  fill: var(--bg-base);
+  stroke: var(--border-subtle);
+  stroke-width: 0.5;
+}
+
+.node-viz .viz-cell {
+  fill: var(--bg-elevated);
+  stroke: var(--border-subtle);
+  stroke-width: 0.4;
+}
+.node-viz .viz-cell--accent { fill: var(--accent); }
+
+.node-viz .viz-chip {
+  fill: var(--bg-base);
+  stroke: var(--border-default);
+  stroke-width: 0.6;
+}
+.node-viz .viz-chip--accent {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 0.8;
+}
+
+.node-viz .viz-curve {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.node-viz .viz-dot { fill: var(--fg-secondary); }
+.node-viz .viz-dot--accent { fill: var(--accent); }
+
+.node-viz .viz-tx-line { fill: var(--fg-secondary); opacity: 0.55; }
+.node-viz .viz-bar {
+  fill: var(--accent-muted);
+}
+.node-viz .viz-bar--a { fill: var(--accent); }
+.node-viz .viz-bar--b { fill: var(--accent-muted); opacity: 0.65; }
+.node-viz .viz-bar--accent { fill: var(--accent); }
+.node-viz .viz-bar-label {
+  font-family: var(--font-mono);
+  font-size: 6px;
+  fill: var(--fg-secondary);
+}
+.node-viz .viz-bar-label--muted { fill: var(--fg-muted); }
+
+.node-viz .viz-page {
+  fill: var(--bg-elevated);
+  stroke: var(--border-default);
+  stroke-width: 0.6;
+}
+.node-viz .viz-page--mid { fill: var(--bg-base); }
+.node-viz .viz-page--front {
+  fill: var(--bg-elevated);
+  stroke: var(--accent-muted);
+}
+
+/* Light-theme adjustment so the cnode rects read against the warm
+   canvas backdrop. */
+[data-theme="light"] .cnode__bg { fill: #fdfaf0; }
+[data-theme="light"] .node-viz .viz-bg { fill: #f4eddc; }
+[data-theme="light"] .node-viz .viz-cell { fill: #fdfaf0; }
+[data-theme="light"] .node-viz .viz-page { fill: #fdfaf0; }
+[data-theme="light"] .node-viz .viz-page--mid { fill: #f4eddc; }
+[data-theme="light"] .node-viz .viz-page--front { fill: #fdfaf0; }
+
+/* ═══ Node illustrations (mini-vizzes inside each pipeline node) ════ */
+
+.patch-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 1px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.patch-cell {
+  background: var(--bg-base);
+}
+
+.patch-cell--filled {
+  background: var(--accent);
+}
+
+.patch-cell--partial {
+  background: var(--accent-muted);
+  opacity: 0.6;
+}
+
+/* The detail-panel hero patch grid runs 32×32 to mirror the f8-16384
+   VQGAN preset (the default in the codebase). */
+.patch-grid--32 {
+  grid-template-columns: repeat(32, 1fr);
+}
+
+/* Token chips (manipulator-text mini-viz). */
+.token-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.token-chip {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  padding: 3px 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--fg-secondary);
+}
+
+.token-chip--mutated {
+  background: var(--accent-soft);
+  border-color: rgba(124, 250, 156, 0.4);
+  color: var(--accent);
+}
+
+/* Seed dot grid mini-viz. */
+.seed-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.seed-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+  opacity: 0.5;
+}
+
+.seed-dot--near {
+  background: var(--accent);
+  opacity: 1;
+  box-shadow: 0 0 6px var(--accent-soft);
+}
+
+/* Stylised SUT transformer column. */
+.sut-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.sut-block {
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--border-emphasis) 0%,
+    var(--fg-secondary) 50%,
+    var(--border-emphasis) 100%
+  );
+  opacity: 0.78;
+}
+
+.sut-output {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  align-items: center;
+}
+
+.sut-output__fill {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Parquet-page stack illustration for the Artifacts node. */
+.parquet-stack {
+  position: relative;
+  width: 100%;
+  height: 36px;
+}
+
+.parquet-page {
+  position: absolute;
+  width: 60%;
+  height: 22px;
+  border: 1px solid var(--border-emphasis);
+  background: var(--bg-base);
+  border-radius: 3px;
+}
+
+.parquet-page:nth-child(1) { left: 0; top: 0; }
+.parquet-page:nth-child(2) { left: 14%; top: 6px; opacity: 0.78; }
+.parquet-page:nth-child(3) { left: 28%; top: 12px; opacity: 0.55; }
+
+/* ═══ Detail panel: hero + knob list ════════════════════════════════ */
+
+.detail-hero {
+  position: relative;
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  background:
+    radial-gradient(
+      circle at 80% 20%,
+      var(--accent-soft) 0%,
+      transparent 50%
+    ),
+    var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.detail-hero__grid {
+  width: 240px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.detail-hero__title {
+  margin-top: var(--space-4);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* Provenance line: file path + copy / open-external icons. Uses
+   monospace for the path, regular for the metadata. */
+.provenance {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.provenance__path { color: var(--fg-secondary); }
+
+.provenance svg {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.provenance svg:hover { opacity: 1; color: var(--accent); }
+
+/* KaTeX placeholder — looks like math without loading the library. */
+.katex-mock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: "Computer Modern", "Cambria Math", "Times New Roman",
+    serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--fg-primary);
+}
+
+.katex-mock__bracket { color: var(--accent); font-style: normal; }
+.katex-mock__sub {
+  font-size: 0.6em;
+  vertical-align: sub;
+  color: var(--fg-muted);
+  font-style: normal;
+}
+
+/* ═══ Knob widgets ═════════════════════════════════════════════════ */
+
+.knob {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 1.2fr);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.knob:last-child { border-bottom: 0; }
+
+.knob__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.knob__label .name {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-primary);
+}
+
+.knob__label .desc {
+  font-size: var(--text-small);
+  color: var(--fg-muted);
+}
+
+.knob__widget {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.knob__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.knob__viz {
+  grid-column: 1 / -1;
+  padding-top: var(--space-2);
+}
+
+/* Slider input — visual style only (no JS behaviour yet). */
+.slider {
+  position: relative;
+  width: 140px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.slider__track {
+  position: absolute;
+  inset: 12px 0;
+  height: 4px;
+  background: var(--border-default);
+  border-radius: 2px;
+}
+
+.slider__fill {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.slider__thumb {
+  position: absolute;
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow-low);
+}
+
+/* Number input — minimal, mono-styled, looks like config not a form. */
+.number-input {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-primary);
+  min-width: 88px;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.number-input__nudge {
+  color: var(--fg-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.number-input__nudge:hover { color: var(--accent); }
+
+/* Dropdown — closed-state visual. */
+.dropdown {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-primary);
+  cursor: pointer;
+}
+
+.dropdown__chevron { color: var(--fg-muted); }
+
+.dropdown--focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 1px;
+}
+
+.dropdown--hover {
+  border-color: var(--border-emphasis);
+  background: var(--bg-elevated);
+}
+
+/* Toggle (boolean switch). */
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--border-default);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.toggle__handle {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--fg-primary);
+  border-radius: 50%;
+  transition: left var(--duration-base) var(--ease-emphasized);
+}
+
+.toggle--on { background: var(--accent); }
+.toggle--on .toggle__handle {
+  left: 20px;
+  background: var(--fg-on-accent);
+}
+
+/* Mini-vizzes under hero-tier knobs (impact previews). */
+.miniviz-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+
+.miniviz-bar__fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent-muted) 100%
+  );
+}
+
+.sparkline {
+  width: 100%;
+  height: 28px;
+}
+
+.sparkline path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+
+.sparkline circle { fill: var(--accent); }
+
+/* Severity bars for the text-profile mini-viz. */
+.severity-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.severity-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.severity-cell__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+}
+
+.severity-cell__bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-default);
+  overflow: hidden;
+}
+
+.severity-cell__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+/* ═══ YAML editor (phase 6 — live two-way binding) ═══════════════════ */
+
+/* Outer host: gutter (col 1) + stacked highlight/textarea (col 2).
+   Sits inside .panel; takes the remaining vertical space and clips its
+   own overflow — children handle their own scrolling. */
+.yaml-editor {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-secondary);
+  line-height: 1.55;
+  background: var(--bg-base);
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Left gutter — 1-based line numbers. Width auto-sizes to digit count
+   via a JS-driven `data-digits` attribute; we just supply min-width
+   safety here. Hover/diff state set by JS adds modifier classes. */
+.yaml-gutter {
+  flex: 0 0 auto;
+  min-width: 2.25rem;
+  padding: var(--space-4) var(--space-2) var(--space-4) var(--space-4);
+  text-align: right;
+  color: var(--fg-muted);
+  user-select: none;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: auto;
+}
+
+.yaml-gutter__line {
+  display: block;
+  padding: 0 var(--space-2) 0 0;
+  position: relative;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.yaml-gutter__line:hover,
+.yaml-gutter__line--hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Diff bar — 2px accent stripe along the right edge of a gutter cell
+   for any line whose content changed in the last serialisation. JS
+   animates opacity to 0 over 800ms then strips the class. */
+.yaml-gutter__line--diff::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  right: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 1;
+}
+
+/* Stack: <pre> highlight under a transparent <textarea>. Children
+   share padding, font metrics, and scroll position so the painted
+   tokens and the caret line up. */
+.yaml-stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.yaml-highlight,
+.yaml-input {
+  margin: 0;
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  line-height: 1.55;
+  letter-spacing: 0;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  border: 0;
+  outline: 0;
+  white-space: pre;
+  overflow: auto;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+.yaml-highlight {
+  position: absolute;
+  inset: 0;
+  /* Receive hover events on the line wrappers but let the underlying
+     textarea handle clicks/drags. The line wrappers re-enable pointer
+     events themselves so we still detect mouse-enter precisely. */
+  pointer-events: none;
+  color: var(--fg-secondary);
+  background: transparent;
+  overflow: hidden;
+}
+
+.yaml-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  resize: none;
+  color: transparent;
+  caret-color: var(--accent);
+  background: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.yaml-input::selection {
+  background: var(--accent-soft);
+}
+
+.yaml-input::-moz-selection {
+  background: var(--accent-soft);
+}
+
+/* Lines inside the highlight pre — one wrapper per source line so we
+   can paint a hover/diff background that spans the full column width. */
+.yaml-hl-line {
+  display: block;
+  position: relative;
+  padding: 0 var(--space-2);
+  border-radius: 2px;
+  min-height: 1.55em;
+}
+
+.yaml-hl-line--hover {
+  background: var(--accent-soft);
+}
+
+.yaml-hl-line--diff {
+  background: linear-gradient(
+    90deg,
+    var(--accent-soft),
+    transparent 70%
+  );
+}
+
+/* Syntax token spans — emitted by the regex highlighter in
+   yaml-editor.js. Colours chosen from the design tokens. */
+.tok-key       { color: var(--accent); }
+.tok-colon     { color: var(--fg-muted); }
+.tok-value     { color: var(--fg-primary); }
+.tok-string    { color: var(--state-modality-text); }
+.tok-number    { color: var(--fg-primary); }
+.tok-bool      { color: var(--state-modality-joint); font-weight: 600; }
+.tok-null      { color: var(--state-modality-joint); font-style: italic; }
+.tok-comment   { color: var(--fg-muted); font-style: italic; }
+.tok-dash      { color: var(--fg-muted); }
+.tok-bracket   { color: var(--fg-muted); }
+
+/* Inline error indicator under the toolbar. Hidden by default. */
+.yaml-error-bar {
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--state-expensive);
+  background: rgba(255, 122, 89, 0.08);
+  border-top: 1px solid var(--border-subtle);
+}
+
+[data-theme="light"] .yaml-error-bar {
+  background: rgba(200, 61, 26, 0.08);
+}
+
+/* Single line of the highlight pre that triggered the YAML parse
+   error. Painted as a subdued red stripe spanning the row. */
+.yaml-hl-line--error {
+  background: rgba(255, 122, 89, 0.14);
+  box-shadow: inset 2px 0 0 var(--state-expensive);
+}
+
+/* Bottom YAML toolbar. */
+.yaml-toolbar {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.yaml-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.yaml-filter-toggle input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.yaml-filter-toggle:hover { color: var(--fg-secondary); }
+
+/* Status pill — switches between valid / invalid / flash states.
+   Default styling is the green "valid" appearance; modifier classes
+   swap palette without re-laying out. */
+.pill-valid__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pill-valid--invalid {
+  color: var(--state-expensive);
+  background: rgba(255, 122, 89, 0.12);
+  border-color: rgba(255, 122, 89, 0.32);
+}
+
+[data-theme="light"] .pill-valid--invalid {
+  background: rgba(200, 61, 26, 0.12);
+  border-color: rgba(200, 61, 26, 0.32);
+}
+
+.pill-valid--flash {
+  transition: transform var(--duration-fast) var(--ease-bounce);
+  transform: scale(1.06);
+}
+
+/* ═══ Step mode ════════════════════════════════════════════════════ */
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  position: relative;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.step:hover { background: var(--bg-elevated); }
+
+.step__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+}
+
+.step__index {
+  font-variant-numeric: tabular-nums;
+}
+
+.step__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.step__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-body);
+  color: var(--fg-secondary);
+}
+
+.step__desc {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+}
+
+.step--complete .step__dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--fg-on-accent);
+}
+
+.step--complete .step__title { color: var(--fg-primary); }
+
+.step--active .step__dot {
+  background: var(--bg-base);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.step--active .step__title { color: var(--accent); }
+.step--active {
+  background: var(--accent-soft);
+}
+
+.step--muted .step__title { color: var(--fg-muted); }
+
+/* Connector line between step dots — drawn behind via ::before. */
+.stepper::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 32px;
+  bottom: 32px;
+  width: 1px;
+  background: var(--border-default);
+}
+
+/* Mini-pipeline strip at the bottom of step mode. */
+.mini-pipeline {
+  height: 80px;
+  position: relative;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+.mini-pipeline__node {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-muted);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mini-pipeline__node--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 22px -4px var(--accent-soft);
+}
+
+.mini-pipeline__edge {
+  height: 1px;
+  flex: 1;
+  background: var(--border-emphasis);
+  position: relative;
+}
+
+.mini-pipeline__edge::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: -3px;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--border-emphasis);
+}
+
+/* ═══ Step mode v2 · 5-cluster red-thread layout ═══════════════════
+   Replaces the 240px sidebar + cramped 1fr content grid with a
+   180px sticky sidebar + full-width cluster grid. The mini-pipeline
+   chip row spans the full bottom row.
+
+   .step-shell--v2 is a modifier on .step-mode (which already has a
+   grid declaration). We re-declare the grid here with explicit areas
+   so the mini-pipeline chip row spans the bottom edge edge-to-edge. */
+.step-shell--v2 {
+  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-areas:
+    "sidebar content"
+    "mini    mini";
+  column-gap: var(--space-6);
+  row-gap: var(--space-4);
+}
+
+.step-shell--v2 > .stepper--v2 { grid-area: sidebar; }
+.step-shell--v2 > .step-content--v2 { grid-area: content; min-width: 0; }
+.step-shell--v2 > .mini-pipeline--v2 { grid-area: mini; }
+
+/* Collapse to single column on narrow viewports; sidebar moves above
+   content (template areas redefined). Mini-pipeline still spans full. */
+@media (max-width: 1100px) {
+  .step-shell--v2 {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "sidebar"
+      "content"
+      "mini";
+  }
+  .stepper--v2 {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* Sticky sidebar — accounts for the 64px-ish top bar. */
+.stepper--v2 {
+  position: sticky;
+  top: calc(var(--space-6) + 56px);
+  align-self: start;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.stepper--v2 .step {
+  grid-template-columns: 28px 1fr;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.stepper--v2 .step__dot {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.stepper--v2 .step__label { gap: 1px; padding-top: 2px; }
+.stepper--v2 .step__title { font-size: var(--text-body-sm, 14px); }
+.stepper--v2 .step__desc {
+  font-size: 11px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg-muted);
+  text-wrap: pretty;
+}
+
+/* Connector line for the v2 sidebar; align to the smaller dot. */
+.stepper--v2::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 28px;
+  bottom: 96px;
+  width: 1px;
+  background: var(--border-default);
+}
+
+/* Active-cluster intro + config-impact summary below the bullets. */
+.stepper__intro {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stepper__intro-meta {
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.stepper__intro-hint {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--fg-secondary);
+  font-family: var(--font-display);
+  font-style: italic;
+  text-wrap: pretty;
+}
+
+/* Content column · vertical stack of header → grid → derived → actions. */
+.step-content--v2 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.step-content__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.step-content__title { margin: 0; }
+
+/* Cluster grid · 2 columns on wide, 1 column below 1100px viewport. */
+.cluster-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .cluster-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cluster-group {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+[data-theme="light"] .cluster-group { background: var(--bg-base); }
+
+/* Pipeline-switcher group is wide enough to span both columns. */
+.cluster-group--span-2 {
+  grid-column: 1 / -1;
+}
+
+.cluster-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cluster-group__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-primary);
+  margin: 0;
+}
+
+.cluster-group__count {
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.cluster-group__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+/* Transparent per-leaf wrapper · required because Alpine's
+   <template x-for> needs exactly one root element. Inner
+   <template x-if> blocks render either the pipeline hero or a knob. */
+.cluster-group__row {
+  display: contents;
+}
+
+.cluster-group__empty {
+  font-size: var(--text-mono-sm);
+  padding: var(--space-2) 0;
+}
+
+/* Knobs nested inside a cluster group are visually tighter — the card
+   wrapper already provides the separation, so we drop the per-knob
+   bottom border that the canvas-mode detail panel uses. */
+.knob--cluster {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.knob--cluster:last-child { border-bottom: 0; }
+
+/* Pipeline hero (special knob inside the Pipeline group on step 1) */
+.pipeline-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.pipeline-hero__seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.pipeline-hero__seg .segmented__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.segmented__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+
+.segmented__sub {
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  letter-spacing: var(--tracking-wide);
+}
+
+.pipeline-hero__seg .segmented__item--active .segmented__sub {
+  color: var(--accent);
+}
+
+.pipeline-hero__caption {
+  font-size: 13.5px;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Derived consequence card · slim accent-soft band below the grid. */
+.cluster-derived {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.cluster-derived__icon {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  line-height: 1.3;
+}
+
+.cluster-derived__text {
+  color: var(--fg-primary);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* Step actions · flex row, gap, full content width. */
+.step-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Mini pipeline row · v2 anchors at the bottom of the step-mode grid
+   (full-width row). Kept compact at 80px tall per the spec. */
+.mini-pipeline--v2 {
+  position: sticky;
+  bottom: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+/* Pulse state — chip belongs to a cluster the user is on. */
+.mini-pipeline__node--active::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1px solid var(--accent);
+  opacity: 0.4;
+  animation: minipulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes minipulse {
+  0%   { transform: scale(1);    opacity: 0.45; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+/* ═══ Pill: live status badge inside the YAML toolbar ═══════════════ */
+
+.pill-valid {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(124, 250, 156, 0.3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--accent);
+}
+
+[data-theme="light"] .pill-valid {
+  border-color: rgba(20, 184, 99, 0.3);
+}
+
+/* Hero number callouts inside the detail hero. */
+.callout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.callout__value {
+  font-family: var(--font-display);
+  font-size: var(--text-display-md);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.callout__sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ═══ Eyebrow heading for big section breaks ════════════════════════ */
+
+.section-eyebrow {
+  position: absolute;
+  top: -10px;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--bg-base);
+  padding-right: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-muted);
+}
+
+.section-eyebrow__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Description block under the section eyebrow — single short paragraph
+   stating what the reader is looking at. */
+.section-desc {
+  max-width: 56ch;
+  color: var(--fg-secondary);
+  font-size: var(--text-body);
+}
+
+/* ═══ Live widgets (phase 4) ════════════════════════════════════════
+   Extends the static visual skin in the section above with the live
+   inputs, popovers, and repeatable cards that the auto-generator emits.
+   Names mirror the static helpers (`.slider`, `.dropdown`, `.toggle`)
+   so phase-2 demo markup keeps rendering. */
+
+.knob {
+  position: relative;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.knob:hover {
+  background: linear-gradient(
+    90deg,
+    var(--accent-soft) 0%,
+    transparent 80%
+  );
+}
+
+.knob--hover {
+  background: linear-gradient(
+    90deg,
+    var(--accent-soft) 0%,
+    transparent 80%
+  );
+}
+
+.knob__label .name {
+  cursor: default;
+}
+
+.knob__label .name code {
+  font-family: var(--font-mono);
+}
+
+/* Slider · native <input type="range"> skinned via CSS so it picks up
+   keyboard / touch behaviour for free. The fill is faked by mixing
+   an accent gradient stop with the track background. */
+.slider-native {
+  width: 140px;
+  height: 24px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.slider-native:focus {
+  outline: none;
+}
+
+.slider-native::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--fill, 0%),
+    var(--border-default) var(--fill, 0%),
+    var(--border-default) 100%
+  );
+}
+
+.slider-native::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-default);
+}
+
+.slider-native::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.slider-native::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow-low);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.slider-native:hover::-webkit-slider-thumb,
+.slider-native:focus::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+.slider-native::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow-low);
+}
+
+/* Inline text + number input. */
+.input-inline {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-primary);
+  min-width: 0;
+  width: 160px;
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.input-inline:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.input-inline--invalid {
+  border-color: var(--state-expensive);
+  box-shadow: 0 0 0 2px rgba(255, 122, 89, 0.16);
+}
+
+.input-inline--wide { width: 100%; }
+.input-inline--path { font-family: var(--font-mono); }
+
+/* Dropdown popover — anchor on the trigger via position:relative on
+   the wrapper. We use a button-styled trigger (not a native <select>)
+   and a panel that drops below it. */
+.dropdown-root {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-primary);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.dropdown-trigger:hover,
+.dropdown-trigger[aria-expanded="true"] {
+  border-color: var(--border-emphasis);
+  background: var(--bg-elevated);
+}
+
+.dropdown-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 100%;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-mid);
+  padding: 4px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdown-option {
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+
+.dropdown-option:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.dropdown-option--active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Toggle pill — wraps a hidden checkbox for keyboard accessibility. */
+.toggle-pill {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--border-default);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+  border: 0;
+  padding: 0;
+}
+
+.toggle-pill::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--fg-primary);
+  border-radius: 50%;
+  transition: left var(--duration-base) var(--ease-emphasized);
+}
+
+.toggle-pill[aria-pressed="true"] {
+  background: var(--accent);
+}
+
+.toggle-pill[aria-pressed="true"]::after {
+  left: 22px;
+  background: var(--fg-on-accent);
+}
+
+.toggle-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Tuple chip row beneath the input — visual confirmation of parsed
+   list. Disappears for tuple_str/path where the input is plain text. */
+.tuple-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tuple-chip {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  padding: 2px 8px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--fg-secondary);
+}
+
+/* Repeatable item card group (tuple_dataclass · tiers · strategies) */
+.item-group {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.item-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.item-card__title {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.item-card__remove {
+  background: transparent;
+  border: 0;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-card__remove:hover {
+  color: var(--state-expensive);
+  background: var(--bg-elevated);
+}
+
+.item-card__field {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1.2fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.item-card__field .name {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+}
+
+.item-add {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px dashed var(--border-default);
+  color: var(--fg-secondary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.item-add:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* JSON preview block (dict fallback). */
+.json-preview {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+/* Side-effect note (modality runtime override). */
+.knob__note {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+/* Advanced disclosure group at the bottom of the panel. */
+.advanced-group {
+  margin-top: var(--space-4);
+  border-top: 1px dashed var(--border-default);
+  padding-top: var(--space-3);
+}
+
+.advanced-group > summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-muted);
+  padding: var(--space-2) 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.advanced-group > summary::-webkit-details-marker { display: none; }
+.advanced-group > summary::marker { display: none; }
+
+.advanced-group > summary::before {
+  content: "▸";
+  display: inline-block;
+  transition: transform var(--duration-fast) var(--ease-standard);
+  color: var(--fg-muted);
+}
+
+.advanced-group[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.advanced-group > summary:hover { color: var(--fg-primary); }
+
+/* Configuration heading inside the panel. */
+.config-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.config-heading h3 {
+  font-family: var(--font-display);
+  font-weight: 640;
+  font-size: var(--text-h3);
+}
+
+.config-heading__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+}
+
+/* Generic node icon (hero illustration for nodes without bespoke art).
+   A large outlined Lucide-style glyph stacked over a soft accent halo. */
+.hero-generic {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-generic::before {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  filter: blur(24px);
+}
+
+.hero-generic svg {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  color: var(--accent);
+}
+
+/* ═══ Genotype playground (phase 8) ═════════════════════════════════
+   Standalone interactive card living at the bottom of canvas-mode.
+   Spans the full width of the 3-column canvas grid and renders the
+   deterministic genotype -> phenotype mapping. No SUT call, no
+   outcome prediction — only the rendering pipeline is shown. */
+
+.playground {
+  grid-column: 1 / -1;
+  position: relative;
+  background: var(--bg-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-mid);
+  padding: var(--space-8) var(--space-8) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  overflow: hidden;
+}
+
+.playground::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(
+    circle at center,
+    var(--accent-soft) 0%,
+    transparent 60%
+  );
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.playground > * { position: relative; z-index: 1; }
+
+.playground__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.playground__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  font-size: var(--text-display-md);
+  line-height: 1.05;
+  color: var(--fg-primary);
+}
+
+.playground__title-dot { color: var(--accent); }
+
+.playground__sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  margin-top: var(--space-2);
+}
+
+.playground__head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.playground__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+}
+
+.playground__count strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Workspace: image grid (left) + text genes (right). */
+.playground__workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.4fr);
+  gap: var(--space-6);
+}
+
+@media (max-width: 1080px) {
+  .playground__workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+.playground__panel {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+.playground__panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.playground__panel-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-h3);
+  letter-spacing: -0.01em;
+}
+
+.playground__panel-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+}
+
+/* Image grid (schematic). 8 columns visible, square cells. */
+.playground__grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.playground__cell {
+  position: relative;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.playground__cell:hover {
+  transform: scale(0.94);
+  z-index: 2;
+}
+
+.playground__cell-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+  pointer-events: none;
+}
+
+/* SVG view container — same aspect ratio, occupies the same slot. */
+.playground__svg-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.playground__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Text-gene token rows. */
+.playground__tokens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.playground__token {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.6fr) 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+
+.playground__token--mutated {
+  border-color: rgba(124, 250, 156, 0.35);
+}
+
+.playground__token--hover {
+  background: var(--accent-soft);
+  border-color: rgba(124, 250, 156, 0.45);
+}
+
+.playground__token-chip {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  font-weight: 600;
+  color: var(--fg-primary);
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 28px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.playground__token-chip--mutated {
+  background: var(--accent-soft);
+  border-color: rgba(124, 250, 156, 0.4);
+  color: var(--accent);
+}
+
+.playground__token-chip .accent-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+}
+
+.playground__op-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.playground__op {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.playground__op-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+}
+
+.playground__op-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.playground__op-slider {
+  flex: 1;
+  height: 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.playground__op-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--border-default);
+  border-radius: 2px;
+}
+.playground__op-slider::-moz-range-track {
+  height: 4px;
+  background: var(--border-default);
+  border-radius: 2px;
+}
+.playground__op-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: -4px;
+  box-shadow: 0 0 0 2px var(--bg-base);
+}
+.playground__op-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.playground__op-val {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-secondary);
+  min-width: 12px;
+  text-align: right;
+}
+
+/* Live phenotype preview block. */
+.playground__preview {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.4fr) 1fr;
+  gap: var(--space-5);
+  align-items: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+@media (max-width: 760px) {
+  .playground__preview { grid-template-columns: 1fr; }
+}
+
+.playground__preview-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 1px;
+  width: 140px;
+  aspect-ratio: 1 / 1;
+  background: var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.playground__preview-cell {
+  width: 100%;
+  height: 100%;
+}
+
+.playground__preview-text {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-lg);
+  color: var(--fg-primary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.playground__preview-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: 6px;
+}
+
+/* Genotype dump. */
+.playground__dump {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.playground__dump-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.playground__dump-row--hover {
+  background: var(--accent-soft);
+}
+
+.playground__dump-key {
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.playground__dump-vals {
+  color: var(--fg-secondary);
+  word-break: break-word;
+  line-height: 1.7;
+}
+
+.playground__dump-num {
+  font-family: var(--font-mono);
+  color: var(--fg-muted);
+}
+.playground__dump-num--mut { color: var(--accent); font-weight: 600; }
+.playground__dump-num--hover {
+  background: var(--accent-soft);
+  padding: 0 4px;
+  border-radius: 3px;
+  color: var(--accent);
+}
+
+/* Action button row. */
+.playground__actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.playground__btn {
+  font-family: var(--font-body);
+  font-weight: 520;
+  font-size: var(--text-small);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.playground__btn:hover {
+  color: var(--fg-primary);
+  border-color: var(--border-emphasis);
+}
+
+.playground__btn--primary {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  border-color: var(--accent);
+}
+.playground__btn--primary:hover {
+  background: var(--accent-hover);
+  color: var(--fg-on-accent);
+  border-color: var(--accent-hover);
+}
+
+/* Anchor badge — hovers above the card when isAnchor === true. */
+.playground__anchor-badge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-8);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(124, 250, 156, 0.3);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+  z-index: 2;
+}
+
+.playground__anchor-badge--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.playground__anchor-badge--pulse {
+  animation: playgroundAnchorPulse 1.2s var(--ease-standard);
+}
+
+@keyframes playgroundAnchorPulse {
+  0%   { transform: translateY(0) scale(1); box-shadow: 0 0 0 0 var(--accent-soft); }
+  40%  { transform: translateY(0) scale(1.08); box-shadow: 0 0 0 14px transparent; }
+  100% { transform: translateY(0) scale(1); box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Scrollbar polish inside the tokens column. */
+.playground__tokens::-webkit-scrollbar {
+  width: 6px;
+}
+.playground__tokens::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE 9 POLISH — entry choreography, keyboard, drawer, KaTeX, theme
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Entry-state classes — applied by polish.js layer 1.
+   `.is-entering` is the pre-animation state (invisible, off-by-a-hair);
+   `.is-entered` is the post-animation resting state. Motion One mutates
+   the inline transform/opacity during the animation; these classes
+   merely provide the initial / final visual frames so the page does
+   not flash unstyled content before Motion One picks up. */
+.is-entering { opacity: 0; }
+.is-entered  { opacity: 1; }
+
+/* Skip-link: present in source order but invisible until focused.
+   Slides down on :focus into a pill at the top of the viewport. */
+.skip-link {
+  position: fixed;
+  left: var(--space-4);
+  top: -48px;
+  z-index: 200;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow-mid);
+  transition: top 160ms var(--ease-standard);
+}
+.skip-link:focus-visible,
+.skip-link:focus {
+  top: var(--space-3);
+  outline: none;
+}
+
+/* Refined :focus-visible accent ring across the polish layer. The
+   per-component rings stay, this one catches everything else that
+   becomes keyboard-reachable (buttons, links). */
+.button--primary:focus-visible,
+.button--ghost:focus-visible,
+.button--icon:focus-visible,
+.footer a:focus-visible,
+.settings-radio input:focus-visible + span,
+.settings-switch input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Equation block · real KaTeX output gets `.kx-rendered` from polish.js.
+   The element keeps `.katex-mock` markup as a fallback when KaTeX is
+   unavailable; once rendered, the `.kx-rendered` overrides reset the
+   mock styling and let KaTeX's own CSS take over. */
+.kx { display: inline-block; }
+.kx.kx-rendered.katex-mock {
+  font-family: inherit; /* let KaTeX font win */
+  font-style: normal;
+  padding: 4px 8px;
+}
+.kx-block {
+  display: block;
+  margin: var(--space-3) 0;
+  text-align: center;
+}
+
+/* ─── Settings drawer ────────────────────────────────────────────── */
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 90;
+  transition: opacity 220ms var(--ease-standard);
+  backdrop-filter: blur(6px);
+}
+.drawer-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 92vw);
+  z-index: 100;
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--border-default);
+  box-shadow: var(--shadow-high);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 320ms var(--ease-emphasized);
+}
+.settings-drawer[hidden] { display: none; }
+.settings-drawer.is-open { transform: translateX(0); }
+
+.settings-drawer__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.settings-drawer__head h2 {
+  font-size: var(--text-h2);
+  font-weight: 720;
+}
+
+.settings-drawer__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.settings-drawer__hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.settings-radio-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.settings-radio {
+  position: relative;
+  cursor: pointer;
+}
+.settings-radio input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.settings-radio span {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-small);
+  color: var(--fg-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 140ms var(--ease-standard),
+    color 140ms var(--ease-standard);
+}
+.settings-radio input:checked + span {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-muted);
+}
+.settings-radio:hover span { color: var(--fg-primary); }
+
+.settings-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  user-select: none;
+}
+.settings-switch input { accent-color: var(--accent); }
+
+/* ─── Keyboard help overlay ──────────────────────────────────────── */
+
+.kbd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease-standard);
+}
+.kbd-overlay[hidden] { display: none; }
+.kbd-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.kbd-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(6px);
+}
+.kbd-overlay__card {
+  position: relative;
+  width: min(720px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-high);
+}
+.kbd-overlay__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+.kbd-overlay__head h2 {
+  font-size: var(--text-h2);
+  font-weight: 720;
+}
+.kbd-overlay__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-6);
+}
+.kbd-overlay__cols section { display: flex; flex-direction: column; gap: var(--space-2); }
+.kbd-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-3);
+  row-gap: var(--space-2);
+  margin: 0;
+}
+.kbd-list dt {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.kbd-list dd {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--fg-secondary);
+}
+.kbd-list kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  color: var(--fg-primary);
+  min-width: 22px;
+  display: inline-block;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ─── Theme crossfade overlay ────────────────────────────────────── */
+
+.theme-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--bg-base);
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+/* Smooth body / panel surface transitions, but only while the
+   transitioning class is on the root. This avoids re-running a CSS
+   transition on every paint. */
+html.theme-transitioning body,
+html.theme-transitioning .panel,
+html.theme-transitioning .topbar,
+html.theme-transitioning .footer,
+html.theme-transitioning .playground,
+html.theme-transitioning .settings-drawer {
+  transition: background-color 240ms var(--ease-emphasized),
+    border-color 240ms var(--ease-emphasized),
+    color 240ms var(--ease-emphasized);
+}
+
+/* Reduced-motion honour: kill all the polish-layer transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .skip-link,
+  .drawer-backdrop,
+  .settings-drawer,
+  .kbd-overlay,
+  .theme-overlay,
+  html.theme-transitioning body,
+  html.theme-transitioning .panel {
+    transition: none !important;
+  }
+}
+html.reduced-motion .skip-link,
+html.reduced-motion .drawer-backdrop,
+html.reduced-motion .settings-drawer,
+html.reduced-motion .kbd-overlay,
+html.reduced-motion .theme-overlay,
+html.reduced-motion.theme-transitioning body,
+html.reduced-motion.theme-transitioning .panel {
+  transition: none !important;
+}
+

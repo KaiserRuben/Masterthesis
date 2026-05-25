@@ -1,0 +1,564 @@
+/* ─────────────────────────────────────────────────────────────────────
+   styles.css  ·  design tokens + base layout
+   The single source of truth for color / type / spacing / motion.
+   Components reference these tokens via var(); never re-declare a hex
+   value inside components.css.
+   Spacing grid: 4px base, doubled at every step (--space-1 = 4, -2 = 8,
+   -3 = 12, -4 = 16, -5 = 20, -6 = 24, -8 = 32, -10 = 40, -12 = 48,
+   -16 = 64). Tailwind utilities are layered on top for one-off offsets.
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Color · dark theme (default) ────────────────────────────────
+     Background ladder runs from absolute base (0a0b0d, near-black with
+     a touch of warm carbon) through three elevation tiers. We never
+     use pure #000; the lift away from black lets accent + grain stay
+     legible without flaring. */
+  --bg-base: #0a0b0d;
+  --bg-elevated: #131418;
+  --bg-glass: rgba(20, 22, 28, 0.62);
+  --bg-overlay: rgba(8, 9, 12, 0.78);
+
+  --fg-primary: #f3f4f7;
+  --fg-secondary: #b6b9c2;
+  --fg-muted: #6b6e78;
+  --fg-on-accent: #07140c;
+
+  /* Accent: an electric-green (#7CFA9C) chosen over generic blue. The
+     hue ties to "search" / "discovery" semantics and stays readable
+     against the warm carbon background. The hover step pushes one
+     point brighter and a hint cooler. */
+  --accent: #7cfa9c;
+  --accent-hover: #94ffae;
+  --accent-muted: #4ea571;
+  --accent-soft: rgba(124, 250, 156, 0.12);
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.11);
+  --border-emphasis: rgba(255, 255, 255, 0.22);
+
+  /* Semantic colour roles. Red is reserved for "search-expensive" cost
+     bands — never used as a danger / error red on its own. Modality
+     accents are kept hue-adjacent to avoid clashing with the green
+     primary while still being distinguishable. */
+  --state-cheap: #7cfa9c;
+  --state-expensive: #ff7a59;
+  --state-modality-joint: #d3b8ff;
+  --state-modality-image: #8ad7ff;
+  --state-modality-text: #ffd07a;
+
+  --shadow-low: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-mid: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 8px 24px -8px rgba(0, 0, 0, 0.55);
+  --shadow-high: 0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 20px 48px -16px rgba(0, 0, 0, 0.6);
+
+  /* ─── Typography ─────────────────────────────────────────────────
+     Display sizes clamp between phone (640px) and desktop (1440px).
+     Tight leading on display, generous on body. Tracking is negative
+     on display (-0.02em) and slightly positive on mono (+0.01em). */
+  --text-display-xl: clamp(2.75rem, 4vw + 1rem, 4.5rem); /* 44–72px */
+  --text-display-lg: clamp(2.25rem, 2.6vw + 1rem, 3.25rem); /* 36–52px */
+  --text-display-md: clamp(1.75rem, 1.4vw + 1rem, 2.25rem); /* 28–36px */
+  --text-h1: 2rem; /* 32 */
+  --text-h2: 1.5rem; /* 24 */
+  --text-h3: 1.125rem; /* 18 */
+  --text-body: 0.9375rem; /* 15 */
+  --text-small: 0.8125rem; /* 13 */
+  --text-mono-sm: 0.75rem;
+  --text-mono-base: 0.8125rem;
+  --text-mono-lg: 0.9375rem;
+
+  --leading-tight: 1.05;
+  --leading-snug: 1.25;
+  --leading-relaxed: 1.6;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.06em;
+
+  /* ─── Spacing · 4px grid ─────────────────────────────────────────
+     Keep these as raw px so calc() against them is predictable. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius scale. Cards are 12px, pills full. Avoid the rounded-2xl-
+     everywhere look — only chips/buttons go pill. */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
+
+  /* Motion. ease-standard handles state transitions; emphasised is for
+     mode-switch animations; bounce is reserved for affordance (the
+     segmented-control thumb in phase 7). Durations are deliberately
+     short — this is a developer tool, not a marketing page. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 400ms;
+}
+
+/* ─── Light theme · warm, not flipped ─────────────────────────────
+   Background is a slight cream (#f6f3ec) rather than #ffffff to avoid
+   the bleached "MUI default" feel. Accent is darkened to #14B863 so
+   contrast against cream meets WCAG AA at the body-text size. The
+   modality and cost colours adjust hue but keep the same role mapping
+   so the legend transfers across themes without re-learning. */
+[data-theme="light"] {
+  --bg-base: #f6f3ec;
+  --bg-elevated: #fdfbf6;
+  --bg-glass: rgba(253, 251, 246, 0.72);
+  --bg-overlay: rgba(246, 243, 236, 0.86);
+
+  --fg-primary: #15151a;
+  --fg-secondary: #4a4d57;
+  --fg-muted: #7d808b;
+  --fg-on-accent: #f6fff2;
+
+  --accent: #14b863;
+  --accent-hover: #0f9d54;
+  --accent-muted: #5fc28a;
+  --accent-soft: rgba(20, 184, 99, 0.14);
+
+  --border-subtle: rgba(20, 20, 30, 0.07);
+  --border-default: rgba(20, 20, 30, 0.13);
+  --border-emphasis: rgba(20, 20, 30, 0.26);
+
+  --state-cheap: #14b863;
+  --state-expensive: #c83d1a;
+  --state-modality-joint: #7b50c4;
+  --state-modality-image: #1f6f9c;
+  --state-modality-text: #b6741a;
+
+  --shadow-low: 0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+    0 1px 2px rgba(40, 30, 10, 0.06);
+  --shadow-mid: 0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
+    0 10px 30px -10px rgba(40, 30, 10, 0.18);
+  --shadow-high: 0 1px 0 0 rgba(255, 255, 255, 0.7) inset,
+    0 26px 60px -20px rgba(40, 30, 10, 0.24);
+}
+
+/* ─── Reset + base ──────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg-base);
+  color: var(--fg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+  background: var(--bg-base);
+  color: var(--fg-primary);
+  /* A faint diagonal grain at the body level keeps the dark theme from
+     feeling flat under large flat panels. Pure CSS — no image asset. */
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(124, 250, 156, 0.05) 0,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 88% 6%,
+      rgba(124, 250, 156, 0.03) 0,
+      transparent 42%
+    );
+  min-height: 100vh;
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(20, 184, 99, 0.08) 0,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 88% 6%,
+      rgba(20, 184, 99, 0.04) 0,
+      transparent 42%
+    );
+}
+
+/* ─── Headings ──────────────────────────────────────────────────── */
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 720;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  margin: 0;
+  color: var(--fg-primary);
+}
+
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); }
+h3 { font-size: var(--text-h3); font-weight: 640; }
+
+p { margin: 0; color: var(--fg-secondary); }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The display-class lockup ("boundary.") in the top bar runs heavier
+   than h1 with explicit tracking. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.display--xl { font-size: var(--text-display-xl); }
+.display--lg { font-size: var(--text-display-lg); }
+.display--md { font-size: var(--text-display-md); }
+
+/* Eyebrow / kicker — small uppercase label above section titles. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-muted);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-base);
+}
+
+/* ─── App shell layout ──────────────────────────────────────────── */
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+/* Top bar — sticky, glass surface. Height held at 64px so the canvas
+   below it gets a known clear region. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-6);
+  background: var(--bg-glass);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topbar__center {
+  display: flex;
+  justify-content: center;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* The main work area uses padding rather than max-width so the canvas
+   feels generous on wide screens. At 1440+ we still leave breathing
+   room. */
+.workarea {
+  padding: var(--space-6) var(--space-6) var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Stacked canvas layout — pipeline canvas on top (generous vertical
+   real-estate), detail panel below at full width, playground beneath.
+   YAML editor is no longer in this flow; it lives in `.yaml-drawer`
+   which is `position: fixed` and overlays the right edge of the
+   viewport when the user opens it via Cmd/Ctrl+Y or the toolbar
+   button. */
+.canvas-mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  align-items: stretch;
+}
+
+/* The pipeline-canvas panel sits at the top of the stack and
+   occupies roughly the upper half of the viewport so it reads as
+   the centerpiece without crowding the detail panel below. */
+.canvas-mode > .panel[aria-label="Pipeline graph"] {
+  flex: 0 0 auto;
+}
+.canvas-mode > .panel[aria-label="Pipeline graph"] .pipeline-canvas {
+  flex: 0 0 auto;
+  /* Three-tier diagram. The SVG preserves aspect ratio so this
+     height controls how tall the rendered flow is. Capped so the
+     detail panel below stays visible on 900px screens. */
+  height: clamp(320px, 38vh, 480px);
+  min-height: 0;            /* override the 580px floor inherited */
+}
+.canvas-mode > .panel[aria-label="Pipeline graph"] {
+  min-height: 0;            /* override the .panel 560px floor */
+}
+
+/* Tighter head padding for the canvas panel — the meta chips fit
+   in a 56px-tall strip rather than the default 80px head. */
+.canvas-mode > .panel[aria-label="Pipeline graph"] > .panel__head {
+  padding: var(--space-3) var(--space-5);
+}
+.canvas-mode > .panel[aria-label="Pipeline graph"] > .panel__body--tight {
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Step-mode wrapper — clear visual break from canvas above. The big
+   eyebrow + thin rule replaces a literal <hr> for editorial polish. */
+.step-mode {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--space-8);
+  position: relative;
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 900px) {
+  .step-mode {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Footer is intentionally low-key — no shadow, single-line. */
+.footer {
+  padding: var(--space-6) var(--space-6) var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-sm);
+  color: var(--fg-muted);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────── */
+
+.muted { color: var(--fg-muted); }
+.secondary { color: var(--fg-secondary); }
+.accent-text { color: var(--accent); }
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; }
+.hidden { display: none; }
+
+/* Visually-hidden but screen-reader-accessible. Used on segmented
+   control hidden inputs when Alpine wires them up. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ─── YAML drawer (canvas-mode on-demand panel) ───────────────────
+   The YAML editor lives in a slide-in drawer pinned to the right
+   edge of the viewport. Closed by default. Opening is triggered
+   from the detail panel's "Open YAML" button, the Cmd/Ctrl+Y
+   shortcut, or programmatically. The drawer overlays content
+   (position: fixed) but does NOT block reading the canvas/detail
+   behind it — the backdrop dims by 50% only.
+
+   Width clamps to [420, 580]px on wide viewports and shrinks to
+   ~min(420, 90vw) on narrow. */
+.yaml-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  min-height: 0;            /* override the .panel 560px floor */
+  width: clamp(420px, 36vw, 580px);
+  z-index: 90;
+  transform: translateX(100%);
+  transition: transform 260ms var(--ease-emphasized, cubic-bezier(0.22, 1, 0.36, 1));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-panel, var(--bg-elevated, var(--bg-base)));
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -16px 0 32px -16px rgba(0, 0, 0, 0.35);
+  border-radius: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.yaml-drawer--open {
+  transform: translateX(0);
+}
+
+@media (max-width: 720px) {
+  .yaml-drawer {
+    width: min(420px, 90vw);
+  }
+}
+
+/* Make the editor body scroll inside the drawer instead of pushing
+   the toolbar off-screen. */
+.yaml-drawer > .yaml-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Close button overlaid in the drawer top-right corner. */
+.yaml-drawer__close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--fg-secondary);
+  cursor: pointer;
+  z-index: 2;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.yaml-drawer__close:hover {
+  background: var(--surface-raised, rgba(255, 255, 255, 0.05));
+  color: var(--fg-primary);
+}
+.yaml-drawer__close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.yaml-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  z-index: 89;
+}
+.yaml-drawer-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Light-theme tweaks — softer backdrop, lighter shadow. */
+[data-theme="light"] .yaml-drawer {
+  box-shadow: -16px 0 32px -16px rgba(20, 30, 40, 0.18);
+}
+[data-theme="light"] .yaml-drawer-backdrop {
+  background: rgba(40, 50, 60, 0.32);
+}
+
+/* Detail panel header gets a YAML toggle button at the far right;
+   reuse the existing button--ghost styling. */
+.detail-yaml-toggle {
+  margin-left: auto;
+}
+
+/* ─── Compressed page hero ─────────────────────────────────────────
+   Single-line headline with inline CTAs on the right. The whole
+   block height clamps so the canvas stays above the fold. */
+.page-hero--compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  max-width: 1280px;
+  padding-block: 0;
+  min-height: clamp(80px, 12vh, 130px);
+  max-height: 140px;
+}
+
+.page-hero__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 480px;
+}
+
+.page-hero__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.05;
+  font-size: clamp(1.625rem, 1.9vw + 0.4rem, 2.25rem);
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-hero__tagline {
+  color: var(--fg-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  max-width: 78ch;
+  margin: 0;
+}
+
+.page-hero__ctas {
+  display: flex;
+  gap: var(--space-3);
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .page-hero__title {
+    white-space: normal;
+  }
+  .page-hero__ctas {
+    flex-basis: 100%;
+  }
+}
+
