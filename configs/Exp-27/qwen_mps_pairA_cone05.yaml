@@ -1,0 +1,72 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-27 — Cone-Alpha-Sweep, Pair A, alpha = 5°
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Tight cone (5° half-angle). Tests whether Exp-26-default alpha=20° was too
+# permissive — if floor or Image-Cost drops further at 5°, cone benefits from
+# tighter restriction. If unchanged or worse, axis itself (class-modal-target
+# direction) is the wrong axis, not alpha.
+#
+# Sole delta vs pairA_baseline: cone_filter.enabled=true, alpha_deg=5.0.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp27_qwen_mps_pairA_cone05
+save_dir: runs/Exp-27
+
+modality: image_only
+
+generations: 100
+pop_size: 20
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: roster
+  filter_indices: [0]
+  roster:
+    class_list:
+      - hammerhead shark
+      - spotted salamander
+    seeds_per_class: 1
+    min_anchor_confidence: 4.5
+    abstraction:
+      levels_anchor: [-1]
+      levels_target: [-1]
+      apply_disjointness: true
+      directions: forward
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 5.0
+    target_m: 10
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null

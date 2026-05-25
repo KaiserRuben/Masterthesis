@@ -1,0 +1,70 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-27 — Cone-Alpha-Sweep + StyleGAN-Qwen-Fill
+# Pair B: junco ↔ chickadee (Exp-22 documented hard within-bucket bird pair)
+# Cell:   VQGAN baseline (cone_filter disabled) — anchor point
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Junco↔chickadee = same L1 (songbird), same L2 (bird) — common_ancestor_level
+# = 1. Documented hard pair from Exp-22 Phase 1 (Floor 2.43 → 2.08 from
+# sparse_multitier alone). Second pair for robustness on top of Pair-A
+# (hammerhead↔salamander).
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp27_qwen_mps_pairB_baseline
+save_dir: runs/Exp-27
+
+modality: image_only
+
+generations: 100
+pop_size: 20
+
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+  - /Volumes/SanDisk/Cache/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: roster
+  filter_indices: [0]
+  roster:
+    class_list:
+      - junco
+      - chickadee
+    seeds_per_class: 1
+    min_anchor_confidence: 3.5      # both well-classified by Qwen 4B
+    abstraction:
+      levels_anchor: [-1]
+      levels_target: [-1]
+      apply_disjointness: true
+      directions: forward
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: false
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 30
+    hypervolume_reference: null
