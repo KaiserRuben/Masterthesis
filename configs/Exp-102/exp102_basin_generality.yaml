@@ -1,0 +1,380 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-102 — Basin Generality (attractor sink, flip geometry, walls at depth)
+# ═══════════════════════════════════════════════════════════════════════════
+# Diary: [[Exp-102-Basin-Generality]]  (100-series = geometry series)
+# Base : configs/Exp-100/poc_boundary_pair.yaml (SUT, cone-VQGAN, text,
+#        sparse_multitier init, evolutionary → PDQ pipeline)
+# Run  : python experiments/runners/run_boundary_pair_test.py \
+#            configs/Exp-102/exp102_basin_generality.yaml
+#
+# Exp-100's partial slice (119/720 seeds) was 100% junco-anchored, forward
+# direction, LLaVA-OV-INT8. Its PDQ-layer findings (boa = global attractor
+# sink; minimal pair-flips sparse + text-dominated) and deep-search findings
+# (snake/songbird label walls) are therefore of UNKNOWN generality across
+# anchor classes and directions. Exp-102 buys exactly that generality in
+# <=48 h wall (plan ~38-39 h, hard-bound check ~45 h). Sibling Exp-101
+# (gen-0 margin predictor, evolutionary-only, 50 gens) covers convergence
+# SPEED breadth; Exp-102 covers what Exp-101 cannot: PDQ neighbourhoods
+# around all 6 anchors, minimal-flip geometry, and walls at depth.
+#
+# ─── (a) HYPOTHESES + PRE-REGISTERED PREDICTIONS ────────────────────────────
+# Evidence base (Exp-100 audit, 120 finished seeds, this workstation): all
+# 83,438 logged PDQ calls around junco anchors argmax'd to junco or boa only;
+# stage-1 flip rate mean 0.75 / median 0.83; stage-2 minimal flips were
+# text-driven (1-4 of 19 text genes); snake (junco->boa lt=1) and songbird
+# (junco->cello la=1) cells showed deep erosion walls.
+#
+#   P1  GLOBAL SINK (primary): for >=4 of 5 non-junco anchor classes, among
+#       logged PDQ calls whose 6-cat argmax LEAVES the anchor's concrete
+#       class, boa constrictor accounts for >50% of escapes. Junco bridge
+#       cells reproduce the junco/boa-only pattern.
+#       ALTERNATIVE (per-anchor attractor): each anchor class escapes
+#       predominantly to a class-specific target (e.g. its own L2-bucket
+#       neighbour).
+#       FALSIFIED if boa escape-share <=50% for >=2 non-junco anchor classes,
+#       or a non-boa category is the modal escape for >=2 classes.
+#   P1b SINK STABILITY: around boa-anchored neighbourhoods the basin barely
+#       leaks — 6-cat argmax stays boa in >80% of boa-anchored stage-1 calls,
+#       and boa cells are the only ones whose stage-1 regularly exhausts the
+#       full 100-call budget without reaching the 3-flip cap.
+#   P2  FLIP GEOMETRY: minimal pair-flips stay sparse and text-dominated
+#       across anchors — per non-junco anchor class, the median completed
+#       (non-budget-capped) stage-2 genotype_min has <=4 active genes with
+#       >=80% of them in the 19-gene text block.
+#       FALSIFIED if >=2 anchor classes show median active genes >6 or
+#       text-block share <50% (geometry was junco-specific).
+#   P3  WALLS AT DEPTH + DIRECTION SYMMETRY (H5): (a) the lt=1 "snake" wall
+#       replicates from non-junco anchors: ostrich->boa (0,1) and
+#       iguana->boa (0,1) end-of-run pop_min TgtBal floors are >=10x their
+#       same-pair (0,0) diagonal floors at gen 150; (b) the reverse
+#       "songbird" wall holds: boa->junco (0,1) and cello->junco (0,1) show
+#       the same >=10x floor ratio — i.e. the wall is a property of the
+#       abstracted TARGET label, not of the junco-forward direction.
+#       FALSIFIED if the wall/diagonal floor ratio is <3x in >=2 of the 5
+#       wall cells (incl. the junco->boa (0,1) bridge).
+#   P4  TEXT-EROSION MECHANISM (free from trace.parquet): among runs whose
+#       population crosses (any individual p_target > p_anchor), the first
+#       crossing individual carries >=1 active text gene in >=80% of runs.
+#
+# ─── (b) CELL-SUBSET DESIGN (23 cells, 4 upgraded to n=2 -> 27 runs) ────────
+# Every roster class anchors >=3 cells with >=1 within-bucket and >=1
+# cross-bucket pair; cells are mostly level-(0,0) (PDQ operates on concrete
+# classes — abstraction depth is spent only where the walls are). Generated
+# by configs/Exp-102/make_filter_indices.py (re-runs the real
+# combinatorial_pairs() enumeration; indices share Exp-101's 480-row index
+# space, so e.g. idx 28 = junco->boa (0,1) "snake" in both experiments).
+#
+#   junco   (bridge, 4 runs): J->O (0,0) | J->B (0,0) | J->B (0,1) WALL n=2
+#   ostrich (5 runs): O->J (0,0) | O->I (0,0) | O->B (0,0) | O->B (0,1) WALL n=2
+#   iguana  (4 runs): I->B (0,0) | I->B (0,1) wall n=1 | I->C (0,0) | I->J (0,0)
+#   boa     (5 runs): B->I (0,0) | B->J (0,0) | B->J (0,1) WALL n=2 | B->M (0,0)
+#   cello   (5 runs): C->M (0,0) | C->J (0,0) | C->J (0,1) WALL n=2 | C->B (0,0)
+#   marimba (4 runs): M->C (0,0) | M->B (0,0) | M->J (0,0) | M->I (0,0)
+#
+#   Boa-free pairs (I->C, I->J, M->J, M->I, O->I) are the sharpest P1 probes:
+#   if calls around those anchors still escape to boa, the sink is global.
+#   n=2 rationale: the four cross-bucket WALL cells carry the P3 depth/
+#   direction claims whose noise term is between-seed floor variance; one
+#   extra seed each gives a minimal within-cell replicate. Diagonal cells are
+#   breadth (basin + flip geometry) and stay n=1 (wide > deep).
+#   Exp-101 overlap is DELIBERATE where present (19 of 27 rows): those cells
+#   gain a 50-gen evo-only vs 150-gen evo+PDQ depth comparison. New coverage:
+#   O->B (0,0)+(0,1), I->J, C->B, M->J, M->I, C->J (0,1) seed 1.
+#
+# ─── (c) PDQ BUDGET DESIGN (the flip-rate coupling, made explicit) ──────────
+# Stage 2 minimises EVERY stage-1 flip (max_flips_per_seed binds only via
+# stage-1 early stop), and the empirical flip rate near top-TgtBal anchors is
+# 0.75-0.85 — so the early-stop floor min_calls_before_stop IS the stage-2
+# multiplier. Balance chosen:
+#   * anchor_selection.k: 1 — sidesteps the known k=3 phenotype-duplicate
+#     anchor bug (~55% of Exp-100 seeds had duplicate anchors) and frees
+#     budget; basin statistics are recovered by the larger stage-1 budget.
+#   * stage1.budget_sut_calls: 100 (vs 20/anchor in Exp-100) — only reached
+#     in flip-POOR neighbourhoods, i.e. exactly where the sink hypothesis
+#     predicts no escapes (boa-anchored cells get up to 100 random probes).
+#   * min_calls_before_stop: 12 — guarantees >=12 stage-1 basin calls/seed;
+#     in flip-rich cells stage 1 stops at call 12 with ~9-10 flips -> stage-2
+#     cost ~10 x 29 ~ 290 calls. Hard bound: flips <= 12 -> S2 <= 360 calls.
+#   * Strategy list REORDERED + REWEIGHTED (deviation from Exp-100, reason:
+#     strategies execute sequentially, so with early stop at ~call 12 only
+#     the first list entries ever run in flip-rich cells). Guaranteed prefix
+#     = 6 dense_uniform (global random probes, basin map) + 6 modality_text
+#     (sparse text flip candidates, P2). A second dense_uniform entry (25
+#     calls) runs only in flip-poor cells -> extra global probes exactly
+#     where the sink claim needs them. Cross-anchor comparability holds
+#     because every cell uses the identical list; the junco bridge cells
+#     re-measure the Exp-100 slice under these exact settings.
+#   * stage2.budget_sut_calls_per_flip: 30 — UNCHANGED from Exp-100 so
+#     minimal-flip costs stay comparable (sparse text flips complete in ~24
+#     calls; dense flips stay budget-capped, and the cap RATE per anchor
+#     class is itself a secondary replication statistic, Exp-100: 86%).
+#   * flip_policy / flip_preserve_policy: pair_target (pair-relative side
+#     comparison, lp[target] > lp[anchor]) — the boundary-crossing semantics
+#     the pair-space geometry claims are actually about. Implemented in
+#     src/pdq/flip_policy.py and wired through run_pdq_core(pair_classes=…);
+#     this config validates against the working-tree loader. The
+#     implementation is NOT YET COMMITTED — launch from a tree that includes
+#     it. The basin map (P1) is computed from logged full-category logprobs
+#     and is independent of the flip criterion.
+#
+# ─── (d) GENERATION BUDGET + WALL-TIME MATH ─────────────────────────────────
+# generations=150, uniform, early_stop disabled: ~150 gens captures >=99% of
+# improvement for ~87% of seeds (Exp-100), deep enough for P3 floors;
+# uniform fixed budget keeps floors comparable across cells. (The plateau
+# trigger is silently dead with hypervolume_reference: null anyway — known
+# bug; we disable early stop explicitly instead of relying on it.)
+#
+# Cost model (empirical, 120 finished Exp-100 boundary-pair seeds, THIS
+# workstation: LLaVA-OV-INT8 / Arc A770 / ov_device GPU / workers 2; all
+# figures include 2-worker contention):
+#   * evolutionary: 50.1 s/gen mean (IQR 41-57, incl. finalize at 200 gens)
+#     -> 150 gens ~ 150 x 50 s + ~6 min finalize  ~ 7,860 s ~ 2.18 h/seed
+#   * PDQ end-to-end: 5.95 s/call median, 7.56 s/call mean (incl. render +
+#     logging); stage-2 ~29 calls/flip at B2=30.
+#   * PDQ calls/seed (k=1): 1 anchor + S1 + S2
+#       flip-rich (most cells):  1 + 12 + ~10x29  ~ 300 calls ~ 2,250 s
+#       flip-poor (sink cells):  1 + <=100 + <=3x29 ~ 190 calls ~ 1,440 s
+#       hard bound:              1 + 12 + 12x30   = 373 calls ~ 2,820 s
+#     Experiment total ~ 27 x ~300 ~ 8,100 PDQ calls; per anchor class
+#     ~1,200-1,500 logged calls for the basin map (junco's Exp-100 map was
+#     built from the same S1+S2 call mixture).
+#   * per-seed expected: 7,860 + 2,250 = 10,110 s ~ 2.81 h
+#     wall (2 workers): 27 x 2.81 / 2 ~ 37.9 h
+#     one-time (roster preflight 6 classes + model load + cone modal-target
+#     precompute, redis-cached) ~ 0.5-0.8 h
+#     TOTAL ~ 38.4-38.7 h  ->  ~19% margin under the 48 h hard cap.
+#   * universal-worst-case check (every seed at the PDQ hard bound AND evo
+#     p75 57 s/gen): 27 x (8,950 + 2,820) / 2 / 3600 + 0.8 ~ 45.0 h < 48 h.
+#   * operational guard: after the first 6 manifests, compare mean per-seed
+#     wall against 1.40 h; if projection exceeds ~46 h, stop and finish the
+#     remainder later via --resume (per-seed manifests make this lossless).
+#
+# ─── (e) LAUNCH ─────────────────────────────────────────────────────────────
+#   python experiments/runners/run_boundary_pair_test.py \
+#       configs/Exp-102/exp102_basin_generality.yaml
+#   # cheap dry check of the seed plan (27 rows, no model load):
+#   python experiments/runners/run_boundary_pair_test.py \
+#       configs/Exp-102/exp102_basin_generality.yaml --plan-only
+#   # after interruption:  ... --resume  (add --clean-partials to drop
+#   # half-finished seed dirs)
+#
+# ─── (f) ANALYSIS PLAN (existing artifacts only) ────────────────────────────
+# Per run dir runs/Exp-102/exp102_basin_generality/seed_<i>_<ts>/:
+#   * P1/P1b — pdq/sut_calls.parquet (full `logprobs` vector + `categories` +
+#     `top1_label` + `stage` per call). Pool per anchor class (cell metadata
+#     from evolutionary/stats.json seed_metadata). Primary statistic on
+#     stage1 rows split by strategy (join candidates.parquet `operation` /
+#     `sut_call_id`); secondary on ALL logged calls (matches the Exp-100
+#     83k-call evidence regime). Escape share = P(argmax = boa | argmax !=
+#     anchor concrete class).
+#   * P2 — pdq/archive.parquet (genotype_anchor / genotype_min / rank_sum_min
+#     / sparsity_min, rows tagged pareto_idx) + stage2_trajectories.parquet
+#     (budget-capped vs completed). Gene-block split via stats.json
+#     image_dim=222 / text_dim=19. d_o_label_embedding / d_o_wordnet_path are
+#     KNOWN-BROKEN (never computed) — do not use.
+#   * P3 — evolutionary/convergence.parquet (pop_min_TgtBal per generation):
+#     gen-150 floor ratios wall vs same-pair (0,0); bridge comparison against
+#     Exp-100 200-gen junco cells and Exp-101 50-gen rows (shared enumeration
+#     indices).
+#   * P4 — evolutionary/trace.parquet: first generation with p_class_b >
+#     p_class_a, text-block activity of the crossing genotype.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp102_basin_generality
+save_dir: runs/Exp-102
+
+device: cpu
+
+# Explicit 6-class label set (identical to Exp-100). PDQ scores against this
+# 6-cat tuple — keeps argmax-based basin mapping meaningful (5 possible
+# escape targets per anchor). The evolutionary stage still does pair-only
+# scoring (score_full_categories: false), preserving Exp-100 fitness
+# semantics. Roster MUST stay these 6 preflight-validated classes — new
+# classes need blind-spot preflight (out of scope).
+categories:
+  - junco
+  - ostrich
+  - green iguana
+  - boa constrictor
+  - cello
+  - marimba
+
+# ───────────────────────────────────────────────────────────────────────────
+# SUT — LLaVA-OV-INT8 on workstation Arc A770 (identical to Exp-100)
+# ───────────────────────────────────────────────────────────────────────────
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+# ───────────────────────────────────────────────────────────────────────────
+# Reproducibility (PDQ-side RNG; evolutionary uses its own pymoo path)
+# ───────────────────────────────────────────────────────────────────────────
+reproducibility:
+  seed_int: 42
+  dump_rng_state: true
+  dump_git_hash: true
+  dump_env: true
+
+# ───────────────────────────────────────────────────────────────────────────
+# Roster — 6 classes, seeds_per_class=2 (pool; the four n=2 wall cells need a
+# second anchor seed). filter_indices narrows the 480-row enumeration to the
+# 27 pre-registered rows. Class-list ORDER is load-bearing (direction
+# semantics AND the enumeration index space) — do NOT reorder without
+# regenerating via configs/Exp-102/make_filter_indices.py.
+# ───────────────────────────────────────────────────────────────────────────
+seeds:
+  mode: roster
+  # 27 rows across 23 stratified cells (4 wall cells at n=2). Generated by
+  # configs/Exp-102/make_filter_indices.py against seeds_per_class=2 + the
+  # full (0,1,2)x(0,1,2) directions=both grid below. Index space shared with
+  # Exp-101 (e.g. 28/29 = junco->boa (0,1) "snake", seeds 0/1).
+  filter_indices: [0, 26, 28, 29, 80, 88, 106, 108, 109, 160,
+                   196, 198, 204, 240, 242, 243, 276, 302, 320, 322,
+                   323, 374, 392, 400, 436, 454, 472]
+  roster:
+    class_list:
+      - junco
+      - ostrich
+      - green iguana
+      - boa constrictor
+      - cello
+      - marimba
+    seeds_per_class: 2
+    # Carried over from Exp-100 (LLaVA-OV-INT8 preflight-validated roster).
+    # If any class fails to fill 2 anchors, RosterSeedGenerator fails fast —
+    # recalibrate via preflight rather than swapping classes.
+    min_anchor_confidence: 3.5
+    abstraction:
+      levels_anchor: [0, 1, 2]
+      levels_target: [0, 1, 2]
+      apply_disjointness: true
+      directions: both
+
+# ───────────────────────────────────────────────────────────────────────────
+# Image manipulator — VQGAN cone backend, IDENTICAL to Exp-100. The cone-axis
+# pair-conditionality caveat (Exp-26/27) is acknowledged; a validation
+# experiment must hold the manipulation layer fixed to isolate the anchor-
+# class factor.
+# ───────────────────────────────────────────────────────────────────────────
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 20.0
+    target_m: 10
+
+text:
+  composite:
+    profile: full_stack
+
+parallel:
+  workers: 2                              # OV-GPU + torch/CPU split → true concurrency
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Stage 1 — Evolutionary (AGE-MOEA-II), uniform 150-gen budget
+# ═══════════════════════════════════════════════════════════════════════════
+# Init sampling is the EXACT Exp-100/Exp-101 sparse_multitier block —
+# changing any tier breaks comparability of floors and gen-0 margins.
+evolutionary:
+  generations: 150
+  pop_size: 30
+  modality: joint
+  score_full_categories: false
+  optimizer:
+    sampling:
+      mode: sparse_multitier
+      zero_anchor_fraction: 0.05
+      tiers:
+        - {p_active: 0.005, fraction: 0.20}   # spike       E[n_active] ≈ 1
+        - {p_active: 0.030, fraction: 0.20}   # sparse      E[n_active] ≈ 7
+        - {p_active: 0.100, fraction: 0.25}   # medium      E[n_active] ≈ 22
+        - {p_active: 0.300, fraction: 0.20}   # heavy       E[n_active] ≈ 67
+        - {p_active: 0.500, fraction: 0.10}   # very heavy  E[n_active] ≈ 111
+    early_stop:
+      enable: false                           # uniform 150-gen length: floors
+                                              # must be depth-comparable across
+                                              # cells (and the null-reference
+                                              # plateau trigger is dead anyway)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Anchor selection — k=1 (top Pareto member by TgtBal)
+# ═══════════════════════════════════════════════════════════════════════════
+# k=1 sidesteps the unfixed k=3 phenotype-duplicate bug (55% of Exp-100 seeds
+# had duplicate anchors → ~1/3 effective diversity) and concentrates the PDQ
+# budget on one well-defined neighbourhood per seed; basin sampling power is
+# recovered via stage1.budget_sut_calls 100 (vs 20/anchor in Exp-100).
+anchor_selection:
+  source: pareto_front
+  k: 1
+  label_assignment: argmax_pair_softmax
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Stage 2 — PDQ (basin-mapping profile; see header section (c) for rationale)
+# ═══════════════════════════════════════════════════════════════════════════
+pdq:
+  stage1:
+    budget_sut_calls: 100                   # reached only in flip-poor (sink)
+                                            # neighbourhoods — up to 100 probes
+                                            # exactly where P1b predicts silence
+    max_flips_per_seed: 3                   # Exp-100 value; stop is governed by
+                                            # min_calls_before_stop in practice
+    max_distinct_targets: 5                 # = all non-anchor labels; inert in a
+                                            # 2-attractor landscape, stops early
+                                            # only if the basin is demonstrably
+                                            # multi-attractor (finding made)
+    # Pair-relative flip criterion (lp[target] > lp[anchor] side comparison,
+    # src/pdq/flip_policy.py). The runner resolves the concrete pair from the
+    # seed metadata, so abstracted prompt labels ("snake") are handled.
+    flip_policy: pair_target
+    # Order = execution order (sequential!). Guaranteed 12-call prefix in
+    # flip-rich cells = 6 dense_uniform + 6 modality_text; the second
+    # dense_uniform entry (25 calls) and the rest only run in flip-poor cells.
+    strategies:
+      - {name: dense_uniform, weight: 0.06}                          # basin probes (always run)
+      - {name: modality_text, weight: 0.06, density: 1.0}            # P2 flip candidates (always run)
+      - {name: dense_uniform, weight: 0.25}                          # extra global probes (sink cells)
+      - {name: sparsity_sweep, weight: 0.18, densities: [0.2, 0.5, 1.0]}
+      - {name: bituniform_density, weight: 0.15}
+      - {name: max_rank, weight: 0.15, subset_fractions: [0.1, 0.5, 1.0]}
+      - {name: modality_image, weight: 0.15, density: 0.6}
+    early_stop:
+      on_targets_complete: true
+      on_flips_complete: true
+      min_calls_before_stop: 12             # basin floor AND stage-2 cost cap:
+                                            # flips ≤ 12 → S2 ≤ 360 calls/seed
+
+  stage2:
+    budget_sut_calls_per_flip: 30           # UNCHANGED from Exp-100 — minimal-
+                                            # flip costs stay comparable; cap
+                                            # rate per anchor class is itself a
+                                            # replication statistic (86% @ junco)
+    flip_preserve_policy: pair_target       # pair-relative, see stage1 note
+    passes:
+      zero:
+        enabled: true
+        order: by_gene_value_desc
+        full_sweep_only: true
+      rank:
+        enabled: false
+      random_subset:
+        enabled: false
+
+  distances:
+    d_i_primary: rank_sum_delta             # anchor-aware: Σ|g − anchor|
+    d_i_compute_all: true
+    d_o_primary: label_mismatch             # d_o_label_embedding / wordnet_path
+    d_o_compute_all: true                   # are known-broken — never analysed
+
+  logging:
+    save_anchor_images: true
+    save_flip_images: true
+    save_all_candidate_images: false
+    parquet_compression: zstd
+    flush_interval_calls: 50
