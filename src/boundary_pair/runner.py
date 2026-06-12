@@ -25,7 +25,8 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
+import shutil
+from dataclasses import dataclass, replace
 from time import time
 from typing import Any
 
@@ -177,10 +178,28 @@ class BoundaryPairRunner:
 
     :param config: Boundary-pair experiment config.  Categories may be
         unresolved; :meth:`run` resolves them via ImageNetCache.
+    :param resume: Skip seeds whose ``manifest.json`` already exists
+        under ``<save_dir>/<name>/``. Each kept seed is matched against
+        the regenerated seed pool by concrete metadata (anchor class,
+        target class, levels, in-class seed index); any mismatch aborts.
+    :param clean_partials: With ``resume``, remove seed dirs lacking
+        ``manifest.json`` before launch. Destructive — opt-in only.
+    :param plan_only: Build the resume filter, log the run plan, exit
+        before any model work.
     """
 
-    def __init__(self, config: BoundaryPairExperimentConfig) -> None:
+    def __init__(
+        self,
+        config: BoundaryPairExperimentConfig,
+        *,
+        resume: bool = False,
+        clean_partials: bool = False,
+        plan_only: bool = False,
+    ) -> None:
         self._cfg = config
+        self._resume = resume
+        self._clean_partials = clean_partials
+        self._plan_only = plan_only
 
     def run(self) -> None:
         """Initialise components and run all seeds."""
@@ -207,6 +226,39 @@ class BoundaryPairRunner:
         if not seeds:
             logger.warning("No seeds — nothing to test.")
             return
+
+        # -- Resume bookkeeping (before backend precompute) --------------
+        # Resume must happen here:
+        #   - after seed generation, so we can sanity-check that the
+        #     regenerated SeedTriple at index N matches the persisted
+        #     metadata for the run's seed_NNNN_<ts>/ on disk;
+        #   - before backend precompute, since we may shrink the seed
+        #     list significantly and only want to precompute candidates
+        #     for the seeds we'll actually run.
+        if self._resume:
+            cfg = self._apply_resume(cfg, seeds)
+            self._cfg = cfg
+            # Empty filter after resume = nothing left to run. Bail before
+            # apply_seed_filter() treats the empty tuple as "keep all" and
+            # re-runs every finished seed.
+            if not cfg.seeds.filter_indices:
+                logger.info(
+                    "Resume: pipeline complete — every seed in the pool "
+                    "already has a manifest.json. Nothing to do."
+                )
+                return
+        if self._plan_only:
+            run_count = (
+                len(cfg.seeds.filter_indices)
+                if cfg.seeds.filter_indices else len(seeds)
+            )
+            logger.info(
+                "--plan-only: would run %d seed(s); skipping precompute, "
+                "worker init, and evolutionary / PDQ stages.",
+                run_count,
+            )
+            return
+
         precompute_image_backend(components, seeds, evo_cfg)
 
         # -- Objective spec (per-worker collections built below) --------
@@ -584,6 +636,186 @@ class BoundaryPairRunner:
             return cfg
         import dataclasses
         return dataclasses.replace(cfg, categories=categories)
+
+    # ------------------------------------------------------------------
+    # Resume support
+    # ------------------------------------------------------------------
+
+    _SANITY_FIELDS: tuple[str, ...] = (
+        "anchor_class_concrete",
+        "target_class_concrete",
+        "level_anchor",
+        "level_target",
+        "seed_idx_in_class",
+    )
+
+    def _apply_resume(
+        self,
+        cfg: BoundaryPairExperimentConfig,
+        seeds: list[SeedTriple],
+    ) -> BoundaryPairExperimentConfig:
+        """Scan ``<save_dir>/<name>/`` for finished seeds and shrink the
+        filter to the unfinished complement.
+
+        A seed is "finished" iff its ``manifest.json`` exists *and* its
+        sibling ``evolutionary/stats.json`` is readable and carries the
+        ``seed_metadata`` block we wrote at evo-stage start.  Each kept
+        index is then cross-checked against the regenerated seed pool:
+        a mismatch on any field in :attr:`_SANITY_FIELDS` aborts the
+        run.
+
+        Partial dirs (``manifest.json`` missing) are reported and, when
+        ``clean_partials`` is set, removed.  They are otherwise harmless
+        because downstream analysis keys off manifest presence.
+
+        :returns: A new config with ``seeds.filter_indices`` set to the
+            indices that still need running, intersected with any
+            user-supplied filter from YAML.
+        """
+        run_root = (cfg.save_dir / cfg.name).resolve()
+        if not run_root.exists():
+            logger.info(
+                "Resume: %s does not exist — nothing to skip; running all %d "
+                "seed(s).", run_root, len(seeds),
+            )
+            return self._narrow_filter(cfg, range(len(seeds)))
+
+        done_meta: dict[int, dict] = {}
+        partial_dirs: list = []
+        unreadable: list = []
+        duplicate_idxs: list[int] = []
+        for seed_dir in sorted(run_root.glob("seed_*")):
+            if not seed_dir.is_dir():
+                continue
+            manifest_path = seed_dir / "manifest.json"
+            if not manifest_path.exists():
+                partial_dirs.append(seed_dir)
+                continue
+            stats_path = seed_dir / "evolutionary" / "stats.json"
+            if not stats_path.exists():
+                unreadable.append((seed_dir, "no evolutionary/stats.json"))
+                continue
+            try:
+                manifest = json.loads(manifest_path.read_text())
+                stats = json.loads(stats_path.read_text())
+                seed_meta = stats.get("seed_metadata")
+                if seed_meta is None:
+                    unreadable.append((seed_dir, "stats.json missing seed_metadata"))
+                    continue
+                idx = int(manifest["seed_idx"])
+            except (ValueError, KeyError, json.JSONDecodeError) as exc:
+                unreadable.append((seed_dir, f"parse error: {exc}"))
+                continue
+            # If multiple finished dirs share an idx (re-resume scenario),
+            # keep the first one we see — they should be byte-equivalent
+            # under the sanity check, but flagging is cheaper than guessing.
+            # Counts are summarised in one line below; no per-idx spam.
+            if idx in done_meta:
+                duplicate_idxs.append(idx)
+                continue
+            done_meta[idx] = seed_meta
+
+        if partial_dirs:
+            logger.info(
+                "Resume: found %d partial seed dir(s) (no manifest.json — "
+                "evo or PDQ interrupted).", len(partial_dirs),
+            )
+            if self._clean_partials:
+                for d in partial_dirs:
+                    shutil.rmtree(d)
+                logger.info(
+                    "Resume: removed %d partial seed dir(s).", len(partial_dirs),
+                )
+            else:
+                for d in partial_dirs[:5]:
+                    logger.info("  partial: %s", d.name)
+                if len(partial_dirs) > 5:
+                    logger.info("  ... +%d more", len(partial_dirs) - 5)
+                logger.info(
+                    "Resume: pass --clean-partials to remove them; otherwise "
+                    "they will remain on disk (harmless: analysis keys off "
+                    "manifest.json)."
+                )
+
+        if duplicate_idxs:
+            sample = ", ".join(str(i) for i in sorted(set(duplicate_idxs))[:5])
+            more = max(0, len(set(duplicate_idxs)) - 5)
+            logger.warning(
+                "Resume: %d duplicate finished dir(s) across %d seed_idx "
+                "value(s) (sample: %s%s) — kept first encountered. Consider "
+                "archiving duplicates.",
+                len(duplicate_idxs), len(set(duplicate_idxs)),
+                sample, f", +{more} more" if more else "",
+            )
+
+        if unreadable:
+            logger.warning(
+                "Resume: %d seed dir(s) had a manifest.json but unreadable "
+                "metadata; treating as not-done and re-running.",
+                len(unreadable),
+            )
+            for d, reason in unreadable[:5]:
+                logger.warning("  unreadable: %s — %s", d.name, reason)
+            if len(unreadable) > 5:
+                logger.warning("  ... +%d more", len(unreadable) - 5)
+
+        # Sanity-check every kept index against the regenerated pool.
+        # An out-of-range idx means the seed pool shrank (config changed);
+        # field divergence means the SeedTriple at that idx is different now.
+        for idx in sorted(done_meta):
+            if idx >= len(seeds):
+                raise RuntimeError(
+                    f"Resume drift: persisted seed_idx={idx} exceeds the "
+                    f"regenerated pool size ({len(seeds)}). Config "
+                    f"(categories / seeds_per_class / abstraction / seed_int) "
+                    f"has shrunk the pool since the original run."
+                )
+            live_meta = seeds[idx].metadata or {}
+            persisted = done_meta[idx]
+            for field_name in self._SANITY_FIELDS:
+                live_val = live_meta.get(field_name)
+                persisted_val = persisted.get(field_name)
+                if live_val != persisted_val:
+                    raise RuntimeError(
+                        f"Resume drift at seed_idx={idx}: persisted "
+                        f"{field_name}={persisted_val!r}, regenerated "
+                        f"{field_name}={live_val!r}.\n"
+                        f"Config (categories / seeds_per_class / "
+                        f"abstraction / reproducibility.seed_int) has "
+                        f"changed since the original run.  Aborting to "
+                        f"prevent silent index drift.\n"
+                        f"Full persisted metadata: {persisted}\n"
+                        f"Full regenerated metadata: {live_meta}"
+                    )
+
+        remaining = [i for i in range(len(seeds)) if i not in done_meta]
+        logger.info(
+            "Resume: %d/%d seed(s) already complete (sanity-checked); "
+            "%d remaining.",
+            len(done_meta), len(seeds), len(remaining),
+        )
+        if not remaining:
+            logger.info("Resume: nothing left to run.")
+        return self._narrow_filter(cfg, remaining)
+
+    @staticmethod
+    def _narrow_filter(
+        cfg: BoundaryPairExperimentConfig,
+        remaining: "list | range",
+    ) -> BoundaryPairExperimentConfig:
+        """Intersect ``remaining`` with any existing ``filter_indices``.
+
+        Honors a user-supplied YAML filter so resume composes with manual
+        scoping (e.g. ``filter_indices: [0..99]`` + ``--resume`` runs the
+        unfinished subset of the first 100).
+        """
+        existing = cfg.seeds.filter_indices
+        keep = list(remaining)
+        if existing:
+            existing_set = set(existing)
+            keep = [i for i in keep if i in existing_set]
+        new_seeds = replace(cfg.seeds, filter_indices=tuple(keep))
+        return replace(cfg, seeds=new_seeds)
 
 
 def _maybe_get_gen(cand: Any) -> int | None:

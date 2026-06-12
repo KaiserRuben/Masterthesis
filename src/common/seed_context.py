@@ -130,7 +130,8 @@ def apply_seed_filter(
         )
     kept = [(i, s) for i, s in enumerate(seeds) if i in filter_set]
     logger.info(
-        "Seed filter active: %d of %d seeds retained (indices %s)",
-        len(kept), len(seeds), sorted(filter_set),
+        "Seed filter active: %d of %d seeds retained",
+        len(kept), len(seeds),
     )
+    logger.debug("Retained seed indices: %s", sorted(filter_set))
     return kept
