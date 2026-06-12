@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -28,6 +29,8 @@ import yaml
 from src import distlock
 from src.common import (
     apply_seed_filter,
+    compute_resume_filter,
+    default_seed_probe,
     init_shared_components,
     precompute_image_backend,
     prepare_pipeline_seeds,
@@ -89,7 +92,14 @@ def _configure_distlock(workers: int) -> None:
         logger.info("Device locks enabled (workers=%d)", workers)
 
 
-def run_experiment(cfg: dict, preflight: bool = False) -> None:
+def run_experiment(
+    cfg: dict,
+    preflight: bool = False,
+    *,
+    resume: bool = False,
+    clean_partials: bool = False,
+    plan_only: bool = False,
+) -> None:
     """Build all components from *cfg* dict and run the boundary test.
 
     With ``parallel.workers > 1`` the per-seed loop runs across N worker
@@ -102,6 +112,13 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     :param cfg: Raw YAML config dict.
     :param preflight: If True, run a SUT cost-check measurement on the
         first seed before the main loop starts.
+    :param resume: Skip seeds whose ``<save_dir>/<name>_seed_<idx>_<ts>/
+        stats.json`` already exists; run only the unfinished complement,
+        sanity-checked against the regenerated pool.
+    :param clean_partials: With *resume*, remove seed dirs lacking
+        ``stats.json`` (interrupted mid-run) before launch. Destructive.
+    :param plan_only: Log the resume skip/run counts and return before any
+        backend precompute or model work.
     """
     exp = load_config(cfg)
     exp = apply_modality(exp)
@@ -117,6 +134,37 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
     if not seeds:
         logger.warning("No seeds passed filters — nothing to test.")
         return
+
+    # -- Resume bookkeeping (before precompute, so finished-seed targets are
+    # not re-precomputed) ----------------------------------------------------
+    if resume:
+        remaining = compute_resume_filter(
+            default_seed_probe(exp.name),
+            exp.save_dir,
+            exp.name,
+            seeds,
+            exp.seeds.filter_indices,
+            clean_partials=clean_partials,
+        )
+        # An empty filter is NOT "keep all": apply_seed_filter reads () as
+        # keep-all, which would re-run every finished seed. Bail instead.
+        if not remaining:
+            logger.info(
+                "Resume: every requested seed is already complete — nothing "
+                "to do."
+            )
+            return
+        exp = replace(exp, seeds=replace(exp.seeds, filter_indices=remaining))
+
+    if plan_only:
+        n_run = len(exp.seeds.filter_indices) or len(seeds)
+        logger.info(
+            "--plan-only: would run %d seed(s); skipping precompute, "
+            "objectives, and the evolutionary loop.",
+            n_run,
+        )
+        return
+
     precompute_image_backend(components, seeds, exp)
 
     # -- Objectives spec (per-worker collection built below) ---------------
@@ -267,6 +315,30 @@ def main() -> None:
             "— Ctrl-C the run if the projection is unacceptable."
         ),
     )
+    parser.add_argument(
+        "--resume", action="store_true",
+        help=(
+            "Skip seeds whose <save_dir>/<name>_seed_<idx>_<ts>/stats.json "
+            "already exists and run only the unfinished complement. Each "
+            "kept seed is matched against the regenerated pool by concrete "
+            "metadata (anchor/target class, levels, in-class index); a "
+            "mismatch aborts to prevent silent index drift."
+        ),
+    )
+    parser.add_argument(
+        "--clean-partials", action="store_true",
+        help=(
+            "With --resume, rm -rf seed dirs lacking stats.json (interrupted "
+            "mid-run) before launch. Destructive — opt-in only."
+        ),
+    )
+    parser.add_argument(
+        "--plan-only", action="store_true",
+        help=(
+            "Compute the resume filter, log the skip/run counts, then exit "
+            "before any backend precompute or model work."
+        ),
+    )
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -277,7 +349,13 @@ def main() -> None:
     if args.save_dir:
         cfg["save_dir"] = args.save_dir
 
-    run_experiment(cfg, preflight=args.preflight)
+    run_experiment(
+        cfg,
+        preflight=args.preflight,
+        resume=args.resume,
+        clean_partials=args.clean_partials,
+        plan_only=args.plan_only,
+    )
 
     # HF streaming leaves daemon threads — force exit.
     os._exit(0)
