@@ -175,6 +175,7 @@ def preflight_cost_check(
         seed.image,
         prompt_template,
         target_class=seed_target_class(seed),
+        origin_class=seed.class_a,
     )
 
     gene_bounds = manipulator.gene_bounds
