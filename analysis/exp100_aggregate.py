@@ -130,12 +130,24 @@ def _safe_load_parquet(path: Path) -> pd.DataFrame | None:
         return None
 
 
+def _resolve_evo_dir(seed_dir: Path) -> Path:
+    """Locate the evolutionary artefact dir for both supported layouts.
+
+    Flat (original PoC):      <seed_dir>/stats.json
+    Boundary-pair (schema 5): <seed_dir>/evolutionary/stats.json
+    """
+    if (seed_dir / "evolutionary" / "stats.json").exists():
+        return seed_dir / "evolutionary"
+    return seed_dir
+
+
 def _seed_row(seed_dir: Path) -> dict[str, Any] | None:
     """Build one tidy row from a single seed directory.
 
     Returns None and logs when essential files are missing or unparseable.
     """
-    stats = _safe_load_json(seed_dir / "stats.json")
+    evo_dir = _resolve_evo_dir(seed_dir)
+    stats = _safe_load_json(evo_dir / "stats.json")
     if stats is None:
         return None  # Run probably still in progress.
 
@@ -191,8 +203,27 @@ def _seed_row(seed_dir: Path) -> dict[str, Any] | None:
     }
     row["flipped"] = row["early_stop_trigger"] == "flip"
 
+    # Boundary-pair pipeline (schema 5) writes a manifest with the PDQ
+    # stage summary next to the evolutionary dir — fold the headline
+    # numbers in when present so H-evaluation can condition on flips.
+    manifest = _safe_load_json(seed_dir / "manifest.json")
+    if manifest and manifest.get("pipeline") == "boundary_pair":
+        anchors = manifest.get("anchors") or []
+        row["n_pareto"] = manifest.get("n_pareto")
+        row["n_anchors_evaluated"] = manifest.get("n_anchors_evaluated")
+        row["n_stage1_flips_total"] = sum(a.get("n_stage1_flips", 0) for a in anchors)
+        row["n_stage2_flips_total"] = sum(a.get("n_stage2_flips", 0) for a in anchors)
+        row["n_distinct_targets_max"] = max(
+            (a.get("n_distinct_targets", 0) for a in anchors), default=0,
+        )
+        row["anchor_min_p_gap"] = min(
+            (abs(a["p_a"] - a["p_b"]) for a in anchors
+             if a.get("p_a") is not None and a.get("p_b") is not None),
+            default=float("nan"),
+        )
+
     # Convergence-derived metrics — pull min over all logged generations.
-    conv = _safe_load_parquet(seed_dir / "convergence.parquet")
+    conv = _safe_load_parquet(evo_dir / "convergence.parquet")
     if conv is not None and len(conv) > 0:
         row["n_gens_completed"] = int(conv["generation"].max() + 1)
         row["final_pareto_min_TgtBal"] = float(conv["pareto_min_TgtBal"].iloc[-1])
@@ -236,7 +267,7 @@ def aggregate_run(run_dir: Path) -> pd.DataFrame:
     run_dir = Path(run_dir)
     seed_dirs = sorted(
         p for p in run_dir.iterdir()
-        if p.is_dir() and "_seed_" in p.name
+        if p.is_dir() and ("_seed_" in p.name or p.name.startswith("seed_"))
     )
     rows: list[dict[str, Any]] = []
     for sd in seed_dirs:
@@ -253,7 +284,8 @@ def _looks_like_run_dir(path: Path) -> bool:
     if not path.is_dir():
         return False
     return any(
-        p.is_dir() and "_seed_" in p.name for p in path.iterdir()
+        p.is_dir() and ("_seed_" in p.name or p.name.startswith("seed_"))
+        for p in path.iterdir()
     )
 
 
