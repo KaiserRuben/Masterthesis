@@ -360,6 +360,38 @@ class TestBoundaryPairConfigProjections:
         cfg = BoundaryPairExperimentConfig()
         assert cfg.pdq.distances.d_i_primary == "rank_sum_delta"
 
+    def test_operator_knobs_thread_to_evolutionary_config(self) -> None:
+        """evolutionary.optimizer.{mutation,crossover} reach the projection."""
+        from src.boundary_pair.config import (
+            BoundaryPairExperimentConfig,
+            EvolutionaryStageConfig,
+            to_evolutionary_config,
+        )
+        from src.config import CrossoverConfig, MutationConfig, OptimizerConfig
+
+        cfg = BoundaryPairExperimentConfig(
+            evolutionary=EvolutionaryStageConfig(
+                optimizer=OptimizerConfig(
+                    mutation=MutationConfig(prob=0.3, eta=1.0),
+                    crossover=CrossoverConfig(prob=0.8, eta=5.0),
+                ),
+            ),
+        )
+        evo = to_evolutionary_config(cfg)
+        assert evo.optimizer.mutation.prob == 0.3
+        assert evo.optimizer.mutation.eta == 1.0
+        assert evo.optimizer.crossover.prob == 0.8
+        assert evo.optimizer.crossover.eta == 5.0
+
+        # Defaults stay at the historical hardcoded operator values.
+        default_evo = to_evolutionary_config(BoundaryPairExperimentConfig())
+        assert default_evo.optimizer.mutation == MutationConfig(
+            prob=None, eta=3.0
+        )
+        assert default_evo.optimizer.crossover == CrossoverConfig(
+            prob=0.9, eta=3.0
+        )
+
     def test_load_boundary_pair_config_from_template(self) -> None:
         from src.boundary_pair.config import load_boundary_pair_config
 
