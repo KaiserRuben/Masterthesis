@@ -1,0 +1,82 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# HS-GEN-01 pair C — great white shark → stingray (gap_filter idx 2)
+#                    StyleGAN-XL backend — STRETCH / RISK-FLAGGED
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Third-closest LLaVA pair in the image-only evidence base, included for
+# pair diversity. It has NOT crossed yet:
+#   Exp-26 vqgan baseline/cone 100×20: floor ~1.000 (hard plateau gen 50)
+#   Exp-26 stylegan 100×20:            gen-0 min 0.721, floor 0.279
+#                                      (0.43@50 → 0.279@75, flat 75→99)
+#
+# Rationale for one more attempt under StyleGAN only: its gen-0 minimum
+# (0.72) sits in the same band as pair B's (0.64), which crossed at gen 62;
+# the Exp-26 run was still 28× the threshold but had spent only 2,000 evals
+# with sparse-skewed init. This config gives 3.75× the evals, dense init,
+# and a generous plateau patience. If it plateaus again, the early stop
+# bails out and the pair is declared image-walled for LLaVA — record the
+# floor in the HS-GEN README/diary either way.
+#
+# Expected outcome is uncertain — do NOT count this pair toward the
+# minimum stratum fill; treat any yield as bonus diversity.
+#
+# Output: runs/HS-GEN-01/hs_gen01_pairC_shark_stingray_stylegan_seed_2_<ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: hs_gen01_pairC_shark_stingray_stylegan
+save_dir: runs/HS-GEN-01
+
+modality: image_only
+
+generations: 250
+pop_size: 30
+
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [2]                    # great white shark → stingray
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: stylegan_xl
+  stylegan:
+    checkpoint_url: https://s3.eu-central-1.amazonaws.com/avg-projects/stylegan_xl/models/imagenet256.pkl
+    checkpoint_path: ~/.cache/stylegan_xl/imagenet256.pkl
+    interpolate: true
+    truncation_psi: 1.0
+    truncation_cutoff: 0
+    kappa_quant_levels: 20
+    target_m: 10
+    sut_precheck_max_attempts: 200
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.0
+    tiers:                               # same dense w-space tiers as pair B
+      - {p_active: 0.10, fraction: 0.15}
+      - {p_active: 0.25, fraction: 0.20}
+      - {p_active: 0.50, fraction: 0.20}
+      - {p_active: 0.80, fraction: 0.30}
+      - {p_active: 1.00, fraction: 0.15}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 80
+    no_improvement_warmup: 50
+    hypervolume_reference: [1.0, 10.0]   # live plateau trigger — the exit
+                                         # hatch if this pair walls again

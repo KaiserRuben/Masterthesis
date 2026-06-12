@@ -1,0 +1,87 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# HS-GEN-01 pair B — hammerhead shark → spotted salamander (gap_filter idx 83)
+#                    StyleGAN-XL backend
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# This pair is VQGAN-WALLED on LLaVA — every VQGAN attempt plateaus ~1.4:
+#   Exp-24 image_only 300 gen × 30 pop:  floor 1.4907 (flat from gen ~50)
+#   Exp-26 vqgan baseline 100×20:        floor 1.380
+#   Exp-26 vqgan cone α=20° 100×20:      floor 1.381  (cone does NOT rescue)
+#
+# StyleGAN-XL is the only backend with evidence of crossing it:
+#   Exp-26 stylegan 100×20: gen-0 min 0.644 → first ≤1e-2 at gen 62,
+#   floor 6.6e-3, 2 qualifying uniques, still improving at gen 99.
+# The w-space class-interpolation geometry puts the origin far closer to
+# this boundary (gen-0 0.64 vs 1.66–1.78 under VQGAN). Budget is therefore
+# 2.2× Exp-26 (crossing emerged late and the run was cut at 100 gens).
+#
+# Init: the two qualifying genotypes had 25–27 of 32 w-layer genes active —
+# near-full activation. Exp-26's stylegan tiers put only ~30% of init mass
+# at E[n_active] ≥ 20; these tiers put 45% there while keeping coverage of
+# the sparse regime (pair A's stylegan crossers had median 4 active genes).
+#
+# Output: runs/HS-GEN-01/hs_gen01_pairB_hammerhead_salamander_stylegan_seed_83_<ts>/
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: hs_gen01_pairB_hammerhead_salamander_stylegan
+save_dir: runs/HS-GEN-01
+
+modality: image_only
+
+generations: 220
+pop_size: 30
+
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [83]                   # hammerhead shark → spotted salamander
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: stylegan_xl
+  stylegan:                              # identical to the Exp-26 block that crossed
+    checkpoint_url: https://s3.eu-central-1.amazonaws.com/avg-projects/stylegan_xl/models/imagenet256.pkl
+    checkpoint_path: ~/.cache/stylegan_xl/imagenet256.pkl
+    interpolate: true
+    truncation_psi: 1.0
+    truncation_cutoff: 0
+    kappa_quant_levels: 20
+    target_m: 10
+    sut_precheck_max_attempts: 200
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.0
+    # E[n_active] on the 32-gene w-space genome ≈ 3 / 8 / 16 / 26 / 32.
+    # Mass shifted to the dense regime where this pair's qualifying
+    # genotypes live (25–27 active), sparse regime retained for spread.
+    tiers:
+      - {p_active: 0.10, fraction: 0.15}
+      - {p_active: 0.25, fraction: 0.20}
+      - {p_active: 0.50, fraction: 0.20}
+      - {p_active: 0.80, fraction: 0.30}
+      - {p_active: 1.00, fraction: 0.15}
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    # Generous: this pair's best-TgtBal trace stalled for ~25 gens
+    # (0.0118 from gen 25→50) BEFORE crossing at gen 62 — a tight
+    # patience would have killed the crossing run.
+    plateau_patience: 80
+    no_improvement_warmup: 50
+    hypervolume_reference: [1.0, 10.0]   # live plateau trigger (see pair A)
