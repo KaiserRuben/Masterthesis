@@ -121,10 +121,14 @@ cluster (`src/data/taxonomy.common_ancestor_level`):
   "shark") — the abstraction machinery cannot rescue this pair into a 2-way
   choice. The only viable framing is the **manual feature contrast**
   `"hammerhead shark"` vs `"shark (other / non-hammerhead)"`, exploiting the
-  hammerhead's lay-recognizable cephalofoil. This is the central open
-  study-design question (below). idx 1 is NOT study-eligible as a fine
-  "great-white vs hammerhead" choice, but is kept as the reference/calibration
-  full run (it is the one proven-crossable pair).
+  hammerhead's lay-recognizable cephalofoil. idx 1 is NOT study-eligible and
+  gets **no dedicated full run** — this is a human study, and generation
+  compute goes only to study-eligible pairs. It participates in the screen
+  like every roster entry (useful as the known-crossable sanity row in the
+  screen report); its old calibration config is archived under
+  `configs/Archive/HS-GEN-01-pairA-calibration/` and may be resurrected only
+  by explicit study-owner decision on the abstraction framing (open question
+  below).
 - **idx 2 (shark→stingray) and idx 83 (shark→salamander)** are lay-eligible as
   fine labels; their L0 cluster labels (`shark`/`ray`, `shark`/`salamander`)
   also give a clean coarse framing if a uniform presentation level is wanted.
@@ -142,8 +146,7 @@ cluster (`src/data/taxonomy.common_ancestor_level`):
 | file | pair | backend | gens×pop | role |
 |---|---|---|---|---|
 | `hs_gen01_screen.yaml` | full roster (≤150 entries) | vqgan, **cone 20° ON**, heavy mutation | 4×30 | crossability discovery |
-| `hs_gen01_pairA_shark_hammerhead.yaml` | gws→hammerhead (idx 1) | vqgan, **cone 20° ON** | 150×30 | reference/calibration; **needs-abstraction** for study use |
-| `hs_gen01_promoted_idx<N>_*.yaml` | screen-promoted | vqgan, cone 20° ON | 150×30 | emitted by `promote_pairs.py` |
+| `hs_gen01_promoted_idx<N>_*.yaml` | screen-promoted | vqgan, cone 20° ON | 150×30 | emitted by `promote_pairs.py` — the ONLY full runs |
 | `promote_pairs.py` | — | — | — | screen → promote: gates + YAML emission |
 | `validate_configs.py` | — | — | — | every YAML through the production loader |
 | `run_hs_gen01_chain.sh` | — | — | — | screen / full-run chain |
@@ -209,14 +212,14 @@ conda run -n uni python configs/HS-GEN-01/promote_pairs.py   # classify + emit
 conda run -n uni python configs/HS-GEN-01/validate_configs.py
 # append emitted YAMLs to PROMOTED=() in run_hs_gen01_chain.sh
 
-# Stage 2 — calibration pair A + every promoted pair:
+# Stage 2 — promoted pairs only:
 bash configs/HS-GEN-01/run_hs_gen01_chain.sh
 ```
 
 `promote_pairs.py` reads `runs/HS-GEN-01/hs_gen01_screen_seed_*`, computes
 per-pair `gen0_min` / `best` / 4-gen `rel_slope`, applies both gates, and:
 
-- **emits** `hs_gen01_promoted_idx<N>_<a>_<b>.yaml` (clone of pair A) for pairs
+- **emits** `hs_gen01_promoted_idx<N>_<a>_<b>.yaml` (inline standard template) for pairs
   that are crossable (`gen0_min ≤ 0.3`, or marginal `≤ 1.0` with a ≥20% slope)
   **and** lay-distinguishable (`common_ancestor_level ≥ 1`);
 - **lists** crossable-but-fine-sibling pairs under "needs manual abstraction"
@@ -239,12 +242,14 @@ Prefer distinct anchor *classes* across promotions (the roster spans the first
   ambiguity rather than ignorance? For genuinely distinguishable promoted pairs,
   decide whether to present fine labels or a uniform L0 framing.
 - **The screen finds no lay-distinguishable crossable pair.** Then `promote_
-  pairs.py` emits nothing and prints the fallback: the image-heavy strata fall
-  back to idx 1 under its manual-abstraction framing (reduced pair diversity,
-  documented), or the cell is dropped per HS-01 spec §9/§10. Re-screen with a
-  wider roster / heavier mutation before declaring the strata image-walled.
-- **Cone reduces yield (~½).** Accepted per decision 1. Pair A's 150×30 budget
-  (vs Exp-26's 100×20 cone run that yielded 19) buys back unique count.
+  pairs.py` emits nothing. Default response: re-screen with a wider roster /
+  heavier mutation before declaring the strata image-walled. Crossable
+  fine-sibling pairs (e.g. idx 1) enter the study only by explicit study-owner
+  decision on an abstraction framing; otherwise the image-heavy cell is
+  dropped per HS-01 spec §9/§10.
+- **Cone reduces yield (~½).** Accepted per decision 1. The promoted full runs'
+  150×30 budget (vs Exp-26's 100×20 cone run that yielded 19) buys back unique
+  count.
 - **idx 2 / idx 83 stay walled under VQGAN+cone.** Prior VQGAN evidence has them
   at floor ~1.0 / ~1.4; StyleGAN (the only backend that crossed 83) is now out.
   The screen decides; if both wall, the strata are shark-family + idx-1 only.
@@ -262,9 +267,9 @@ Prefer distinct anchor *classes* across promotions (the roster spans the first
 
 ```bash
 # single config:
-python experiments/runners/run_boundary_test.py configs/HS-GEN-01/hs_gen01_pairA_shark_hammerhead.yaml
+python experiments/runners/run_boundary_test.py configs/HS-GEN-01/hs_gen01_screen.yaml
 ```
 
 Rough cost (workstation OV-GPU, 1.5–3 s/call): screen ≤18k calls + one-time
-cone modal-grid precompute ≈ overnight at workers 2; pair A 4.5k calls ≈ 2–4 h
-per replicate.
+cone modal-grid precompute ≈ overnight at workers 2; each promoted full run
+4.5k calls ≈ 2–4 h per replicate.

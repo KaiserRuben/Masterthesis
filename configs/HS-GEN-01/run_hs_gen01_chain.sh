@@ -15,17 +15,18 @@
 #           # crossability screen AND the human-distinguishability gate.
 #           conda run -n uni python configs/HS-GEN-01/validate_configs.py
 #           # append the emitted YAMLs to PROMOTED below, re-run this script.
-#   Stage 2 (this script): full-evolution runs — the calibration pair A plus
-#           every promoted pair.
+#   Stage 2 (this script): full-evolution runs — promoted pairs ONLY.
 #
-# Pair A (great white shark → hammerhead, idx 1) is the REFERENCE/CALIBRATION
-# pair: proven crossable, but NEEDS ABSTRACTION for study eligibility (two
-# shark species — see README). It always runs; it is the fallback strata
-# source and the pipeline sanity check.
+# No pair runs without passing BOTH gates (crossability + lay-
+# distinguishability). idx 1 (gw shark → hammerhead) is covered by the screen
+# like every roster entry, but as a fine-sibling pair it is never auto-
+# promoted; its old calibration config is archived under
+# configs/Archive/HS-GEN-01-pairA-calibration/ (study-owner decision required
+# to resurrect it under an abstraction framing).
 #
 # Usage:
 #   HS_GEN_ONLY_SCREEN=1 bash configs/HS-GEN-01/run_hs_gen01_chain.sh   # screen only
-#   bash configs/HS-GEN-01/run_hs_gen01_chain.sh                        # full runs (A + promoted)
+#   bash configs/HS-GEN-01/run_hs_gen01_chain.sh                        # full runs (promoted)
 #   HS_GEN_WITH_SCREEN=1 bash configs/HS-GEN-01/run_hs_gen01_chain.sh   # screen THEN full runs
 #   tail -f runs/HS-GEN-01/_logs/hs_gen01_chain.log                     # follow live
 #
@@ -63,15 +64,20 @@ if [ "${HS_GEN_WITH_SCREEN:-0}" = "1" ] || [ "${HS_GEN_ONLY_SCREEN:-0}" = "1" ];
 fi
 
 if [ "${HS_GEN_ONLY_SCREEN:-0}" != "1" ]; then
-  # --- full-evolution runs ---
-  CONFIGS+=(
-    "configs/HS-GEN-01/hs_gen01_pairA_shark_hammerhead.yaml"   # calibration / reference
-    "configs/HS-GEN-01/hs_gen01_pairA_shark_hammerhead.yaml"   # ×2 for yield
-  )
   # ── screen-promoted pair configs (run promote_pairs.py, then list here) ──
   # PROMOTED=(configs/HS-GEN-01/hs_gen01_promoted_idx<N>_<a>_<b>.yaml ...)
   PROMOTED=()
-  CONFIGS+=("${PROMOTED[@]}")
+  if [ "${#PROMOTED[@]}" -eq 0 ]; then
+    echo "No promoted configs listed. Run the screen, then promote_pairs.py,"
+    echo "then append the emitted YAMLs to PROMOTED in this script."
+  else
+    CONFIGS+=("${PROMOTED[@]}")
+  fi
+fi
+
+if [ "${#CONFIGS[@]}" -eq 0 ]; then
+  echo "Nothing to run — exiting."
+  exit 0
 fi
 
 echo "=== START $(date) ==="

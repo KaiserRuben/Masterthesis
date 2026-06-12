@@ -3,7 +3,10 @@
 
 Reads the screening sweep outputs (``runs/HS-GEN-01/hs_gen01_screen_seed_*``),
 applies the two promotion gates, and emits a full-evolution YAML per promoted
-pair (cloned from pair A: VQGAN, cone ON, dense init, annealed heavy mutation).
+pair (inline template: VQGAN, cone ON, dense init, annealed heavy mutation).
+Promoted pairs are the ONLY full runs — no pair runs without passing both
+gates (study-owner decision required for any exception, e.g. resurrecting the
+archived idx-1 calibration config under an abstraction framing).
 
 Two gates, BOTH must pass to auto-emit a config:
 
@@ -127,9 +130,10 @@ def emit_config(r, present_labels: str) -> Path:
 #   best(4 gen)={r.best:.4g}, rel_slope={r.rel_slope:.2f} → {classify_crossability(r)}.
 # Distinguishability: {present_labels}.
 #
-# Clone of hs_gen01_pairA_shark_hammerhead.yaml — VQGAN, cone α=20° ON, dense
+# Standard HS-GEN-01 full-run template — VQGAN, cone α=20° ON, dense
 # image-only init, annealed heavy mutation (prob=0.1, eta=3.0). Only `name`,
-# `filter_indices`, and these comments differ. Verify with validate_configs.py.
+# `filter_indices`, and these comments differ per pair. Knob justifications:
+# README knob table. Verify with validate_configs.py.
 # ═══════════════════════════════════════════════════════════════════════════
 
 name: {name}
@@ -243,11 +247,12 @@ def main() -> int:
     print(f"\nSKIPPED — walled/marginal-hold ({len(walled)})")
 
     if not emitted and not manual:
-        print("\n*** No crossable pair passed either gate. ***")
-        print("Open study-design question (README): the image-heavy strata then "
-              "fall back to the calibration pair (idx 1) under its manual "
-              "abstraction framing, or the cell is dropped. Re-screen with a "
-              "wider roster / higher mutation before declaring image-walled.")
+        print("\n*** No pair passed both gates. ***")
+        print("Default response: re-screen with a wider roster / heavier "
+              "mutation before declaring the strata image-walled. Crossable "
+              "fine-sibling pairs (listed above, if any) enter the study only "
+              "by explicit study-owner decision on an abstraction framing; "
+              "otherwise the image-heavy cell is dropped per HS-01 spec.")
 
     # Self-validate every emitted YAML through the production loader.
     if emitted and not args.report_only:
