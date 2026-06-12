@@ -87,6 +87,26 @@ OVERRIDE_CASES = [
         {"seeds": {"gap_filter": {"max_logprob_gap": 5.0}}},
         5.0,
     ),
+    (
+        "optimizer.mutation.prob",
+        {"optimizer": {"mutation": {"prob": 0.2}}},
+        0.2,
+    ),
+    (
+        "optimizer.mutation.eta",
+        {"optimizer": {"mutation": {"eta": 1.5}}},
+        1.5,
+    ),
+    (
+        "optimizer.crossover.prob",
+        {"optimizer": {"crossover": {"prob": 0.7}}},
+        0.7,
+    ),
+    (
+        "optimizer.crossover.eta",
+        {"optimizer": {"crossover": {"eta": 15.0}}},
+        15.0,
+    ),
 ]
 
 
@@ -104,3 +124,24 @@ def test_config_override(field_path, yaml_dict, expected):
 
     drift = _check_defaults(cfg, skip_path=field_path)
     assert not drift, f"Non-overridden defaults drifted:\n" + "\n".join(drift)
+
+
+VALIDATION_CASES = [
+    # (case_id, yaml_dict)
+    ("mutation_prob_above_one", {"optimizer": {"mutation": {"prob": 1.5}}}),
+    ("mutation_prob_negative", {"optimizer": {"mutation": {"prob": -0.1}}}),
+    ("mutation_eta_negative", {"optimizer": {"mutation": {"eta": -1.0}}}),
+    ("crossover_prob_above_one", {"optimizer": {"crossover": {"prob": 1.5}}}),
+    ("crossover_eta_negative", {"optimizer": {"crossover": {"eta": -1.0}}}),
+]
+
+
+@pytest.mark.parametrize(
+    "case_id, yaml_dict",
+    VALIDATION_CASES,
+    ids=[case[0] for case in VALIDATION_CASES],
+)
+def test_operator_config_validation(case_id, yaml_dict):
+    """Out-of-range mutation/crossover values are rejected at load time."""
+    with pytest.raises(ValueError):
+        load_config(yaml_dict)

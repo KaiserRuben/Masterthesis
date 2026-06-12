@@ -275,3 +275,108 @@ class TestReset:
             assert (pop_after[:, i] < ub).all()
         # Content should differ (stochastic -- extremely unlikely to match).
         assert not np.array_equal(pop_before, pop_after)
+
+
+# ===================================================================
+# TestOperatorConfig
+# ===================================================================
+
+
+class TestOperatorConfig:
+    """Verify mutation/crossover hyperparameters reach the PyMoo operators."""
+
+    def test_defaults_match_historical_operators(self) -> None:
+        """No kwargs → exactly the old hardcoded PM/SBX setup."""
+        from pymoo.operators.crossover.sbx import SBX
+        from pymoo.operators.mutation.pm import PM
+        from pymoo.operators.repair.rounding import RoundingRepair
+
+        opt = _make_optimizer([10, 20, 30])
+        mut = opt._pymoo_algo.mating.mutation
+        cx = opt._pymoo_algo.mating.crossover
+
+        assert isinstance(mut, PM)
+        assert mut.eta.value == 3.0
+        # prob_var=None → PyMoo's adaptive per-gene default min(0.5, 1/n_var).
+        assert mut.prob_var is None
+        assert mut.vtype is float
+        assert isinstance(mut.repair, RoundingRepair)
+
+        assert isinstance(cx, SBX)
+        assert cx.prob.value == 0.9
+        assert cx.eta.value == 3.0
+        assert cx.vtype is float
+        assert isinstance(cx.repair, RoundingRepair)
+
+    def test_custom_values_reach_operators(self) -> None:
+        opt = DiscretePymooOptimizer(
+            gene_bounds=np.array([10, 20, 30], dtype=np.int64),
+            num_objectives=2,
+            pop_size=20,
+            mutation_prob=0.25,
+            mutation_eta=1.0,
+            crossover_prob=0.7,
+            crossover_eta=10.0,
+        )
+        mut = opt._pymoo_algo.mating.mutation
+        cx = opt._pymoo_algo.mating.crossover
+
+        assert mut.prob_var.value == 0.25
+        assert mut.eta.value == 1.0
+        assert cx.prob.value == 0.7
+        assert cx.eta.value == 10.0
+
+    def test_custom_operators_survive_bounds_update(self) -> None:
+        """update_gene_bounds re-inits the algorithm — params must persist."""
+        opt = DiscretePymooOptimizer(
+            gene_bounds=np.array([10, 20, 30], dtype=np.int64),
+            num_objectives=2,
+            pop_size=20,
+            mutation_prob=0.25,
+            mutation_eta=1.0,
+            crossover_prob=0.7,
+            crossover_eta=10.0,
+        )
+        opt.update_gene_bounds(np.array([5, 8], dtype=np.int64))
+        mut = opt._pymoo_algo.mating.mutation
+        cx = opt._pymoo_algo.mating.crossover
+
+        assert mut.prob_var.value == 0.25
+        assert mut.eta.value == 1.0
+        assert cx.prob.value == 0.7
+        assert cx.eta.value == 10.0
+
+    def test_algo_params_override_wins(self) -> None:
+        """Explicit algo_params operators take precedence over scalars."""
+        from pymoo.operators.mutation.pm import PM
+        from pymoo.operators.repair.rounding import RoundingRepair
+
+        custom_pm = PM(eta=7.0, vtype=float, repair=RoundingRepair())
+        opt = DiscretePymooOptimizer(
+            gene_bounds=np.array([10, 20], dtype=np.int64),
+            num_objectives=2,
+            pop_size=20,
+            algo_params={"mutation": custom_pm},
+            mutation_eta=1.0,  # must lose against algo_params
+        )
+        assert opt._pymoo_algo.mating.mutation is custom_pm
+
+    def test_heavy_mutation_loop_stays_valid(self) -> None:
+        """Heavy-mutation settings keep integer/bounds invariants."""
+        bounds = np.array([5, 15, 25, 8], dtype=np.int64)
+        opt = DiscretePymooOptimizer(
+            gene_bounds=bounds,
+            num_objectives=2,
+            pop_size=20,
+            mutation_prob=0.5,
+            mutation_eta=1.0,
+        )
+        for gen in range(5):
+            _assign_and_update(opt, num_objectives=2)
+            pop = opt.get_x_current()
+            np.testing.assert_array_equal(
+                pop, pop.astype(np.int64), err_msg=f"Non-integer at gen {gen}"
+            )
+            assert (pop >= 0).all()
+            for i, ub in enumerate(bounds):
+                assert (pop[:, i] < ub).all()

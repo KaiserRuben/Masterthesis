@@ -369,20 +369,87 @@ class SamplingConfig:
 
 
 @dataclass(frozen=True)
+class MutationConfig:
+    """Polynomial-mutation (PM) operator parameters.
+
+    Maps onto PyMoo's :class:`~pymoo.operators.mutation.pm.PM` operator
+    inside :class:`~src.optimizer.discrete_pymoo_optimizer.DiscretePymooOptimizer`.
+    The defaults reproduce the historical hardcoded operator
+    (``PM(eta=3.0)``) exactly — configs without a ``mutation`` block
+    behave identically to runs predating this knob.
+
+    :param prob: Per-gene mutation probability (PyMoo's ``prob_var``).
+        ``None`` (default) keeps PyMoo's adaptive default
+        ``min(0.5, 1/n_var)`` — roughly one mutated gene per offspring.
+        Raise (e.g. ``0.1``) for "heavy mutation" runs. The per-offspring
+        application probability stays at PyMoo's ``0.9`` regardless.
+    :param eta: PM distribution index. Smaller → larger jumps away from
+        the parent value; larger → tighter local perturbation.
+    """
+
+    prob: float | None = None
+    eta: float = 3.0
+
+    def __post_init__(self) -> None:
+        if self.prob is not None and not 0.0 <= self.prob <= 1.0:
+            raise ValueError(
+                f"mutation.prob must be in [0, 1] or null; got {self.prob!r}"
+            )
+        if self.eta < 0.0:
+            raise ValueError(
+                f"mutation.eta must be >= 0; got {self.eta!r}"
+            )
+
+
+@dataclass(frozen=True)
+class CrossoverConfig:
+    """SBX crossover operator parameters.
+
+    Maps onto PyMoo's :class:`~pymoo.operators.crossover.sbx.SBX`
+    operator inside
+    :class:`~src.optimizer.discrete_pymoo_optimizer.DiscretePymooOptimizer`.
+    The defaults reproduce the historical hardcoded operator
+    (``SBX(prob=0.9, eta=3.0)``) exactly.
+
+    :param prob: Probability that crossover is applied to a mating pair
+        at all (PyMoo's ``prob``; unmated pairs are copied unchanged).
+    :param eta: SBX distribution index. Smaller → offspring further from
+        the parents; larger → near-parent offspring.
+    """
+
+    prob: float = 0.9
+    eta: float = 3.0
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.prob <= 1.0:
+            raise ValueError(
+                f"crossover.prob must be in [0, 1]; got {self.prob!r}"
+            )
+        if self.eta < 0.0:
+            raise ValueError(
+                f"crossover.eta must be >= 0; got {self.eta!r}"
+            )
+
+
+@dataclass(frozen=True)
 class OptimizerConfig:
-    """Optimizer sampling strategy and early-stop configuration.
+    """Optimizer sampling strategy, variation operators, and early stop.
 
     Consumed by :class:`~src.evolutionary.VLMBoundaryTester`. Controls
-    the initial-population sampler (uniform random vs sparse init) and
-    the early-stop triggers that may terminate a seed before the
-    generation budget is exhausted.
+    the initial-population sampler (uniform random vs sparse init), the
+    PM/SBX variation-operator parameters, and the early-stop triggers
+    that may terminate a seed before the generation budget is exhausted.
 
     :param early_stop: Early-stop configuration.
     :param sampling: Initial population sampling strategy.
+    :param mutation: Polynomial-mutation operator parameters.
+    :param crossover: SBX crossover operator parameters.
     """
 
     early_stop: EarlyStopCfg = field(default_factory=EarlyStopCfg)
     sampling: SamplingConfig = field(default_factory=SamplingConfig)
+    mutation: MutationConfig = field(default_factory=MutationConfig)
+    crossover: CrossoverConfig = field(default_factory=CrossoverConfig)
 
 
 # ---------------------------------------------------------------------------
@@ -598,6 +665,7 @@ def apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
 
 __all__ = [
     "AbstractionConfig",
+    "CrossoverConfig",
     "DEFAULT_ANSWER_FORMAT",
     "DEFAULT_MULTITIER_TIERS",
     "DEFAULT_PROMPT_TEMPLATE",
@@ -605,6 +673,7 @@ __all__ = [
     "ExperimentConfig",
     "GapFilterConfig",
     "ImageConfig",
+    "MutationConfig",
     "OptimizerConfig",
     "ParallelConfig",
     "RosterConfig",

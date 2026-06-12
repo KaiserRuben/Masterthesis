@@ -135,6 +135,21 @@ evolutionary:
       plateau_patience: 30
       no_improvement_warmup: 20
 
+    # Variation operators (PM mutation + SBX crossover). Defaults reproduce
+    # the historical hardcoded operators exactly (PM(eta=3.0),
+    # SBX(prob=0.9, eta=3.0)) — omit both blocks for behaviour identical to
+    # pre-knob runs. For "heavy mutation" raise mutation.prob, lower
+    # mutation.eta.
+    #
+    # mutation:
+    #   prob: null                       # per-gene mutation probability;
+    #                                    # null = pymoo default min(0.5, 1/n_var)
+    #   eta: 3.0                         # PM distribution index; lower = larger jumps
+    # crossover:
+    #   prob: 0.9                        # per-mating SBX application probability
+    #   eta: 3.0                         # SBX distribution index; lower = offspring
+    #                                    # further from parents
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Anchor selection — which Pareto members become PDQ anchors

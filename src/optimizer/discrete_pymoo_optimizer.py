@@ -31,12 +31,47 @@ from smoo.optimizer.auxiliary_components import OptimizerCandidate
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Default operator factories
+# Default operator parameters (historical hardcoded values)
 # ---------------------------------------------------------------------------
 
-_DEFAULT_CROSSOVER = SBX(prob=0.9, eta=3.0, vtype=float, repair=RoundingRepair())
-_DEFAULT_MUTATION = PM(eta=3.0, vtype=float, repair=RoundingRepair())
+DEFAULT_MUTATION_ETA = 3.0
+DEFAULT_CROSSOVER_PROB = 0.9
+DEFAULT_CROSSOVER_ETA = 3.0
+
 _DEFAULT_SAMPLING = IntegerRandomSampling()
+
+
+def build_mutation(
+    prob: float | None = None,
+    eta: float = DEFAULT_MUTATION_ETA,
+) -> PM:
+    """Build the integer-aware PM operator.
+
+    :param prob: Per-gene mutation probability (PyMoo ``prob_var``).
+        ``None`` keeps PyMoo's adaptive default ``min(0.5, 1/n_var)``.
+    :param eta: PM distribution index (smaller → larger jumps).
+    :returns: PM operator with rounding repair, matching the historical
+        default ``PM(eta=3.0)`` when called with no arguments.
+    """
+    kwargs: dict[str, Any] = {}
+    if prob is not None:
+        kwargs["prob_var"] = prob
+    return PM(eta=eta, vtype=float, repair=RoundingRepair(), **kwargs)
+
+
+def build_crossover(
+    prob: float = DEFAULT_CROSSOVER_PROB,
+    eta: float = DEFAULT_CROSSOVER_ETA,
+) -> SBX:
+    """Build the integer-aware SBX operator.
+
+    :param prob: Per-mating crossover application probability.
+    :param eta: SBX distribution index (smaller → offspring further
+        from parents).
+    :returns: SBX operator with rounding repair, matching the historical
+        default ``SBX(prob=0.9, eta=3.0)`` when called with no arguments.
+    """
+    return SBX(prob=prob, eta=eta, vtype=float, repair=RoundingRepair())
 
 
 class DiscretePymooOptimizer(Optimizer):
@@ -57,7 +92,17 @@ class DiscretePymooOptimizer(Optimizer):
     :param algorithm: PyMoo algorithm class (default :class:`AGEMOEA2`).
     :param algo_params: Extra keyword arguments forwarded to the algorithm
         constructor.  Keys ``sampling``, ``crossover``, and ``mutation``
-        override the default integer-aware operators.
+        override the default integer-aware operators (including any
+        ``mutation_*`` / ``crossover_*`` scalar settings below).
+    :param mutation_prob: Per-gene mutation probability (PyMoo
+        ``prob_var``). ``None`` (default) keeps PyMoo's adaptive default
+        ``min(0.5, 1/n_var)``.
+    :param mutation_eta: PM distribution index (default ``3.0``,
+        the historical hardcoded value).
+    :param crossover_prob: SBX per-mating application probability
+        (default ``0.9``, the historical hardcoded value).
+    :param crossover_eta: SBX distribution index (default ``3.0``,
+        the historical hardcoded value).
     """
 
     _pymoo_algo: GeneticAlgorithm
@@ -67,6 +112,8 @@ class DiscretePymooOptimizer(Optimizer):
     _pop_size: int
     _algorithm_cls: Type[GeneticAlgorithm]
     _algo_params: dict[str, Any]
+    _mutation_op: PM
+    _crossover_op: SBX
 
     def __init__(
         self,
@@ -75,6 +122,10 @@ class DiscretePymooOptimizer(Optimizer):
         pop_size: int = 50,
         algorithm: Type[GeneticAlgorithm] = AGEMOEA2,
         algo_params: dict[str, Any] | None = None,
+        mutation_prob: float | None = None,
+        mutation_eta: float = DEFAULT_MUTATION_ETA,
+        crossover_prob: float = DEFAULT_CROSSOVER_PROB,
+        crossover_eta: float = DEFAULT_CROSSOVER_ETA,
     ) -> None:
         super().__init__(num_objectives)
 
@@ -82,6 +133,10 @@ class DiscretePymooOptimizer(Optimizer):
         self._pop_size = pop_size
         self._algorithm_cls = algorithm
         self._algo_params = dict(algo_params) if algo_params else {}
+        self._mutation_op = build_mutation(prob=mutation_prob, eta=mutation_eta)
+        self._crossover_op = build_crossover(
+            prob=crossover_prob, eta=crossover_eta
+        )
         self._n_var = len(self._gene_bounds)
 
         # Defer initialization when bounds are placeholder zeros —
@@ -101,8 +156,8 @@ class DiscretePymooOptimizer(Optimizer):
         params: dict[str, Any] = {
             "pop_size": self._pop_size,
             "sampling": _DEFAULT_SAMPLING,
-            "crossover": _DEFAULT_CROSSOVER,
-            "mutation": _DEFAULT_MUTATION,
+            "crossover": self._crossover_op,
+            "mutation": self._mutation_op,
         }
         params.update(self._algo_params)
         return params

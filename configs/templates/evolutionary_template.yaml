@@ -232,6 +232,23 @@ optimizer:
     no_improvement_warmup: 20           # Gens before no-improvement trigger can fire.
     hypervolume_reference: null         # e.g. [0.5, 1.0, 5.0] for (MatDist, TextDist, TgtBal).
 
+  # --- Variation operators (PM mutation + SBX crossover) --------------------
+  # Defaults reproduce the historical hardcoded operators exactly
+  # (PM(eta=3.0), SBX(prob=0.9, eta=3.0)) — omit both blocks for behaviour
+  # identical to pre-knob runs. For "heavy mutation" runs raise
+  # mutation.prob and lower mutation.eta.
+  #
+  # mutation:
+  #   prob: null                          # Per-gene mutation probability.
+  #                                       # null = pymoo default min(0.5, 1/n_var)
+  #                                       # (~1 mutated gene per offspring);
+  #                                       # e.g. 0.1 for heavy mutation.
+  #   eta: 3.0                            # PM distribution index; lower = larger jumps.
+  # crossover:
+  #   prob: 0.9                           # Per-mating SBX application probability.
+  #   eta: 3.0                            # SBX distribution index; lower = offspring
+  #                                       # further from parents.
+
 # ---------------------------------------------------------------------------
 # Parallelism (multi-thread seed dispatch)
 # ---------------------------------------------------------------------------

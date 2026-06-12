@@ -194,6 +194,10 @@ def _build_tester(
         gene_bounds=np.zeros(1, dtype=np.int64),  # updated per-seed
         num_objectives=objectives.num_objectives,
         pop_size=exp.pop_size,
+        mutation_prob=exp.optimizer.mutation.prob,
+        mutation_eta=exp.optimizer.mutation.eta,
+        crossover_prob=exp.optimizer.crossover.prob,
+        crossover_eta=exp.optimizer.crossover.eta,
     )
     manipulator = VLMManipulator(image_manip, text_manip)
     return VLMBoundaryTester(

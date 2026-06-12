@@ -289,6 +289,10 @@ class BoundaryPairRunner:
             gene_bounds=np.zeros(1, dtype=np.int64),
             num_objectives=len(crit_types),
             pop_size=evo_cfg.pop_size,
+            mutation_prob=evo_cfg.optimizer.mutation.prob,
+            mutation_eta=evo_cfg.optimizer.mutation.eta,
+            crossover_prob=evo_cfg.optimizer.crossover.prob,
+            crossover_eta=evo_cfg.optimizer.crossover.eta,
         )
         manipulator = VLMManipulator(image_manip, text_manip)
         tester = VLMBoundaryTester(
