@@ -40,6 +40,7 @@ from src.common import (
 from src.config import (
     ExperimentConfig,
     SeedTriple,
+    apply_modality,
     resolve_categories as resolve_evolutionary_categories,
 )
 from src.data import ImageNetCache
@@ -189,7 +190,11 @@ class BoundaryPairRunner:
         evo_cfg = resolve_evolutionary_categories(evo_cfg, data_source.labels())
         cfg = self._with_resolved_categories(cfg, evo_cfg.categories)
         self._cfg = cfg
-        evo_cfg = to_evolutionary_config(cfg)
+        # Modality postprocessing must precede component init: it shrinks
+        # the genome blocks (image_only → text profile 'noop', text_only →
+        # patch_ratio 0) so manipulators and workers only ever see the
+        # channels the modality flag activates.
+        evo_cfg = apply_modality(to_evolutionary_config(cfg))
         pdq_cfg = to_pdq_config(cfg)
 
         # -- Shared component init + seed gen + backend precompute -----

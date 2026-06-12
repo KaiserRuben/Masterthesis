@@ -13,7 +13,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import logging
 import os
 import sys
@@ -33,7 +32,7 @@ from src.common import (
     precompute_image_backend,
     prepare_pipeline_seeds,
 )
-from src.config import ExperimentConfig, resolve_categories
+from src.config import ExperimentConfig, apply_modality, resolve_categories
 from src.data import ImageNetCache
 from src.evolutionary import VLMBoundaryTester
 from src.manipulator.image.types import CandidateStrategy, PatchStrategy
@@ -90,37 +89,6 @@ def _configure_distlock(workers: int) -> None:
         logger.info("Device locks enabled (workers=%d)", workers)
 
 
-def _apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
-    """Force genome-block sizes consistent with the modality flag.
-
-    * ``image_only`` → text profile becomes ``noop`` (text_dim=0).
-    * ``text_only``  → ``image.patch_ratio`` becomes 0 (image_dim=0).
-    * ``joint``      → unchanged.
-
-    User-facing YAML only needs ``modality:`` — this avoids inconsistent
-    states where genome sizes and Pareto dimensionality drift apart.
-    """
-    if exp.modality == "image_only":
-        new_composite = dataclasses.replace(
-            exp.text.composite,
-            profile="noop",
-            operators=(),
-            overrides={},
-        )
-        logger.info("modality=image_only → forcing text profile to 'noop'")
-        return dataclasses.replace(
-            exp,
-            text=dataclasses.replace(exp.text, composite=new_composite),
-        )
-    if exp.modality == "text_only":
-        logger.info("modality=text_only → forcing image.patch_ratio to 0.0")
-        return dataclasses.replace(
-            exp,
-            image=dataclasses.replace(exp.image, patch_ratio=0.0),
-        )
-    return exp
-
-
 def run_experiment(cfg: dict, preflight: bool = False) -> None:
     """Build all components from *cfg* dict and run the boundary test.
 
@@ -136,7 +104,7 @@ def run_experiment(cfg: dict, preflight: bool = False) -> None:
         first seed before the main loop starts.
     """
     exp = load_config(cfg)
-    exp = _apply_modality(exp)
+    exp = apply_modality(exp)
     _configure_distlock(exp.parallel.workers)
 
     # -- Resolve categories from data source (before any component sees them)

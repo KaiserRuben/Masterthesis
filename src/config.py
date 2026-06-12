@@ -17,6 +17,7 @@ in their respective component modules (to avoid circular imports).
 from __future__ import annotations
 
 import dataclasses
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -28,6 +29,8 @@ from src.manipulator.text.config import TextConfig
 
 if TYPE_CHECKING:
     from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Shared constants (ONE copy — never duplicated)
@@ -560,6 +563,39 @@ def resolve_categories(
     return dataclasses.replace(config, categories=cats)
 
 
+def apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
+    """Force genome-block sizes consistent with the modality flag.
+
+    * ``image_only`` → text profile becomes ``noop`` (text_dim=0).
+    * ``text_only``  → ``image.patch_ratio`` becomes 0 (image_dim=0).
+    * ``joint``      → unchanged.
+
+    User-facing YAML only needs ``modality:`` — this avoids inconsistent
+    states where genome sizes and Pareto dimensionality drift apart.
+    Every runner that materialises an :class:`ExperimentConfig` must
+    call this before initialising manipulators / shared components.
+    """
+    if exp.modality == "image_only":
+        new_composite = dataclasses.replace(
+            exp.text.composite,
+            profile="noop",
+            operators=(),
+            overrides={},
+        )
+        logger.info("modality=image_only → forcing text profile to 'noop'")
+        return dataclasses.replace(
+            exp,
+            text=dataclasses.replace(exp.text, composite=new_composite),
+        )
+    if exp.modality == "text_only":
+        logger.info("modality=text_only → forcing image.patch_ratio to 0.0")
+        return dataclasses.replace(
+            exp,
+            image=dataclasses.replace(exp.image, patch_ratio=0.0),
+        )
+    return exp
+
+
 __all__ = [
     "AbstractionConfig",
     "DEFAULT_ANSWER_FORMAT",
@@ -578,5 +614,6 @@ __all__ = [
     "SeedTriple",
     "SUTConfig",
     "TextConfig",
+    "apply_modality",
     "resolve_categories",
 ]
