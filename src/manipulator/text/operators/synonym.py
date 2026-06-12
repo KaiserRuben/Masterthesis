@@ -31,6 +31,7 @@ import hashlib
 import json
 import logging
 import re
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -41,6 +42,15 @@ from ..types import CONTENT_POS_TAGS, TokenSequence
 from .base import OperatorContext, severity_to_k_max
 
 logger = logging.getLogger(__name__)
+
+# Serialises the lazy MLM/spaCy load across worker threads. The composite
+# text manipulator (and hence this operator) is shared by every worker, so
+# concurrent first-time prepare() calls would otherwise enter
+# ``from_pretrained(...).to(...)`` simultaneously — HF model construction is
+# not thread-safe and the loser reads half-materialised meta tensors
+# ("Cannot copy out of meta tensor; no data!"). Module-level so it also
+# guards distinct instances built per worker.
+_LOAD_LOCK = threading.Lock()
 
 
 # Morphological negation prefixes that indicate an antonym, not a synonym.
@@ -121,37 +131,49 @@ class SynonymOperator:
     def _ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        import torch
-        import spacy
-        from transformers import AutoModelForMaskedLM, AutoTokenizer
+        # Double-checked locking: only one thread builds the MLM/spaCy
+        # resources; the rest block here and return on the inner check.
+        with _LOAD_LOCK:
+            if self._model is not None:
+                return
+            import torch
+            import spacy
+            from transformers import AutoModelForMaskedLM, AutoTokenizer
 
-        self._device = torch.device(self._device_str)
-        self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
-        self._model = (
-            AutoModelForMaskedLM.from_pretrained(self._model_name)
-            .to(self._device)
-            .eval()
-        )
-        # Lemmatiser must be enabled for the lemma-reject filter
-        self._nlp = spacy.load(self._spacy_model_name, disable=["ner", "parser"])
+            self._device = torch.device(self._device_str)
+            self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
+            model = (
+                AutoModelForMaskedLM.from_pretrained(self._model_name)
+                .to(self._device)
+                .eval()
+            )
+            # Lemmatiser must be enabled for the lemma-reject filter
+            self._nlp = spacy.load(
+                self._spacy_model_name, disable=["ner", "parser"]
+            )
 
-        if self._redis_url:
-            try:
-                import redis
+            if self._redis_url:
+                try:
+                    import redis
 
-                client = redis.Redis.from_url(self._redis_url, decode_responses=True)
-                client.ping()
-                self._redis = client
-                logger.info(
-                    "Synonym MLM candidate cache connected to Redis at %s",
-                    self._redis_url,
-                )
-            except Exception:  # noqa: BLE001
-                logger.info(
-                    "Redis unavailable at %s — synonym MLM running without cache",
-                    self._redis_url,
-                )
-                self._redis = None
+                    client = redis.Redis.from_url(
+                        self._redis_url, decode_responses=True
+                    )
+                    client.ping()
+                    self._redis = client
+                    logger.info(
+                        "Synonym MLM candidate cache connected to Redis at %s",
+                        self._redis_url,
+                    )
+                except Exception:  # noqa: BLE001
+                    logger.info(
+                        "Redis unavailable at %s — synonym MLM running without cache",
+                        self._redis_url,
+                    )
+                    self._redis = None
+            # Publish the fully-built model last: other threads gate on
+            # ``self._model is not None`` and must never see a partial object.
+            self._model = model
 
     def _set_resources(
         self,
