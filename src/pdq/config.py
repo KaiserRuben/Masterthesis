@@ -55,6 +55,7 @@ VALID_D_O: frozenset[str] = frozenset({
 
 VALID_FLIP_POLICIES: frozenset[str] = frozenset({
     "any_non_anchor",
+    "pair_target",
 })
 
 VALID_PASS_ORDERS: frozenset[str] = frozenset({
@@ -120,12 +121,26 @@ class StrategyConfig:
 
 @dataclass(frozen=True)
 class Stage1Config:
-    """Stage-1 flip-discovery configuration."""
+    """Stage-1 flip-discovery configuration.
+
+    :param flip_policy: How a candidate counts as a flip (see
+        :mod:`src.pdq.flip_policy`).  ``"pair_target"`` (default) —
+        pair-restricted argmax lands on the other side of the
+        anchor↔target boundary (``lp[target] > lp[anchor]`` for an
+        anchor on its own side); requires the seed's concrete pair,
+        which only the boundary-pair pipeline supplies.
+        ``"any_non_anchor"`` — full-category argmax differs from the
+        anchor label (canonical AutoBVA; required for standalone PDQ).
+        The default changed from ``any_non_anchor`` to ``pair_target``
+        because boundary-pair is the primary consumer; the standalone
+        runner rejects ``pair_target`` at start-up, so standalone
+        configs must set this field explicitly.
+    """
 
     budget_sut_calls: int = 1000
     max_flips_per_seed: int = 20
     max_distinct_targets: int = 8
-    flip_policy: str = "any_non_anchor"
+    flip_policy: str = "pair_target"
     strategies: tuple[StrategyConfig, ...] = field(
         default_factory=lambda: (
             StrategyConfig(name="dense_uniform", weight=0.30),
@@ -188,10 +203,16 @@ class PassesConfig:
 
 @dataclass(frozen=True)
 class Stage2Config:
-    """Stage-2 minimisation configuration."""
+    """Stage-2 minimisation configuration.
+
+    :param flip_preserve_policy: Criterion a shrink step must preserve
+        — same values and default as ``Stage1Config.flip_policy``.
+        Keep both fields on the same policy unless deliberately probing
+        criterion asymmetry.
+    """
 
     budget_sut_calls_per_flip: int = 300
-    flip_preserve_policy: str = "any_non_anchor"
+    flip_preserve_policy: str = "pair_target"
     passes: PassesConfig = field(default_factory=PassesConfig)
 
 

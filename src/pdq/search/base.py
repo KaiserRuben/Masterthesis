@@ -19,6 +19,7 @@ import numpy as np
 from PIL import Image
 
 from ..distances.input import hamming, image_pixel_l2, rank_sum, sparsity
+from ..flip_policy import FlipPredicate
 from ..metric import pdq as pdq_metric
 
 if TYPE_CHECKING:
@@ -68,7 +69,10 @@ class ScoredCandidate:
     :param d_i: Primary input distance (from ``d_i_primary`` config).
     :param d_o: Primary output distance (from ``d_o_primary`` config).
     :param pdq_score: PDQ = d_o / (d_i + eps).
-    :param flipped: Whether predicted label differs from anchor label.
+    :param flipped: Whether the candidate crosses the boundary per the
+        configured ``stage1.flip_policy`` (see
+        :mod:`src.pdq.flip_policy`).  ``label`` always remains the
+        full-category argmax, independent of the policy.
     :param img_sparsity: Non-zero image genes.
     :param txt_sparsity: Non-zero text genes.
     :param total_sparsity: img_sparsity + txt_sparsity.
@@ -122,6 +126,7 @@ def score_candidate(
     sut_call_fn: Callable[[np.ndarray], tuple[list[float], int, Image.Image, str, float]],
     input_distance_fn: Callable[[np.ndarray, np.ndarray], float],
     output_distance_fn: Callable[[str, str], float],
+    flip_predicate: FlipPredicate | None = None,
 ) -> ScoredCandidate:
     """Evaluate one candidate genotype and return a fully scored result.
 
@@ -142,6 +147,10 @@ def score_candidate(
         rendered_image, rendered_text, wall_time_cum)`` — makes one SUT call.
     :param input_distance_fn: ``(g, anchor_geno) → float``.
     :param output_distance_fn: ``(label_a, label_b) → float``.
+    :param flip_predicate: ``(logprobs, label) → bool`` deciding whether
+        the candidate counts as a flip (built via
+        :func:`src.pdq.flip_policy.make_flip_predicate`).  ``None``
+        falls back to ``label != anchor_label`` (``any_non_anchor``).
     :returns: Fully populated :class:`ScoredCandidate`.
     """
     g = cand.genotype
@@ -167,7 +176,10 @@ def score_candidate(
     text_cos = float(text_distance_fn(rendered_text))
 
     d_i = input_distance_fn(g, anchor_geno)
-    flipped = label != anchor_label
+    if flip_predicate is not None:
+        flipped = flip_predicate(logprobs_list, label)
+    else:
+        flipped = label != anchor_label
     d_o = float(output_distance_fn(label, anchor_label))
     pdq_val = pdq_metric(d_i, d_o)
 

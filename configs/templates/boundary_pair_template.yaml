@@ -173,7 +173,15 @@ pdq:
     budget_sut_calls: 30                 # CALIBRATE — anchors near boundary
     max_flips_per_seed: 10
     max_distinct_targets: 4
-    flip_policy: any_non_anchor
+    # `pair_target` (default): flip iff the pair-restricted argmax over the
+    # seed's concrete (anchor, target) classes lands on the non-anchor side
+    # — i.e. lp[target] > lp[anchor] for an anchor labelled on its own side.
+    # Consistent with the pair-softmax anchor labelling above, and immune to
+    # generic attractor classes capturing the 6-cat argmax (Exp-100: 6-cat
+    # `any_non_anchor` flips were ~always 'boa constrictor', 0% on-target).
+    # SUT scoring stays over the FULL category list — only flip detection
+    # is pair-restricted.  `any_non_anchor` restores the 6-cat argmax check.
+    flip_policy: pair_target
     strategies:
       - name: dense_uniform
         weight: 0.25
@@ -198,7 +206,8 @@ pdq:
 
   stage2:
     budget_sut_calls_per_flip: 200       # smaller than canonical 500 — anchors close
-    flip_preserve_policy: any_non_anchor
+    # Shrink steps must preserve the same pair-space criterion as stage1.
+    flip_preserve_policy: pair_target
     passes:
       zero:
         enabled: true

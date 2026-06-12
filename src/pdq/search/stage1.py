@@ -22,6 +22,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ..config import EarlyStopConfig, StrategyConfig
+from ..flip_policy import FlipPredicate
 from .base import Candidate, ScoredCandidate, score_candidate
 
 logger = logging.getLogger(__name__)
@@ -296,6 +297,7 @@ def run_stage1(
     early_stop_cfg: EarlyStopConfig,
     max_flips: int,
     max_distinct_targets: int,
+    flip_predicate: FlipPredicate | None = None,
 ) -> list[ScoredCandidate]:
     """Run Stage-1 flip discovery across all configured strategies.
 
@@ -326,6 +328,9 @@ def run_stage1(
     :param max_flips: Stop early when this many flips are found.
     :param max_distinct_targets: Stop early when this many distinct target
         labels have been flipped to.
+    :param flip_predicate: ``(logprobs, label) → bool`` implementing the
+        configured ``stage1.flip_policy`` (see
+        :mod:`src.pdq.flip_policy`).  ``None`` = ``any_non_anchor``.
     :returns: All evaluated candidates in evaluation order.
     """
     if not strategies:
@@ -386,6 +391,7 @@ def run_stage1(
                 sut_call_fn=sut_call_fn,
                 input_distance_fn=input_distance_fn,
                 output_distance_fn=output_distance_fn,
+                flip_predicate=flip_predicate,
             )
             results.append(sc)
             total_calls += 1

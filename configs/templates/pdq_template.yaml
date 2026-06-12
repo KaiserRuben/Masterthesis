@@ -175,6 +175,13 @@ stage1:
   budget_sut_calls: 150                  # 3× the gate minimum — proven sufficient
   max_flips_per_seed: 30
   max_distinct_targets: 10
+  # Flip policies: `any_non_anchor` (full-category argmax ≠ anchor label;
+  # canonical AutoBVA) or `pair_target` (pair-restricted argmax lands on the
+  # non-anchor side of the seed's concrete anchor↔target pair).  The
+  # dataclass DEFAULT is now `pair_target` (boundary-pair is the primary
+  # consumer) — but standalone PDQ has no pair-space anchor and REJECTS
+  # `pair_target` at start-up.  Standalone configs MUST set this field
+  # explicitly to any_non_anchor.
   flip_policy: any_non_anchor
   strategies:
     - name: dense_uniform
@@ -211,6 +218,8 @@ stage1:
 
 stage2:
   budget_sut_calls_per_flip: 500
+  # Same values/default as stage1.flip_policy — see comment there.  Must be
+  # any_non_anchor for standalone PDQ.
   flip_preserve_policy: any_non_anchor
   passes:
     zero:

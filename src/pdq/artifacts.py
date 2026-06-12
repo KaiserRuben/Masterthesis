@@ -36,6 +36,24 @@ Every archived flip is assigned a two-letter validity code:
     Neither genotype flips the label (should not appear in the archive
     under normal operation; present only for diagnostic rows written when
     a cached flip is later invalidated by a subsequent SUT call).
+
+Label columns vs flip booleans (flip policies)
+----------------------------------------------
+Label columns (``label`` / ``top1_label`` / ``L_target`` /
+``label_flipped`` / ``label_min`` / ``label_after``) always record the
+**full-category argmax** of the SUT logprobs, regardless of the
+configured flip policy.  Boolean flip columns (``flipped_vs_anchor``,
+``still_flipped``) and the flip/archive row *selection* follow
+``stage1.flip_policy`` / ``stage2.flip_preserve_policy`` (see
+:mod:`src.pdq.flip_policy`).  Under ``pair_target`` (boundary-pair
+default) a flip row's ``label_flipped`` may therefore be an off-pair
+attractor class (e.g. "boa constrictor") even though the row crossed
+the pair boundary; the pair-space side is recoverable from the full
+``logprobs_*`` vectors plus the pair recorded in the seed's
+``config.json`` (``pair_classes``).  ``label_anchor`` is the
+full-category argmax for standalone PDQ and the pair-softmax argmax for
+boundary-pair rows (``anchor_source == "evolutionary"``).  No schema
+change: column set and ``PDQ_SCHEMA_VERSION`` are unchanged.
 """
 
 from __future__ import annotations

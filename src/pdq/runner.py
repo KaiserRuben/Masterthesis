@@ -51,6 +51,7 @@ from .config import (
     config_to_dict,
     resolve_categories as pdq_resolve_categories,
 )
+from .flip_policy import make_flip_predicate
 from .metric import INPUT_DISTANCES, OUTPUT_DISTANCES
 from .search.base import ScoredCandidate
 from .search.stage1 import run_stage1
@@ -238,6 +239,28 @@ class PDQRunner:
             the run.
         """
         cfg = self._cfg
+
+        # -- Fail fast: pair_target needs a pair-space anchor --------------
+        # Standalone PDQ anchors on the zero genotype with a full-category
+        # argmax label; the seed's (class_a, class_b) is seed-selection
+        # metadata, not a pair-boundary contract.  pair_target is only
+        # meaningful in the boundary-pair pipeline, which assigns anchors
+        # via pair-restricted softmax.  Raise before any model loading.
+        for field_name, value in (
+            ("stage1.flip_policy", cfg.stage1.flip_policy),
+            ("stage2.flip_preserve_policy", cfg.stage2.flip_preserve_policy),
+        ):
+            if value == "pair_target":
+                raise ValueError(
+                    f"{field_name}='pair_target' is not supported by the "
+                    "standalone PDQ runner (it is the default because "
+                    "boundary-pair is the primary consumer). Set "
+                    f"{field_name}: any_non_anchor in your YAML for "
+                    "canonical standalone semantics, or run the "
+                    "boundary-pair pipeline "
+                    "(experiments/runners/run_boundary_pair_test.py) for "
+                    "pair-space flip detection."
+                )
 
         # -- Data source (always needed first for category resolution) ----
         data_source = ImageNetCache(dirs=list(cfg.cache_dirs))
@@ -581,6 +604,7 @@ def run_pdq_core(
     pareto_idx: int | None = None,
     evolutionary_gen: int | None = None,
     anchor_source: str = "zero",
+    pair_classes: tuple[str, str] | None = None,
 ) -> dict[str, Any]:
     """Run Stage 1 + Stage 2 for one anchor.
 
@@ -617,12 +641,33 @@ def run_pdq_core(
         appeared.  ``None`` for canonical zero anchor.
     :param anchor_source: ``"zero"`` for canonical PDQ; ``"evolutionary"``
         for boundary-pair rows.
+    :param pair_classes: ``(anchor_class_concrete, target_class_concrete)``
+        — the seed's concrete pair, required when either
+        ``stage1.flip_policy`` or ``stage2.flip_preserve_policy`` is
+        ``"pair_target"``.  The boundary-pair runner supplies it from
+        seed metadata; the standalone runner leaves it ``None``.
     :returns: Counts dict with ``n_stage1_candidates``,
         ``n_stage1_flips``, ``n_distinct_targets``, ``n_stage2_flips``,
         ``n_stage2_sut_calls``, ``next_flip_id``.
     """
     categories = cfg.categories
     anchor_image_arr = np.array(anchor_image)
+
+    # Flip predicates — raise immediately on pair_target without a pair.
+    stage1_flip_fn = make_flip_predicate(
+        cfg.stage1.flip_policy,
+        categories=categories,
+        anchor_label=anchor_label,
+        anchor_logprobs=anchor_logprobs,
+        pair_classes=pair_classes,
+    )
+    stage2_flip_fn = make_flip_predicate(
+        cfg.stage2.flip_preserve_policy,
+        categories=categories,
+        anchor_label=anchor_label,
+        anchor_logprobs=anchor_logprobs,
+        pair_classes=pair_classes,
+    )
 
     # Resolve distance functions from config.
     input_dist_fn = INPUT_DISTANCES.get(cfg.distances.d_i_primary)
@@ -682,6 +727,7 @@ def run_pdq_core(
         early_stop_cfg=cfg.stage1.early_stop,
         max_flips=cfg.stage1.max_flips_per_seed,
         max_distinct_targets=cfg.stage1.max_distinct_targets,
+        flip_predicate=stage1_flip_fn,
     )
 
     # -- Write Stage-1 results to parquet --------------------------------
@@ -757,6 +803,7 @@ def run_pdq_core(
             stage="stage2",
             candidate_id=-1,
         )
+        logprobs_list = logprobs_t.tolist()
         lbl = categories[int(logprobs_t.argmax().item())]
 
         _stage2_call_counter[0] += 1
@@ -764,7 +811,14 @@ def run_pdq_core(
             _release_gpu_cache(cfg.device)
             _stage2_call_counter[0] = 0
 
-        return CheckResult(lbl != anchor_label, lbl, call_id, adapter.wall_time_cumulative)
+        # still_flipped follows stage2.flip_preserve_policy; lbl stays the
+        # full-category argmax for trajectory / label_min recording.
+        return CheckResult(
+            stage2_flip_fn(logprobs_list, lbl),
+            lbl,
+            call_id,
+            adapter.wall_time_cumulative,
+        )
 
     n_stage2_calls = 0
     n_vv = 0

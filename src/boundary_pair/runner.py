@@ -8,9 +8,13 @@ Per seed::
     2. Each Pareto member is selected as a PDQ anchor.  The anchor image
        is rendered, the SUT yields the anchor label via pair-restricted
        softmax, and :func:`~src.pdq.runner.run_pdq_core` runs Stage 1 +
-       Stage 2 with that anchor.  All anchors for one seed share a
-       single :class:`SeedLogger` at ``<seed_dir>/pdq/``; the
-       archive.parquet rows are tagged by ``pareto_idx``.
+       Stage 2 with that anchor.  The seed's concrete (anchor, target)
+       pair is forwarded so that the default ``pair_target`` flip
+       policy detects flips in pair space — consistent with the
+       pair-softmax anchor labelling (see :mod:`src.pdq.flip_policy`).
+       All anchors for one seed share a single :class:`SeedLogger` at
+       ``<seed_dir>/pdq/``; the archive.parquet rows are tagged by
+       ``pareto_idx``.
     3. Optimiser is reset between seeds.
 
 Shared models (SUT, VQGAN/StyleGAN, text composite) are loaded exactly
@@ -431,6 +435,9 @@ class BoundaryPairRunner:
             pdq_cfg_dict["schema_version"] = PDQ_SCHEMA_VERSION
             pdq_cfg_dict["pipeline"] = "boundary_pair"
             pdq_cfg_dict["boundary_pair_name"] = cfg.name
+            # Concrete pair driving anchor labels and (under pair_target)
+            # the flip criterion — provenance for downstream analysis.
+            pdq_cfg_dict["pair_classes"] = [pair_class_a, pair_class_b]
             sl.write_config_json(pdq_cfg_dict)
             sl.write_context_json(build_context_meta(manipulator))
 
@@ -516,6 +523,7 @@ class BoundaryPairRunner:
                     pareto_idx=pareto_idx,
                     evolutionary_gen=evolutionary_gen,
                     anchor_source="evolutionary",
+                    pair_classes=(pair_class_a, pair_class_b),
                 )
                 flip_id_cursor = counts["next_flip_id"]
                 anchor_summaries.append({

@@ -66,9 +66,13 @@ logger = logging.getLogger(__name__)
 class CheckResult(NamedTuple):
     """Result of one Stage-2 SUT check call.
 
-    :param still_flipped: Whether the tested genotype crosses the class
-        boundary (VLM label ≠ anchor label).
-    :param label: Top-1 label returned by the VLM for the tested genotype.
+    :param still_flipped: Whether the tested genotype still crosses the
+        boundary per the configured ``stage2.flip_preserve_policy``
+        (``any_non_anchor``: VLM label ≠ anchor label; ``pair_target``:
+        pair-restricted argmax on the non-anchor side — see
+        :mod:`src.pdq.flip_policy`).
+    :param label: Top-1 full-category label returned by the VLM for the
+        tested genotype (policy-independent).
     :param sut_call_id: Monotonic call ID from the SUT adapter.
     :param wall_time_cum: Cumulative SUT wall time at call completion (s).
     """
