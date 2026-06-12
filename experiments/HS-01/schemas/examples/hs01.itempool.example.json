@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0.0",
+  "pool_id": "hs01-pool-v1",
+  "created": "2026-06-20T10:00:00Z",
+  "frozen": true,
+  "generator": {
+    "pipeline_commit": "abc1234",
+    "selection_script": "analysis/hs01_select_items.py",
+    "notes": "Exp-100 slice + HS-GEN-01 modality runs."
+  },
+  "composition_targets": {
+    "pair": { "baseline": 8, "image_heavy": 14, "text_heavy": 14, "balanced": 14 },
+    "text": { "clean": 6, "low_drift": 8, "medium_drift": 8, "high_drift": 8 },
+    "image": { "raw": 6, "roundtrip": 6, "boundary_joint": 12, "image_heavy": 6 }
+  },
+  "sources": [
+    {
+      "source_id": "src-exp100-s0042-g117-i3",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-100",
+        "run_id": "poc_boundary_pair",
+        "seed_index": 42,
+        "generation": 117,
+        "individual_id": "pareto-3"
+      },
+      "sut": { "model_id": "llava-next-mistral-7b-int8", "backend": "openvino", "scoring": "teacher-forced-logprob" },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa_constrictor",
+        "anchor_word": "sparrow",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": "forward",
+        "bucket_relation": "cross"
+      },
+      "search": { "modality": "text_only", "tgtbal": 7e-06, "crossed": true, "gen_first_cross": 2 },
+      "drift": { "d_text": 0.58, "d_img": 0.006, "active_text_genes": 11, "hamming_to_anchor_norm": 0.41 },
+      "strata": { "text": "high_drift", "image": null, "pair": "text_heavy" },
+      "assets": {
+        "prompt": {
+          "text": "W hat is thе current mecsage in this chapter?",
+          "sha256": "1f3870be274f6c49b3e31a0c6728957f1f3870be274f6c49b3e31a0c6728957f",
+          "char_count": 45,
+          "contains_homoglyphs": true,
+          "original_text": "What is the current message in this image?"
+        },
+        "image": {
+          "uri": "assets/src-exp100-s0042-g117-i3.png",
+          "sha256": "9b74c9897bac770ffc029102a200c5de9b74c9897bac770ffc029102a200c5de",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-junco-007",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa_constrictor",
+        "anchor_word": "sparrow",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": "forward",
+        "bucket_relation": "cross"
+      },
+      "search": null,
+      "drift": null,
+      "strata": { "text": "clean", "image": "roundtrip", "pair": "baseline" },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "2c26b46b68ffc68ff99b453c1d30413412c26b46b68ffc68ff99b453c1d30413",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/src-base-junco-007.png",
+          "sha256": "fcde2b2edba56bf408601fb721fe9b5cfcde2b2edba56bf408601fb721fe9b5c",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-attn-nonsense-01",
+      "origin": "attention_synthetic",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": { "text": "high_drift", "image": null, "pair": null },
+      "assets": {
+        "prompt": {
+          "text": "Gr fnx ple wzzt kqj morb?",
+          "sha256": "a665a45920422f9d417e4867efdc4fb8a665a45920422f9d417e4867efdc4fb8",
+          "char_count": 25,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": null
+      }
+    }
+  ],
+  "items": [
+    { "item_id": "txt-exp100-s0042", "kind": "text", "source_id": "src-exp100-s0042-g117-i3" },
+    { "item_id": "pair-exp100-s0042", "kind": "pair", "source_id": "src-exp100-s0042-g117-i3" },
+    { "item_id": "img-base-007", "kind": "image", "source_id": "src-base-junco-007" },
+    { "item_id": "pair-base-007", "kind": "pair", "source_id": "src-base-junco-007" },
+    {
+      "item_id": "txt-attn-01",
+      "kind": "text",
+      "source_id": "src-attn-nonsense-01",
+      "is_attention_check": true,
+      "check_rule": { "metric": "scale_leq", "value": 2 }
+    }
+  ]
+}

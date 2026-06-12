@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "study_id": "HS-01",
+  "config_version": "0.1.0",
+  "preregistration": { "hypotheses_frozen": false, "doc_ref": "01 - Active Projects/Master Thesis/Experiments/HS-01-Human-Validity-Study.md" },
+  "pool_ref": {
+    "pool_id": "hs01-pool-v1",
+    "pool_file_sha256": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2"
+  },
+  "locale": "en",
+  "phases": [
+    { "phase_id": "consent", "target_duration_s": 60, "trials_per_rater": null },
+    { "phase_id": "text", "target_duration_s": 120, "trials_per_rater": 9 },
+    { "phase_id": "image", "target_duration_s": 120, "trials_per_rater": 9 },
+    { "phase_id": "pair", "target_duration_s": 240, "trials_per_rater": 15 },
+    { "phase_id": "demographics", "target_duration_s": 60, "trials_per_rater": null }
+  ],
+  "scales": [
+    {
+      "scale_id": "text-comprehensibility-v1",
+      "applies_to": "text",
+      "statement": "I can tell what this question is asking",
+      "points": 5,
+      "point_labels": ["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"]
+    },
+    {
+      "scale_id": "image-clarity-v1",
+      "applies_to": "image",
+      "statement": "I can tell what this image is displaying",
+      "points": 5,
+      "point_labels": ["Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"]
+    }
+  ],
+  "pair_response": {
+    "semantic_options": ["ANCHOR_WORD", "TARGET_WORD", "OTHER_CLASS", "NOTHING_RECOGNIZABLE", "CANT_TELL"],
+    "display_labels": {
+      "OTHER_CLASS": "Something else",
+      "NOTHING_RECOGNIZABLE": "Nothing recognizable",
+      "CANT_TELL": "I can't tell"
+    },
+    "ab_order": "randomized_per_trial",
+    "fixed_tail": true,
+    "other_class_free_text": true
+  },
+  "forms": [
+    {
+      "form_id": "A",
+      "text_items": ["txt-exp100-s0042", "txt-attn-01"],
+      "image_items": ["img-base-007"],
+      "pair_items": ["pair-base-007"]
+    },
+    {
+      "form_id": "B",
+      "text_items": ["txt-attn-01"],
+      "image_items": ["img-base-007"],
+      "pair_items": ["pair-exp100-s0042"]
+    }
+  ],
+  "randomization": {
+    "within_phase_shuffle": true,
+    "session_seed_source": "server_generated",
+    "log_seed": true
+  },
+  "attention_policy": {
+    "item_ids": ["txt-attn-01", "pair-attn-01"],
+    "placement": "interleaved",
+    "exclusion_fail_threshold": 2
+  },
+  "demographics_fields": [
+    { "field_id": "age_band", "label": "Your age group", "type": "select", "options": ["18_24", "25_34", "35_44", "45_54", "55_plus", "prefer_not_to_say"], "required": true },
+    { "field_id": "ml_familiarity", "label": "How familiar are you with machine learning?", "type": "select", "options": ["no_experience", "some_exposure", "regular_practice", "prefer_not_to_say"], "required": true },
+    { "field_id": "english_proficiency", "label": "Your English proficiency", "type": "select", "options": ["A1", "A2", "B1", "B2", "C1", "C2", "native", "prefer_not_to_say"], "required": true },
+    { "field_id": "comment", "label": "Anything you want to tell us?", "type": "free_text", "options": null, "required": false }
+  ],
+  "consent": {
+    "consent_version": "v1",
+    "text_sha256": "e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3",
+    "required": true
+  },
+  "quality": {
+    "log_integrity_events": true,
+    "render_check": true,
+    "min_rendered_image_css_px": 256
+  }
+}

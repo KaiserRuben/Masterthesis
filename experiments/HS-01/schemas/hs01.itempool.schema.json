@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masterthesis.local/schemas/hs01/itempool-1.0.0.schema.json",
+  "title": "HS-01 Item Pool",
+  "description": "Input schema for the HS-01 human validity study. Two-level structure: 'sources' are underlying stimulus units (seed / VQGAN round-trip / boundary individual) with full pipeline provenance; 'items' are phase-specific presentation units referencing a source. The same source may appear as text, image, and pair item; the form builder must enforce that no rater sees two items of the same source (cross-entity referential integrity is application-level, not expressible in JSON Schema).",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x_": {} },
+  "required": ["schema_version", "pool_id", "created", "frozen", "sources", "items"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "pool_id": { "type": "string", "minLength": 1 },
+    "created": { "type": "string", "format": "date-time" },
+    "frozen": {
+      "type": "boolean",
+      "description": "Forms may only be built from frozen pools (HS-01 §4: item-pool freeze date)."
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pipeline_commit": { "type": ["string", "null"] },
+        "selection_script": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "composition_targets": {
+      "type": "object",
+      "description": "Intended item counts per phase and stratum (e.g. {\"pair\": {\"baseline\": 8, \"image_heavy\": 14, ...}}). Documentational; balance is checked by tooling, not by this schema.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sources": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/source" } },
+    "items": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/item" } }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x_": {} },
+      "required": ["source_id", "origin", "strata", "assets"],
+      "properties": {
+        "source_id": { "type": "string", "pattern": "^src-[A-Za-z0-9_-]+$" },
+        "origin": {
+          "enum": ["raw_original", "vqgan_roundtrip", "boundary_individual", "attention_synthetic"],
+          "description": "Attribution chain (HS-01 §3): raw_original -> vqgan_roundtrip = codec cost; vqgan_roundtrip -> boundary_individual = search cost. attention_synthetic = constructed attention-check stimulus."
+        },
+        "experiment_ref": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["experiment_id", "run_id"],
+              "properties": {
+                "experiment_id": { "type": "string", "examples": ["Exp-100", "Exp-101", "Exp-102", "HS-GEN-01"] },
+                "run_id": { "type": "string" },
+                "seed_index": { "type": ["integer", "null"], "minimum": 0 },
+                "generation": { "type": ["integer", "null"], "minimum": 0 },
+                "individual_id": {
+                  "type": ["string", "null"],
+                  "description": "Identifier of the Pareto-front individual within the run."
+                }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Null for raw originals and synthetic attention stimuli."
+        },
+        "sut": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["model_id", "backend"],
+              "properties": {
+                "model_id": { "type": "string", "examples": ["llava-next-mistral-7b-int8", "qwen3.5-4b"] },
+                "backend": { "enum": ["openvino", "torch-mps", "torch-cuda", "other"] },
+                "scoring": { "type": "string", "default": "teacher-forced-logprob" }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "SUT the individual was searched against. Covariate in analysis; pool must be balanced over models (HS-01 §4)."
+        },
+        "cell": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["anchor_class", "target_class", "anchor_word", "target_word"],
+              "properties": {
+                "anchor_class": { "type": "string" },
+                "target_class": { "type": "string" },
+                "anchor_word": {
+                  "type": "string",
+                  "description": "Label word as it stood in the prompt. Shown as option ANCHOR_WORD in pair trials — prompt words, not canonical class names (label-wall finding: word identity matters)."
+                },
+                "target_word": { "type": "string" },
+                "level_anchor": { "type": ["integer", "null"], "minimum": -1, "maximum": 2 },
+                "level_target": { "type": ["integer", "null"], "minimum": -1, "maximum": 2 },
+                "direction": { "enum": ["forward", "reverse", null] },
+                "bucket_relation": { "enum": ["within", "cross", null] }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "search": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "modality": {
+                  "enum": ["joint", "image_only", "text_only", null],
+                  "description": "Modality flag of the generation run — operationalizes the pair-phase factor (image_heavy / text_heavy / balanced)."
+                },
+                "tgtbal": {
+                  "type": ["number", "null"],
+                  "minimum": 0,
+                  "description": "TargetedBalance |lp_A - lp_B| of the selected individual. HS-01 requires very low values for all boundary items (acceptance cut TBD, open decision §9)."
+                },
+                "crossed": { "type": ["boolean", "null"] },
+                "gen_first_cross": { "type": ["integer", "null"], "minimum": 0 }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "drift": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "d_text": { "type": ["number", "null"], "minimum": 0, "description": "Sentence-level cosine distance to seed prompt." },
+                "d_img": { "type": ["number", "null"], "minimum": 0, "description": "Normalized Frobenius distance to seed image." },
+                "active_text_genes": { "type": ["integer", "null"], "minimum": 0, "maximum": 19 },
+                "hamming_to_anchor_norm": { "type": ["number", "null"], "minimum": 0 }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Drift metrics at selection time; basis for the text strata cuts (thresholds TBD)."
+        },
+        "strata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text", "image", "pair"],
+          "description": "Phase-specific stratum membership; null = source not eligible for that phase.",
+          "properties": {
+            "text": { "enum": ["clean", "low_drift", "medium_drift", "high_drift", null] },
+            "image": { "enum": ["raw", "roundtrip", "boundary_joint", "image_heavy", null] },
+            "pair": { "enum": ["baseline", "image_heavy", "text_heavy", "balanced", null] }
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["prompt", "image"],
+          "properties": {
+            "prompt": { "anyOf": [{ "$ref": "#/$defs/prompt_asset" }, { "type": "null" }] },
+            "image": { "anyOf": [{ "$ref": "#/$defs/image_asset" }, { "type": "null" }] }
+          }
+        }
+      }
+    },
+    "prompt_asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "sha256"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "VERBATIM prompt as fed to the SUT — no Unicode normalization, homoglyphs and spacing preserved. The app must render this byte-identically (HS-01 stimulus fidelity rule)."
+        },
+        "sha256": { "$ref": "#/$defs/sha256", "description": "SHA-256 of the UTF-8 bytes of 'text'; guards against silent normalization in transit." },
+        "char_count": { "type": ["integer", "null"], "minimum": 0 },
+        "contains_homoglyphs": { "type": ["boolean", "null"] },
+        "original_text": {
+          "type": ["string", "null"],
+          "description": "Clean seed prompt, for analysis reference only — never displayed (preservation comparison was dropped by design decision 2026-06-11)."
+        }
+      }
+    },
+    "image_asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "sha256", "width", "height", "format"],
+      "properties": {
+        "uri": { "type": "string", "description": "Relative path or URL to the image file as decoded for the SUT (native resolution, no re-encoding)." },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "format": { "enum": ["png"], "description": "Lossless only — fidelity rule." }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": { "^x_": {} },
+      "required": ["item_id", "kind", "source_id"],
+      "properties": {
+        "item_id": { "type": "string", "pattern": "^(txt|img|pair)-[A-Za-z0-9_-]+$" },
+        "kind": { "enum": ["text", "image", "pair"] },
+        "source_id": { "type": "string", "pattern": "^src-[A-Za-z0-9_-]+$" },
+        "is_attention_check": { "type": "boolean", "default": false },
+        "check_rule": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["metric", "value"],
+              "properties": {
+                "metric": { "enum": ["scale_leq", "scale_geq", "choice_equals"] },
+                "value": { "type": ["number", "string"] }
+              }
+            },
+            { "type": "null" }
+          ],
+          "description": "Pass criterion for attention checks, e.g. {scale_leq, 2} for the nonsense prompt, {choice_equals, ANCHOR_WORD} for the obvious-class pair."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "is_attention_check": { "const": true } }, "required": ["is_attention_check"] },
+          "then": { "required": ["check_rule"] }
+        }
+      ]
+    }
+  }
+}

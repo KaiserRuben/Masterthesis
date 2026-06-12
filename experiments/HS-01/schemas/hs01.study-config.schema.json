@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masterthesis.local/schemas/hs01/study-config-1.0.0.schema.json",
+  "title": "HS-01 Study Configuration",
+  "description": "Input schema defining one runnable instance of the HS-01 study: phase structure, scales, pair response options, parallel forms, randomization, attention policy, demographics, consent. Binds to exactly one frozen item pool via pool_ref. Item-id references into the pool and the source-disjointness constraint across phases within a form are application-level checks.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": { "^x_": {} },
+  "required": [
+    "schema_version", "study_id", "config_version", "pool_ref", "locale",
+    "phases", "scales", "pair_response", "forms", "randomization",
+    "attention_policy", "demographics_fields", "consent"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "study_id": { "type": "string", "examples": ["HS-01"] },
+    "config_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "preregistration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hypotheses_frozen": { "type": "boolean" },
+        "doc_ref": { "type": ["string", "null"], "description": "e.g. vault path to HS-01 spec note at freeze commit." }
+      }
+    },
+    "pool_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pool_id", "pool_file_sha256"],
+      "properties": {
+        "pool_id": { "type": "string" },
+        "pool_file_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "locale": { "enum": ["en"], "description": "English UI — design decision 2026-06-11. Stimuli are verbatim regardless of locale." },
+    "phases": {
+      "type": "array",
+      "minItems": 5,
+      "description": "Fixed order (design decision: structured, not mixed): consent -> text -> image -> pair -> demographics. Order = array order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["phase_id", "target_duration_s"],
+        "properties": {
+          "phase_id": { "enum": ["consent", "text", "image", "pair", "demographics"] },
+          "target_duration_s": { "type": "integer", "minimum": 0 },
+          "trials_per_rater": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "description": "Judgment phases only (text ~9, image ~9, pair ~15); null for consent/demographics."
+          }
+        }
+      }
+    },
+    "scales": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scale_id", "applies_to", "statement", "points", "point_labels"],
+        "properties": {
+          "scale_id": { "type": "string" },
+          "applies_to": { "enum": ["text", "image"] },
+          "statement": {
+            "type": "string",
+            "examples": ["I can tell what this question is asking", "I can tell what this image is displaying"]
+          },
+          "points": { "const": 5 },
+          "point_labels": {
+            "type": "array",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": { "type": "string" },
+            "description": "All five points verbally anchored, balanced (psychometric standard, design decision #5)."
+          }
+        }
+      }
+    },
+    "pair_response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semantic_options", "display_labels", "ab_order", "other_class_free_text"],
+      "properties": {
+        "semantic_options": {
+          "const": ["ANCHOR_WORD", "TARGET_WORD", "OTHER_CLASS", "NOTHING_RECOGNIZABLE", "CANT_TELL"],
+          "description": "Responses are stored semantically, never positionally. ANCHOR_WORD/TARGET_WORD render as the cell's prompt words."
+        },
+        "display_labels": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["OTHER_CLASS", "NOTHING_RECOGNIZABLE", "CANT_TELL"],
+          "properties": {
+            "OTHER_CLASS": { "type": "string", "examples": ["Something else"] },
+            "NOTHING_RECOGNIZABLE": { "type": "string", "examples": ["Nothing recognizable"] },
+            "CANT_TELL": { "type": "string", "examples": ["I can't tell"] }
+          }
+        },
+        "ab_order": {
+          "enum": ["randomized_per_trial"],
+          "description": "Anchor/target word display order randomized per trial; the realized order is logged in the session record."
+        },
+        "fixed_tail": {
+          "type": "boolean",
+          "default": true,
+          "description": "OTHER_CLASS / NOTHING_RECOGNIZABLE / CANT_TELL always follow the two word options in fixed order."
+        },
+        "other_class_free_text": {
+          "type": "boolean",
+          "description": "If true, choosing OTHER_CLASS opens an optional free-text field."
+        }
+      }
+    },
+    "forms": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "description": "Parallel forms (2-3, design decision). Constraint enforced by the form builder: within one form, the source_ids behind text_items, image_items and pair_items are pairwise disjoint — no rater judges the same source twice. Across forms, every item should appear approximately equally often.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["form_id", "text_items", "image_items", "pair_items"],
+        "properties": {
+          "form_id": { "type": "string" },
+          "text_items": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^txt-[A-Za-z0-9_-]+$" } },
+          "image_items": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^img-[A-Za-z0-9_-]+$" } },
+          "pair_items": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^pair-[A-Za-z0-9_-]+$" } }
+        }
+      }
+    },
+    "randomization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["within_phase_shuffle", "session_seed_source", "log_seed"],
+      "properties": {
+        "within_phase_shuffle": { "const": true },
+        "session_seed_source": { "enum": ["server_generated", "client_generated"] },
+        "log_seed": { "const": true, "description": "Seed stored in the session record -> trial order fully reproducible." }
+      }
+    },
+    "attention_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_ids", "placement", "exclusion_fail_threshold"],
+      "properties": {
+        "item_ids": { "type": "array", "minItems": 2, "items": { "type": "string" }, "description": "1 nonsense text item + 1 obvious-class pair item (HS-01 §3)." },
+        "placement": { "enum": ["interleaved"], "description": "Indistinguishable from regular trials within their phase." },
+        "exclusion_fail_threshold": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Pre-specified rule: failures >= threshold -> exclude rater (HS-01: 2 = fail both)."
+        }
+      }
+    },
+    "demographics_fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field_id", "label", "type", "required"],
+        "properties": {
+          "field_id": { "type": "string", "examples": ["age_band", "ml_familiarity", "english_proficiency"] },
+          "label": { "type": "string" },
+          "type": { "enum": ["select", "free_text"] },
+          "options": { "type": ["array", "null"], "items": { "type": "string" } },
+          "required": { "type": "boolean" }
+        }
+      },
+      "description": "HS-01 defaults: age_band; ml_familiarity (3-level: no_experience / some_exposure / regular_practice); english_proficiency (CEFR self-report A1-C2 / native); optional free comment."
+    },
+    "consent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consent_version", "required"],
+      "properties": {
+        "consent_version": { "type": "string" },
+        "text_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "required": { "const": true }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "log_integrity_events": { "type": "boolean", "default": true },
+        "render_check": {
+          "type": "boolean",
+          "default": true,
+          "description": "On session start, render a known homoglyph string and verify it is not normalized (stimulus fidelity rule); result stored in session.environment.render_check."
+        },
+        "min_rendered_image_css_px": {
+          "type": ["integer", "null"],
+          "description": "Minimum on-screen image size; sessions on smaller viewports are refused at entry."
+        }
+      }
+    }
+  }
+}

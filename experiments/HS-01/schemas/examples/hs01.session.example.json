@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "study_id": "HS-01",
+  "config_version": "0.1.0",
+  "config_sha256": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1",
+  "app_version": "hs01-app 0.3.1",
+  "session_id": "0e6f9a3c-7c1d-4d3a-9d3a-2b9a4c8e1f00",
+  "form_id": "A",
+  "rng_seed": "a81f3e92",
+  "status": "completed",
+  "participant": {
+    "participant_code": "P007",
+    "recruitment_channel": "fortiss",
+    "consent": { "given": true, "consent_version": "v1", "at_utc": "2026-07-02T09:14:03Z" }
+  },
+  "environment": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+    "platform": "macOS",
+    "viewport": { "w": 1512, "h": 945 },
+    "screen": { "w": 1512, "h": 982 },
+    "device_pixel_ratio": 2.0,
+    "is_touch": false,
+    "render_check": { "passed": true, "method": "canvas-hash-homoglyph-v1" }
+  },
+  "timing": {
+    "started_at_utc": "2026-07-02T09:14:00Z",
+    "completed_at_utc": "2026-07-02T09:24:45Z",
+    "server_received_at_utc": "2026-07-02T09:24:46Z",
+    "total_duration_ms": 645212
+  },
+  "phase_timings": [
+    { "phase_id": "consent", "entered_ms": 0, "exited_ms": 58020 },
+    { "phase_id": "text", "entered_ms": 58020, "exited_ms": 187400 },
+    { "phase_id": "image", "entered_ms": 187400, "exited_ms": 301115 },
+    { "phase_id": "pair", "entered_ms": 301115, "exited_ms": 561800 },
+    { "phase_id": "demographics", "entered_ms": 561800, "exited_ms": 645212 }
+  ],
+  "trials": [
+    {
+      "trial_index": 0,
+      "phase_id": "text",
+      "position_in_phase": 0,
+      "item_id": "txt-exp100-s0042",
+      "source_id": "src-exp100-s0042-g117-i3",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": { "scale_id": "text-comprehensibility-v1", "option_display_order": null, "option_labels": null, "rendered_image": null },
+      "response": { "scale_value": 2, "n_changes": 1 },
+      "timing": { "image_loaded_ms": null, "onset_ms": 58450, "first_interaction_ms": 61210, "response_selected_ms": 64880, "submitted_ms": 65400 }
+    },
+    {
+      "trial_index": 9,
+      "phase_id": "image",
+      "position_in_phase": 0,
+      "item_id": "img-base-007",
+      "source_id": "src-base-junco-007",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": { "css_w": 256, "css_h": 256, "natural_w": 256, "natural_h": 256 }
+      },
+      "response": { "scale_value": 5, "n_changes": 0 },
+      "timing": { "image_loaded_ms": 187610, "onset_ms": 187650, "first_interaction_ms": 189100, "response_selected_ms": 190230, "submitted_ms": 190800 }
+    },
+    {
+      "trial_index": 18,
+      "phase_id": "pair",
+      "position_in_phase": 0,
+      "item_id": "pair-base-007",
+      "source_id": "src-base-junco-007",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": ["TARGET_WORD", "ANCHOR_WORD", "OTHER_CLASS", "NOTHING_RECOGNIZABLE", "CANT_TELL"],
+        "option_labels": { "ANCHOR_WORD": "sparrow", "TARGET_WORD": "constrictor" },
+        "rendered_image": { "css_w": 256, "css_h": 256, "natural_w": 256, "natural_h": 256 }
+      },
+      "response": { "choice": "ANCHOR_WORD", "other_class_text": null, "n_changes": 0 },
+      "timing": { "image_loaded_ms": 301300, "onset_ms": 301350, "first_interaction_ms": 303010, "response_selected_ms": 304500, "submitted_ms": 305110 }
+    }
+  ],
+  "demographics": {
+    "age_band": "25_34",
+    "ml_familiarity": "some_exposure",
+    "english_proficiency": "C1",
+    "comment": null
+  },
+  "integrity_events": [
+    { "at_ms": 412300, "type": "blur", "detail": null },
+    { "at_ms": 415900, "type": "focus", "detail": null }
+  ],
+  "quality_summary": { "attention_total": 2, "attention_failed": 0, "focus_loss_count": 1 }
+}
