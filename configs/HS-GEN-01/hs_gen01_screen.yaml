@@ -1,0 +1,112 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# HS-GEN-01 screen — image-only crossability screen over the full LLaVA
+#                    gap_filter roster, under the STUDY-FACING regime
+#                    (VQGAN + cone ON + heavy mutation). Anchor/pair discovery.
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Stage 1 of the screen-then-promote workflow. Spends a short fixed budget
+# per roster entry and reports per-pair crossability so that full-evolution
+# configs are written ONLY for pairs that pass BOTH gates:
+#   (a) crossability — re-measured HERE under cone + heavy mutation, NOT
+#       inherited from the old cone-off floor table (advisory only now);
+#   (b) human-distinguishability — taxonomy classification, applied by
+#       configs/HS-GEN-01/promote_pairs.py.
+#
+# Predictor: gen-0 minimum TgtBal under a dense image-only init predicts
+# crossability (image-space analogue of the validated gen-0 margin predictor).
+# Prior LLaVA evidence (Exp-26, image_only), for orientation only:
+#     gen-0 min 0.005–0.065  → crossed by gen ≤14   (idx 1, all backends)
+#     gen-0 min 0.64–0.72    → marginal
+#     gen-0 min 1.10–1.78    → walled (300 extra gens bought 0.0007)
+# The cone narrows the per-patch candidate set, so floors/yields differ from
+# the cone-off baselines that produced those numbers — that is exactly why the
+# screen re-measures rather than trusting the old table.
+#
+# Budget: 4 gens × 30 pop = 120 calls/entry (≤150 entries → ≤18k calls). The
+# cone adds a one-time class-modal-grid precompute over the roster's target
+# classes; target_m=10 keeps it cheap (the Exp-26 LLaVA cone runs used the same
+# value) and the grid + gap_filter scan are redis/disk-cached from Exp-24/26.
+#
+# Seed-pool identity: n_categories/n_per_class/max_logprob_gap MUST stay
+# exactly as below or every index in the per-pair / promoted configs silently
+# remaps. Init distribution MUST match the full-run configs or gen-0 stats do
+# not transfer.
+#
+# Output: runs/HS-GEN-01/hs_gen01_screen_seed_<i>_<ts>/  (one dir per entry)
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: hs_gen01_screen
+save_dir: runs/HS-GEN-01
+
+modality: image_only
+
+generations: 4                           # gen-0 margin + a 3-gen slope hint —
+pop_size: 30                             # the predictor needs no depth
+
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  # no filter_indices → the entire roster runs (≤ 50 classes × 3 = 150)
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: vqgan_codebook                # decision 2: VQGAN only, no StyleGAN
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true                        # decision 1: cone ON everywhere — the
+    alpha_deg: 20.0                       # screen must measure crossability under
+    target_m: 10                          # the SAME regime the full runs use.
+                                          # α=20° = the Exp-26 LLaVA cone success
+                                          # setting (only LLaVA α with evidence);
+                                          # target_m=10 matches Exp-26, bounds the
+                                          # roster-wide modal-grid precompute.
+
+optimizer:
+  sampling:
+    # IDENTICAL to the full-run configs — gen-0 statistics only transfer to the
+    # full runs if the init distribution is the same. Dense image-only init:
+    # qualifying genotypes have 9–179 active genes of 298 (med 49–77); the old
+    # spike/sparse default put most init mass in a dead zone here.
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.0
+    tiers:
+      - {p_active: 0.03, fraction: 0.10}
+      - {p_active: 0.10, fraction: 0.20}
+      - {p_active: 0.20, fraction: 0.30}
+      - {p_active: 0.35, fraction: 0.25}
+      - {p_active: 0.55, fraction: 0.15}
+  # HEAVY MUTATION (decision 4). Default per-gene rate on 298 genes is
+  # ~1/298 ≈ 0.003 (≈1 mutated gene/offspring) — far too weak to probe the
+  # dense qualifying band the init seeds. prob=0.2 ≈ 60 mutated genes/offspring,
+  # squarely inside the observed qualifying band [9,179]; eta=1.0 widens each
+  # per-gene jump well past the historical 3.0 (lower = larger jumps). This is
+  # the maximal-reach posture: over a 4-gen budget there is no converged front
+  # to protect, so we trade front quality for the best chance of surfacing a
+  # crossing. Mutation is the primary lever; crossover.eta lowered to 1.0 to
+  # match the broad-exploration intent.
+  mutation:
+    prob: 0.2
+    eta: 1.0
+  crossover:
+    prob: 0.9
+    eta: 1.0
+  early_stop:
+    enable: false                        # fixed 4-gen budget, nothing to save
+
+parallel:
+  workers: 2                             # many short seeds → fanout pays here

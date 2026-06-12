@@ -1,0 +1,129 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# HS-GEN-01 pair A — great white shark → hammerhead shark (gap_filter idx 1)
+#                    REFERENCE / CALIBRATION pair — VQGAN + cone ON.
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# STUDY-ELIGIBILITY: NEEDS ABSTRACTION (NOT lay-distinguishable as-is).
+#   great white shark and hammerhead shark are both taxonomy L0 = "shark"
+#   (path ["shark","cartilaginous fish","fish"]). Laypeople cannot reliably
+#   tell two shark species apart, so a "great white vs hammerhead" choice
+#   measures participant ignorance, not stimulus ambiguity. Symmetric taxonomy
+#   coarsening does NOT rescue this pair — both classes collapse to the same
+#   label at every level. The only viable framing is the manual feature
+#   contrast "hammerhead shark" vs "shark (other / non-hammerhead)", which
+#   exploits the hammerhead's lay-recognizable cephalofoil. See README
+#   ("Pair eligibility" + open question on abstraction presentation).
+#
+# Why keep it anyway: this is the ONE pair proven image-space-crossable on
+# LLaVA (Exp-26, 100 gen × 20 pop). It is the reference/calibration pair —
+# it validates that the cone+dense-init+heavy-mutation pipeline produces
+# qualifying image_only items at all, and it is a fallback strata source if
+# the screen finds no lay-distinguishable crossable pairs.
+#
+# Exp-26 evidence (LLaVA, image_only, floor = min fitness_TgtBal):
+#   vqgan baseline (no cone)  floor 2.6e-6 / 2.5e-5   31 / 42 uniques ≤1e-2
+#   vqgan cone α=20°          floor 2.3e-4            19 uniques ≤1e-2
+#   stylegan                  floor 5.3e-4            40 uniques ≤1e-2
+#
+# CONE ON (decision 1): the cone-off baseline floors/yields above were better
+# on this pair, BUT cone is a core system component that keeps perturbations
+# semantically alive — for human-eval stimuli, semantic validity outranks raw
+# yield. We knowingly trade ~½ the yield (19 vs 31–42 at 100×20) for stimuli
+# that still read as the intended classes. α=20° is the Exp-26 LLaVA cone
+# success setting and the only LLaVA half-angle with evidence (Exp-27's α
+# sweep is Qwen — cone is pair- AND SUT-conditional, so it does not transfer).
+#
+# Init: dense multitier. Qualifying image-only genotypes on this pair have
+# 9–179 active genes of 298 (medians 49 / 77.5 / 37) — density, not sparsity,
+# must be injected at init. Both baseline replicates crossed out of init
+# (gen 0–1).
+#
+# Seed identity is load-bearing: gap_filter idx 1 ⇒ (great white shark image,
+# A=great white shark, B=hammerhead shark) ONLY under n_categories=50,
+# n_per_class=3, max_logprob_gap=3.5 and the workstation ImageNet cache.
+#
+# Output: runs/HS-GEN-01/hs_gen01_pairA_shark_hammerhead_seed_1_<unix-ts>/
+# Run:    python experiments/runners/run_boundary_test.py \
+#             configs/HS-GEN-01/hs_gen01_pairA_shark_hammerhead.yaml
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: hs_gen01_pairA_shark_hammerhead
+save_dir: runs/HS-GEN-01
+
+modality: image_only
+
+# 150 gen × 30 pop = 4,500 evals (2.25× the Exp-26 budget). With the cone the
+# per-run yield is ~½ the cone-off baseline, so the extra budget over Exp-26
+# (which yielded 19 uniques with cone at 100×20) buys back unique-genotype
+# count for stimulus curation. Crossing still happens by gen ≤14 on this pair.
+generations: 150
+pop_size: 30
+
+device: cpu                              # ignored by OV backend
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [1]                    # great white shark → hammerhead shark
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true                        # decision 1: cone ON (semantic validity)
+    alpha_deg: 20.0                       # Exp-26 LLaVA cone success setting
+    target_m: 10                          # matches Exp-26 LLaVA cone runs
+
+# text section omitted — modality=image_only forces profile=noop at runtime.
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    # Image-only boundary work: exact-zero and spike individuals never qualify
+    # (min observed active genes among qualifying = 9) — drop the zero block.
+    zero_anchor_fraction: 0.0
+    # E[n_active] on the 298-gene seed-1 genome ≈ 9 / 30 / 60 / 104 / 164.
+    # Centered on the observed qualifying band [9, 179], median 49–77.
+    tiers:
+      - {p_active: 0.03, fraction: 0.10}
+      - {p_active: 0.10, fraction: 0.20}
+      - {p_active: 0.20, fraction: 0.30}
+      - {p_active: 0.35, fraction: 0.25}
+      - {p_active: 0.55, fraction: 0.15}
+  # HEAVY MUTATION, ANNEALED for the full run. prob=0.1 ≈ 30 mutated
+  # genes/offspring keeps the search inside the dense qualifying band (the
+  # default ~1 gene/offspring barely moves through it → low unique yield), but
+  # eta is annealed back to the historical 3.0: this run DOES build a converged
+  # near-boundary Pareto front, and a very-low eta (as in the screen) would
+  # keep overshooting the TgtBal≈0 ridge and degrade front quality. Elevated
+  # per-gene prob (exploration of the dense regime, for yield) + default eta
+  # (moderate jumps, to protect convergence) is the calibrated middle ground.
+  mutation:
+    prob: 0.1
+    eta: 3.0
+  # crossover omitted → historical default SBX(prob=0.9, eta=3.0).
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 40
+    # 2-objective image_only Pareto = (MatrixDistance_fro, TgtBal). Observed
+    # maxima d_img ≤ 0.25, TgtBal ≤ 3.5 (gap_filter cap) — the reference
+    # dominates everything, making the plateau trigger live (with `null` it is
+    # silently dead, known bug, Exp-102 header; Exp-24 burned 300 gens on a
+    # flat wall as a result).
+    hypervolume_reference: [1.0, 10.0]
