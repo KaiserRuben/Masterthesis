@@ -649,7 +649,7 @@ class ExperimentConfig:
         if self.modality not in ("joint", "image_only", "text_only", "grounding"):
             raise ValueError(
                 f"modality must be one of 'joint' | 'image_only' | "
-                f"'text_only'; got {self.modality!r}"
+                f"'text_only' | 'grounding'; got {self.modality!r}"
             )
 
 
@@ -708,8 +708,8 @@ def apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
             image=dataclasses.replace(exp.image, patch_ratio=0.0),
         )
     if exp.modality == "grounding":
-        logger.info("modality=grounding → joint genome; boundary over box-string candidates")
-        return exp
+        logger.info("modality=grounding → joint genome; grounding answer_format; boundary over box-string candidates")
+        return dataclasses.replace(exp, answer_format=exp.grounding.answer_format)
     return exp
 
 
