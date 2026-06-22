@@ -6,6 +6,7 @@ coordinate strings in the SUT's output space, so TargetedBalance scores
 """
 from __future__ import annotations
 import logging
+import urllib.request
 from pathlib import Path
 from typing import Any
 from PIL import Image
@@ -54,8 +55,9 @@ def _load_refcocoplus_items(cfg, n_items: int) -> list[dict[str, Any]]:
     Lazy import so the dependency is only needed for grounding runs.
     """
     import sys
-    sys.path.insert(0, str(Path("tools/refer").expanduser()))
-    from refer import REFER  # lichengunc/refer
+    _refer_dir = Path(__file__).resolve().parents[2] / "tools" / "refer"
+    sys.path.insert(0, str(_refer_dir))
+    from refer import REFER  # tools/refer (lichengunc/refer, python3 branch)
 
     root = str(Path(cfg.data_root).expanduser())
     refer = REFER(root, dataset="refcoco+", splitBy=cfg.splitBy)
@@ -72,6 +74,11 @@ def _load_refcocoplus_items(cfg, n_items: int) -> list[dict[str, Any]]:
             continue
         img_info = refer.Imgs[image_id]
         img_path = Path(root) / "images" / "mscoco" / "images" / "train2014" / img_info["file_name"]
+        if not img_path.exists():
+            img_path.parent.mkdir(parents=True, exist_ok=True)
+            url = f"http://images.cocodataset.org/train2014/{img_info['file_name']}"
+            logger.info("Fetching image %s", url)
+            urllib.request.urlretrieve(url, img_path)
         image = Image.open(img_path).convert("RGB")
         ra, rb = rids[0], rids[1]
         def _box(rid):  # refer.getRefBox returns [x, y, w, h]

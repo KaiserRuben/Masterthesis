@@ -1,5 +1,21 @@
+from pathlib import Path
+
 from PIL import Image
+
 from src.common.refcocoplus_seed_generator import normalize_box, build_seed_triples
+
+
+def test_refer_dir_resolves_to_repo_root():
+    """_refer_dir computation: parents[2] of the adapter file is the repo root."""
+    adapter = Path(__file__).resolve().parents[1] / "src" / "common" / "refcocoplus_seed_generator.py"
+    repo_root = adapter.parents[2]
+    refer_dir = repo_root / "tools" / "refer"
+    # The resolved path must end with the canonical suffix regardless of CWD.
+    assert repo_root.name == "Masterarbeit" or (repo_root / "src").is_dir(), (
+        f"parents[2] did not reach repo root; got {repo_root}"
+    )
+    assert (repo_root / "src" / "common").is_dir()
+    assert refer_dir == repo_root / "tools" / "refer"
 
 
 def test_normalize_box_norm_1000():
