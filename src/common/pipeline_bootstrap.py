@@ -30,6 +30,7 @@ from .roster_seed_generator import roster_seeds
 from .seed_context import apply_seed_filter, collect_target_classes
 from .seed_generator import generate_seeds
 from .combinatorial_pair_generator import combinatorial_pairs
+from .refcocoplus_seed_generator import refcocoplus_seeds
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +213,9 @@ def prepare_pipeline_seeds(
     if exp_cfg.seeds.mode == "gap_filter":
         logger.info("Generating seeds (gap_filter)")
         return generate_seeds(components.sut, exp_cfg, components.data_source)
+    if exp_cfg.seeds.mode == "refcocoplus":
+        logger.info("Generating seeds (refcocoplus)")
+        return refcocoplus_seeds(components.sut, exp_cfg, components.data_source)
     raise ValueError(  # pragma: no cover — guarded by SeedConfig.__post_init__
         f"Unknown seeds.mode={exp_cfg.seeds.mode!r}"
     )
