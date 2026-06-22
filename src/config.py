@@ -512,6 +512,30 @@ class ParallelConfig:
 
 
 # ---------------------------------------------------------------------------
+# Grounding config
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GroundingConfig:
+    """Coordinate-output (visual grounding) settings. Active when
+    ``ExperimentConfig.modality == 'grounding'``. The boundary objective is
+    ``TargetedBalance`` over two candidate *box strings* (the referents)."""
+
+    coordinate_space: str = "norm_1000"   # norm_1000 (Qwen3-VL/3.5) | abs_pixels (Qwen2.5-VL)
+    bbox_format: str = "bare_array"       # "[x1, y1, x2, y2]" candidate-string format
+    referent_prompt: str = "Locate the {referent}."
+    answer_format: str = " Report the bounding box as a JSON array [x1, y1, x2, y2]."
+
+    def __post_init__(self) -> None:
+        if self.coordinate_space not in ("norm_1000", "abs_pixels"):
+            raise ValueError(
+                f"grounding.coordinate_space must be 'norm_1000' | 'abs_pixels'; "
+                f"got {self.coordinate_space!r}"
+            )
+
+
+# ---------------------------------------------------------------------------
 # Top-level experiment config
 # ---------------------------------------------------------------------------
 
@@ -597,9 +621,10 @@ class ExperimentConfig:
     seeds: SeedConfig = field(default_factory=SeedConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     parallel: "ParallelConfig" = field(default_factory=lambda: ParallelConfig())
+    grounding: GroundingConfig = field(default_factory=GroundingConfig)
 
     def __post_init__(self) -> None:
-        if self.modality not in ("joint", "image_only", "text_only"):
+        if self.modality not in ("joint", "image_only", "text_only", "grounding"):
             raise ValueError(
                 f"modality must be one of 'joint' | 'image_only' | "
                 f"'text_only'; got {self.modality!r}"
@@ -660,6 +685,9 @@ def apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
             exp,
             image=dataclasses.replace(exp.image, patch_ratio=0.0),
         )
+    if exp.modality == "grounding":
+        logger.info("modality=grounding → joint genome; boundary over box-string candidates")
+        return exp
     return exp
 
 
@@ -672,6 +700,7 @@ __all__ = [
     "EarlyStopCfg",
     "ExperimentConfig",
     "GapFilterConfig",
+    "GroundingConfig",
     "ImageConfig",
     "MutationConfig",
     "OptimizerConfig",
