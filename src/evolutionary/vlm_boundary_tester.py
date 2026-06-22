@@ -50,6 +50,13 @@ from src.config import ExperimentConfig, SeedTriple
 logger = logging.getLogger(__name__)
 
 
+def effective_prompt_template(seed: SeedTriple, config: ExperimentConfig) -> str:
+    """Per-seed prompt override (grounding referent) → else the global template."""
+    if seed.metadata and seed.metadata.get("prompt_template"):
+        return seed.metadata["prompt_template"]
+    return config.prompt_template
+
+
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
@@ -430,9 +437,10 @@ class VLMBoundaryTester(SMOO):
         #    mode ignores the value but still records it on the context
         #    for trace metadata.
         target_class = seed_target_class(seed)
+        prompt_template = effective_prompt_template(seed, self._config)
         self._manipulator.prepare(
             seed.image,
-            self._config.prompt_template,
+            prompt_template,
             target_class=target_class,
             origin_class=seed.class_a,
         )
@@ -449,7 +457,7 @@ class VLMBoundaryTester(SMOO):
         #     zeros and effectively drops out of the objective set.
         if self._has_text_dist and self._sut.text_embedder is not None:
             self._anchor_text_embedding = self._sut.text_embedder.embed(
-                self._config.prompt_template,
+                prompt_template,
             )
         else:
             self._anchor_text_embedding = None
