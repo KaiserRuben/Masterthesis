@@ -231,6 +231,11 @@ def build_stats(
             config.seeds.roster.min_anchor_confidence
         )
         out["roster_class_list"] = list(config.seeds.roster.class_list)
+    elif config.seeds.mode == "refcocoplus" and config.seeds.refcocoplus is not None:
+        out["refcoco_split"] = config.seeds.refcocoplus.split
+        out["refcoco_n_items"] = config.seeds.refcocoplus.n_items
+        out["coordinate_space"] = config.grounding.coordinate_space
+        out["grounding_answer_format"] = config.grounding.answer_format
     # Per-seed metadata (Exp-100 roster pipeline emits taxonomy / abstraction
     # bookkeeping; gap_filter leaves it None). Stored under a namespaced key
     # so it can never shadow an existing stats field.
