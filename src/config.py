@@ -199,6 +199,17 @@ class RosterConfig:
 
 
 @dataclass(frozen=True)
+class RefCocoPlusConfig:
+    """RefCOCO+ two-referent seed source for grounding-modality runs."""
+
+    data_root: Path                       # COCO images + refcoco+ annotations (refer-API layout)
+    split: str = "testA"                  # testA = multi-person; testB = multi-object
+    splitBy: str = "unc"
+    n_items: int = 40
+    same_category: bool = True            # keep items whose two referents share a category
+
+
+@dataclass(frozen=True)
 class SeedConfig:
     """Seed-selection parameters — dispatches between two generation modes.
 
@@ -221,20 +232,22 @@ class SeedConfig:
     even if it is the only seed that runs). An empty tuple disables
     filtering.
 
-    :param mode: ``"gap_filter"`` | ``"roster"``.
+    :param mode: ``"gap_filter"`` | ``"roster"`` | ``"refcocoplus"``.
     :param filter_indices: Post-generation index filter. Empty = keep all.
     :param gap_filter: Parameters when ``mode == "gap_filter"``.
     :param roster: Parameters when ``mode == "roster"``.
+    :param refcocoplus: Parameters when ``mode == "refcocoplus"``.
     """
 
     mode: str = "gap_filter"
     filter_indices: tuple[int, ...] = ()
     gap_filter: GapFilterConfig | None = None
     roster: RosterConfig | None = None
+    refcocoplus: "RefCocoPlusConfig | None" = None
 
     def __post_init__(self) -> None:
         if self.mode == "gap_filter":
-            if self.roster is not None:
+            if self.roster is not None or self.refcocoplus is not None:
                 raise ValueError(
                     "seeds.mode='gap_filter' but seeds.roster is set; "
                     "drop one or the other."
@@ -243,7 +256,7 @@ class SeedConfig:
                 # Fill in the default; frozen dataclass requires setattr.
                 object.__setattr__(self, "gap_filter", GapFilterConfig())
         elif self.mode == "roster":
-            if self.gap_filter is not None:
+            if self.gap_filter is not None or self.refcocoplus is not None:
                 raise ValueError(
                     "seeds.mode='roster' but seeds.gap_filter is set; "
                     "drop one or the other."
@@ -252,9 +265,18 @@ class SeedConfig:
                 raise ValueError(
                     "seeds.mode='roster' requires a seeds.roster config block."
                 )
+        elif self.mode == "refcocoplus":
+            if self.gap_filter is not None or self.roster is not None:
+                raise ValueError(
+                    "seeds.mode='refcocoplus' but gap_filter/roster is set; drop one."
+                )
+            if self.refcocoplus is None:
+                raise ValueError(
+                    "seeds.mode='refcocoplus' requires a seeds.refcocoplus config block."
+                )
         else:
             raise ValueError(
-                f"seeds.mode must be 'gap_filter' or 'roster'; "
+                f"seeds.mode must be 'gap_filter' | 'roster' | 'refcocoplus'; "
                 f"got {self.mode!r}"
             )
 
@@ -705,6 +727,7 @@ __all__ = [
     "MutationConfig",
     "OptimizerConfig",
     "ParallelConfig",
+    "RefCocoPlusConfig",
     "RosterConfig",
     "SamplingConfig",
     "SamplingTier",
