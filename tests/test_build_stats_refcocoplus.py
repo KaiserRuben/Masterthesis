@@ -25,3 +25,5 @@ def test_stats_record_refcocoplus_provenance():
     assert stats["refcoco_split"] == "testA"
     assert stats["coordinate_space"] == "norm_1000"
     assert stats["seed_metadata"]["ref_id_a"] == 1
+    assert stats["grounding_answer_format"] == " Report the bounding box as a JSON array [x1, y1, x2, y2]."
+    assert stats["refcoco_n_items"] == 40
