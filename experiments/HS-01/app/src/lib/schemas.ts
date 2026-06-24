@@ -16,7 +16,36 @@ import fs from "fs";
 import type { ValidateFunction } from "ajv";
 import type { ItemPool, StudyConfig, SessionRecord } from "./types";
 
-const SCHEMAS_DIR = path.resolve(__dirname, "../../../schemas");
+/**
+ * Locate the schemas directory. Resolution order:
+ *   1. process.env.HS01_SCHEMAS_DIR (explicit override)
+ *   2. <repo>/experiments/HS-01/schemas relative to this module's __dirname
+ *      (correct under ts-node / vitest where __dirname === src/lib)
+ *   3. <cwd>/../schemas and <cwd>/schemas (correct when the Next server runs
+ *      bundled: __dirname points into .next/, but cwd is the app dir)
+ *
+ * The first candidate that actually contains the itempool schema wins. This
+ * keeps the loader working in dev, test, and the bundled `next build` server
+ * where __dirname is unreliable.
+ */
+function resolveSchemasDir(): string {
+  const probe = "hs01.itempool.schema.json";
+  const candidates = [
+    process.env.HS01_SCHEMAS_DIR,
+    path.resolve(__dirname, "../../../schemas"),
+    path.resolve(process.cwd(), "../schemas"),
+    path.resolve(process.cwd(), "schemas"),
+  ].filter((c): c is string => typeof c === "string" && c.length > 0);
+
+  for (const dir of candidates) {
+    if (fs.existsSync(path.join(dir, probe))) return dir;
+  }
+  // Fall back to the original relative path so the error message is the
+  // familiar ENOENT pointing at the expected location.
+  return path.resolve(__dirname, "../../../schemas");
+}
+
+const SCHEMAS_DIR = resolveSchemasDir();
 
 function readSchema(filename: string): object {
   const fullPath = path.join(SCHEMAS_DIR, filename);

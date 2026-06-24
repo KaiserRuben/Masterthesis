@@ -106,3 +106,17 @@ export function assertPoolBinding(
 export function _resetConfigCache(): void {
   _config = null;
 }
+
+/**
+ * Absolute directory that holds the frozen PNG image assets.
+ *
+ * Resolution order:
+ *   1. process.env.HS01_IMAGE_DIR
+ *   2. Default: <app-root>/../pool_frozen/assets/images
+ */
+export function imageDir(): string {
+  return (
+    process.env.HS01_IMAGE_DIR ??
+    path.resolve(APP_DIR, "../pool_frozen/assets/images")
+  );
+}
