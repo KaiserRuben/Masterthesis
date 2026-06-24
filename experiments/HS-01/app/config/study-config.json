@@ -1,0 +1,286 @@
+{
+  "schema_version": "1.0.0",
+  "study_id": "HS-01",
+  "config_version": "1.0.0",
+  "preregistration": {
+    "hypotheses_frozen": false,
+    "doc_ref": "01 - Active Projects/Master Thesis/Experiments/HS-01-Human-Validity-Study.md"
+  },
+  "pool_ref": {
+    "pool_id": "hs01-pool-v1",
+    "pool_file_sha256": "321461cd039d0537edb67ec078deea6a30f11c9e7cac3e4bbbe4b021a98471a8"
+  },
+  "locale": "en",
+  "phases": [
+    {
+      "phase_id": "consent",
+      "target_duration_s": 60,
+      "trials_per_rater": null
+    },
+    {
+      "phase_id": "text",
+      "target_duration_s": 120,
+      "trials_per_rater": 11
+    },
+    {
+      "phase_id": "image",
+      "target_duration_s": 120,
+      "trials_per_rater": 10
+    },
+    {
+      "phase_id": "pair",
+      "target_duration_s": 240,
+      "trials_per_rater": 13
+    },
+    {
+      "phase_id": "demographics",
+      "target_duration_s": 60,
+      "trials_per_rater": null
+    }
+  ],
+  "scales": [
+    {
+      "scale_id": "text-comprehensibility-v1",
+      "applies_to": "text",
+      "statement": "I can tell what this question is asking",
+      "points": 5,
+      "point_labels": [
+        "Strongly disagree",
+        "Disagree",
+        "Neither agree nor disagree",
+        "Agree",
+        "Strongly agree"
+      ]
+    },
+    {
+      "scale_id": "image-clarity-v1",
+      "applies_to": "image",
+      "statement": "I can tell what this image is displaying",
+      "points": 5,
+      "point_labels": [
+        "Strongly disagree",
+        "Disagree",
+        "Neither agree nor disagree",
+        "Agree",
+        "Strongly agree"
+      ]
+    }
+  ],
+  "pair_response": {
+    "semantic_options": [
+      "ANCHOR_WORD",
+      "TARGET_WORD",
+      "OTHER_CLASS",
+      "NOTHING_RECOGNIZABLE",
+      "CANT_TELL"
+    ],
+    "display_labels": {
+      "OTHER_CLASS": "Something else",
+      "NOTHING_RECOGNIZABLE": "Nothing recognizable",
+      "CANT_TELL": "I can't tell"
+    },
+    "ab_order": "randomized_per_trial",
+    "fixed_tail": true,
+    "other_class_free_text": true
+  },
+  "forms": [
+    {
+      "form_id": "A",
+      "text_items": [
+        "txt-clean-llava-American_robin-3",
+        "txt-clean-llava-boa_constrictor-0",
+        "txt-Exp-100-llava-s91-g63-p5490",
+        "txt-HS-GEN-02-llava-s1822-g15-p690",
+        "txt-HS-GEN-03-llava-s1179-g19-p510",
+        "txt-Exp-101q-qwen-s204-g45-p230",
+        "txt-Exp-101q-qwen-s29-g14-p1350",
+        "txt-Exp-102-llava-s323-g49-p2860",
+        "txt-HS-GEN-02-llava-s376-g16-p410",
+        "txt-HS-GEN-03-llava-s1183-g23-p340",
+        "txt-attn-nonsense-01"
+      ],
+      "image_items": [
+        "img-Exp-101-llava-s310-g22-p480",
+        "img-HS-GEN-02-llava-s2362-g10-p520",
+        "img-HS-GEN-03-llava-s1182-g18-p410",
+        "img-HS-GEN-03-llava-s7-g18-p480",
+        "img-HS-GEN-01-llava-s311-g5-p90",
+        "img-HS-GEN-01-llava-s839-g30-p140",
+        "img-raw-green_iguana",
+        "img-raw-ostrich",
+        "img-rt-llava-boa_constrictor-5",
+        "img-rt-qwen-cello-2"
+      ],
+      "pair_items": [
+        "pair-Exp-100-llava-s54-g155-p2270",
+        "pair-HS-GEN-02-llava-s2357-g7-p310",
+        "pair-HS-GEN-03-llava-s1177-g16-p480",
+        "pair-base-llava-box_turtle-5",
+        "pair-base-llava-great_grey_owl-2",
+        "pair-base-llava-mud_turtle-4",
+        "pair-HS-GEN-01-llava-s249-g0-p70",
+        "pair-HS-GEN-01-llava-s564-g87-p230",
+        "pair-Exp-102-llava-s106-g43-p3970",
+        "pair-HS-GEN-02-llava-s162-g11-p350",
+        "pair-HS-GEN-02-llava-s2360-g12-p250",
+        "pair-HS-GEN-03-llava-s1185-g21-p310",
+        "pair-attn-obvious-01"
+      ]
+    },
+    {
+      "form_id": "B",
+      "text_items": [
+        "txt-clean-llava-Nile_crocodile-2",
+        "txt-clean-llava-chickadee-4",
+        "txt-Exp-102-llava-s454-g36-p2620",
+        "txt-HS-GEN-02-llava-s2359-g22-p240",
+        "txt-HS-GEN-03-llava-s1186-g27-p140",
+        "txt-Exp-101q-qwen-s242-g48-p70",
+        "txt-Exp-101q-qwen-s324-g46-p300",
+        "txt-HS-GEN-02-llava-s1180-g26-p250",
+        "txt-HS-GEN-02-llava-s640-g17-p320",
+        "txt-HS-GEN-03-llava-s157-g19-p300",
+        "txt-attn-nonsense-01"
+      ],
+      "image_items": [
+        "img-Exp-101q-qwen-s28-g47-p180",
+        "img-HS-GEN-02-llava-s747-g23-p370",
+        "img-HS-GEN-03-llava-s2360-g27-p310",
+        "img-HS-GEN-01-llava-s102-g38-p00",
+        "img-HS-GEN-01-llava-s58-g63-p200",
+        "img-raw-boa_constrictor",
+        "img-raw-junco",
+        "img-rt-llava-boa_constrictor-1",
+        "img-rt-llava-green_iguana-0"
+      ],
+      "pair_items": [
+        "pair-Exp-101q-qwen-s462-g40-p460",
+        "pair-HS-GEN-02-llava-s2358-g29-p10",
+        "pair-HS-GEN-03-llava-s636-g27-p200",
+        "pair-base-llava-chameleon-7",
+        "pair-base-llava-great_white_shark-1",
+        "pair-HS-GEN-01-llava-s115-g3-p100",
+        "pair-HS-GEN-01-llava-s442-g148-p10",
+        "pair-HS-GEN-01-llava-s586-g148-p10",
+        "pair-Exp-102-llava-s392-g87-p560",
+        "pair-HS-GEN-02-llava-s167-g27-p140",
+        "pair-HS-GEN-02-llava-s646-g10-p500",
+        "pair-attn-obvious-01"
+      ]
+    },
+    {
+      "form_id": "C",
+      "text_items": [
+        "txt-clean-llava-bald_eagle-5",
+        "txt-clean-llava-great_white_shark-1",
+        "txt-HS-GEN-02-llava-s1182-g27-p130",
+        "txt-HS-GEN-03-llava-s1176-g3-p590",
+        "txt-Exp-101q-qwen-s203-g46-p250",
+        "txt-Exp-101q-qwen-s243-g48-p200",
+        "txt-Exp-101q-qwen-s96-g45-p350",
+        "txt-HS-GEN-02-llava-s2354-g25-p190",
+        "txt-HS-GEN-02-llava-s861-g27-p190",
+        "txt-attn-nonsense-01"
+      ],
+      "image_items": [
+        "img-Exp-102-llava-s196-g95-p510",
+        "img-HS-GEN-03-llava-s1180-g24-p160",
+        "img-HS-GEN-03-llava-s646-g22-p260",
+        "img-HS-GEN-01-llava-s226-g14-p60",
+        "img-HS-GEN-01-llava-s727-g58-p230",
+        "img-raw-cello",
+        "img-raw-marimba",
+        "img-rt-llava-boa_constrictor-4",
+        "img-rt-llava-green_iguana-3"
+      ],
+      "pair_items": [
+        "pair-HS-GEN-02-llava-s2355-g15-p410",
+        "pair-HS-GEN-02-llava-s2361-g12-p360",
+        "pair-base-llava-boa_constrictor-0",
+        "pair-base-llava-desert_grassland_whiptail_lizard-6",
+        "pair-base-llava-loggerhead_sea_turtle-3",
+        "pair-HS-GEN-01-llava-s137-g54-p320",
+        "pair-HS-GEN-01-llava-s479-g8-p100",
+        "pair-HS-GEN-01-llava-s630-g113-p140",
+        "pair-HS-GEN-02-llava-s1183-g29-p50",
+        "pair-HS-GEN-02-llava-s2356-g21-p180",
+        "pair-HS-GEN-02-llava-s863-g24-p300",
+        "pair-attn-obvious-01"
+      ]
+    }
+  ],
+  "randomization": {
+    "within_phase_shuffle": true,
+    "session_seed_source": "server_generated",
+    "log_seed": true
+  },
+  "attention_policy": {
+    "item_ids": [
+      "pair-attn-obvious-01",
+      "txt-attn-nonsense-01"
+    ],
+    "placement": "interleaved",
+    "exclusion_fail_threshold": 2
+  },
+  "demographics_fields": [
+    {
+      "field_id": "age_band",
+      "label": "Your age group",
+      "type": "select",
+      "options": [
+        "18_24",
+        "25_34",
+        "35_44",
+        "45_54",
+        "55_plus",
+        "prefer_not_to_say"
+      ],
+      "required": true
+    },
+    {
+      "field_id": "ml_familiarity",
+      "label": "How familiar are you with machine learning?",
+      "type": "select",
+      "options": [
+        "no_experience",
+        "some_exposure",
+        "regular_practice",
+        "prefer_not_to_say"
+      ],
+      "required": true
+    },
+    {
+      "field_id": "english_proficiency",
+      "label": "Your English proficiency",
+      "type": "select",
+      "options": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1",
+        "C2",
+        "native",
+        "prefer_not_to_say"
+      ],
+      "required": true
+    },
+    {
+      "field_id": "comment",
+      "label": "Anything you want to tell us?",
+      "type": "free_text",
+      "options": null,
+      "required": false
+    }
+  ],
+  "consent": {
+    "consent_version": "v1",
+    "text_sha256": "04ce489222ded770dd2f4ec814fb96692596d64c131742d035ffc35b8130feb7",
+    "required": true
+  },
+  "quality": {
+    "log_integrity_events": true,
+    "render_check": true,
+    "min_rendered_image_css_px": 256
+  }
+}
