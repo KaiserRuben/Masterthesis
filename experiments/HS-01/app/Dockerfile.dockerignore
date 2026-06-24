@@ -1,0 +1,47 @@
+# BuildKit-honored ignore file. Because the build context is experiments/HS-01/
+# (not the app dir), a `.dockerignore` sitting in the app dir is NOT at the
+# context root and is therefore ignored by BuildKit. BuildKit instead reads the
+# file named "<dockerfile>.dockerignore" next to the Dockerfile — this one. It
+# is kept byte-identical to app/.dockerignore (the human-readable deliverable).
+#
+# Paths here are relative to the build context root (experiments/HS-01/), NOT
+# the app dir. Keep pool_frozen/ and schemas/ IN the context — they are baked
+# into the image. Trim everything that would only bloat the context.
+
+# ── app/ build + dev artifacts ────────────────────────────────────────────────
+app/node_modules
+app/.next
+app/data
+app/tests
+app/e2e
+app/playwright-report
+app/test-results
+app/*.tsbuildinfo
+app/.env
+app/.env.local
+
+# Docker / VCS noise
+app/Dockerfile
+app/Dockerfile.dockerignore
+app/.dockerignore
+app/docker-compose.yml
+**/.git
+**/.gitignore
+
+# ── pool_frozen: ship only the bytes the app reads at runtime ─────────────────
+# (itempool.json + assets/images are COPYed explicitly; drop the rest.)
+pool_frozen/Archive
+pool_frozen/report.html
+pool_frozen/POOL_README.md
+
+# ── HS-01 dir: nothing else from here is part of the image ────────────────────
+__pycache__
+**/__pycache__
+**/.DS_Store
+_logs
+data_raw
+pool_staging
+tests
+*.py
+*.md
+schemas/examples

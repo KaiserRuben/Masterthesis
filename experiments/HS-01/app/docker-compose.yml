@@ -1,0 +1,20 @@
+# HS-01 study app — single service.
+#
+# Run from the app dir:  docker compose up --build
+#
+# The build context is the parent (experiments/HS-01/) so the image can bake in
+# pool_frozen/ and schemas/, which live outside the app dir. The Dockerfile is
+# referenced explicitly via `dockerfile:`. See app/README.md for details.
+services:
+  hs01-study:
+    build:
+      context: ..            # experiments/HS-01/
+      dockerfile: app/Dockerfile
+    image: hs01-study
+    ports:
+      - "3939:3939"
+    volumes:
+      # Session output. Host dir is created on first run; writable by the
+      # in-image "node" user (uid/gid 1000).
+      - ./data/sessions:/app/data/sessions
+    restart: unless-stopped
