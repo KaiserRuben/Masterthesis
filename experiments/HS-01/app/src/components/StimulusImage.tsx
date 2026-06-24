@@ -43,15 +43,17 @@ export function StimulusImage({
   alt,
 }: StimulusImageProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
-  // Guard so onset fires exactly once per mounted stimulus.
-  const firedFor = useRef<string | null>(null);
 
+  // Onset fires once per uriName. We rely on the `cancelled` flag (NOT a
+  // "fired once" ref): under React StrictMode the effect runs setup→cleanup→setup
+  // on mount, so a one-shot ref would let the first (cancelled) run win and the
+  // second run skip — leaving onReady un-called and the stimulus stuck on
+  // "Preparing…". The cancelled-flag pattern is StrictMode-safe: the first run is
+  // cancelled, the second run completes and fires onReady exactly once.
   useEffect(() => {
     let cancelled = false;
     const el = imgRef.current;
     if (!el) return;
-    if (firedFor.current === uriName) return;
-    firedFor.current = uriName;
 
     (async () => {
       const result = await awaitOnset(clock, el);

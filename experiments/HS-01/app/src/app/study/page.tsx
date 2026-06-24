@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { useSession } from "@/state/useSession";
 import type { CurrentTrial, TrialAnswer } from "@/state/useSession";
@@ -138,6 +138,13 @@ export default function StudyPage() {
     return (
       <Shell phaseKey={`trial:${s.current.item.item_id}`}>
         <div className="mx-auto max-w-2xl px-6 py-10">
+          {/* Overall progress across the whole session (text + image + pair). */}
+          <PhaseProgress
+            position={Math.min(s.completedTrials + 1, s.totalTrials)}
+            total={s.totalTrials}
+            label="Overall progress"
+          />
+          {/* Progress within the current section. */}
           <PhaseProgress
             position={s.current.position}
             total={s.current.total}
@@ -335,6 +342,14 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 function Shell({ children, phaseKey }: { children: React.ReactNode; phaseKey: string }) {
+  // Under prefers-reduced-motion the cross-fade is instant. This is an
+  // accessibility requirement, but it also removes the overlap window that the
+  // exit fade otherwise creates: with mode="wait" + a non-zero exit duration,
+  // the OUTGOING trial (its still-interactive Next button included) lingers in
+  // the DOM while fading, so a fast actor can interact with a trial that is on
+  // its way out. Zeroing the duration makes each trial unmount the instant the
+  // next one is committed.
+  const reduce = useReducedMotion();
   return (
     <main className="min-h-screen">
       <AnimatePresence mode="wait">
@@ -343,7 +358,7 @@ function Shell({ children, phaseKey }: { children: React.ReactNode; phaseKey: st
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          transition={{ duration: reduce ? 0 : 0.15 }}
         >
           {children}
         </motion.div>

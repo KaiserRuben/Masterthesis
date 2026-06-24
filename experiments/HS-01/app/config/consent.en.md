@@ -12,7 +12,7 @@ right or wrong answers — we are interested in your honest impression.
   We do not collect your name, email, or any personal data.
 - Your answers are used for academic research in a master's thesis.
 
-Questions: <researcher email>
+Questions: ruben.kaiser@tum.de
 
 By choosing **"I consent and want to begin"** you confirm you are at least 18
 years old and agree to take part on these terms.

@@ -54,6 +54,27 @@ function readNewestRecord(): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(newestSessionFile(), "utf-8"));
 }
 
+/**
+ * Count of trials in the IN-PROGRESS record held in the browser's localStorage.
+ *
+ * This is the per-trial durability layer: the app persists each answered trial
+ * to localStorage immediately, but only checkpoints to the server (disk) at
+ * phase boundaries and on final submit. So a mid-phase trial count must be read
+ * from localStorage — the on-disk record still reflects the last phase exit
+ * (or the empty create-time record). Resume itself rehydrates from this store.
+ */
+async function lsTrialCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const raw = window.localStorage.getItem("hs01:record");
+    if (!raw) return 0;
+    try {
+      return (JSON.parse(raw).trials ?? []).length;
+    } catch {
+      return 0;
+    }
+  });
+}
+
 // ─── flow helpers ───────────────────────────────────────────────────────────
 
 /** Click the consent CTA and land in the study runner. */
@@ -66,21 +87,65 @@ async function consentAndBegin(page: Page) {
   await page.waitForURL(/\/study/);
 }
 
-/** If a phase-instructions screen is up, click through it. */
-async function passInstructionsIfPresent(page: Page) {
-  const begin = page.getByTestId("instructions-continue");
-  if (await begin.isVisible().catch(() => false)) {
-    await begin.click();
-  }
+/**
+ * Wait for the study runner to leave its "Loading…" state and settle on a real
+ * screen: an instructions screen, a judgment trial, or the demographics form.
+ *
+ * This matters because `waitForURL(/study/)` resolves on navigation, but the
+ * client then spends a beat in the "loading" phase rehydrating localStorage
+ * before it decides what to show. A decision made during that window (e.g.
+ * "are instructions present?") races the loading screen and answers "no" for a
+ * screen that is about to appear.
+ */
+async function waitForStudyReady(page: Page) {
+  await page
+    .locator(
+      [
+        '[data-testid="instructions-continue"]',
+        '[data-testid="likert-point-3"]',
+        '[data-testid="pair-option-ANCHOR_WORD"]',
+        '[data-testid="demographics-submit"]',
+      ].join(", ")
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 15_000 })
+    .catch(() => {});
 }
 
-/** True once the Next button (a judgment trial) is enabled and clickable. */
-async function trialNextEnabled(page: Page): Promise<boolean> {
-  const next = page.getByTestId("trial-next");
-  if (!(await next.isVisible().catch(() => false))) return false;
-  // Wait until onset has fired (button enables) — generous timeout for decode.
-  await expect(next).toBeEnabled({ timeout: 15_000 });
-  return true;
+/**
+ * If a phase-instructions screen is up, click through it.
+ *
+ * Waits for the runner to settle first (so the instructions-vs-trial decision
+ * is never made on the loading screen). The continue button is server-rendered,
+ * so a click dispatched before React has hydrated its onClick handler is a
+ * no-op (the button stays put). Rather than guess at a hydration delay, we
+ * retry the click until the button actually detaches — the only reliable signal
+ * that `beginPhase` ran and the screen advanced. Returns true if an
+ * instructions screen was passed.
+ */
+async function passInstructionsIfPresent(page: Page): Promise<boolean> {
+  await waitForStudyReady(page);
+  const begin = page.getByTestId("instructions-continue");
+  if (!(await begin.isVisible().catch(() => false))) return false;
+  for (let i = 0; i < 20; i++) {
+    await begin.click().catch(() => {});
+    const gone = await begin
+      .waitFor({ state: "detached", timeout: 500 })
+      .then(() => true)
+      .catch(() => false);
+    if (gone) return true;
+  }
+  return false;
+}
+
+/** True if a judgment trial is currently presented (a Likert point or pair option is on screen). */
+async function trialPresent(page: Page): Promise<boolean> {
+  const pairAnchor = page.getByTestId("pair-option-ANCHOR_WORD");
+  const likert = page.getByTestId("likert-point-3");
+  return (
+    (await pairAnchor.isVisible().catch(() => false)) ||
+    (await likert.isVisible().catch(() => false))
+  );
 }
 
 /**
@@ -88,6 +153,11 @@ async function trialNextEnabled(page: Page): Promise<boolean> {
  * a semantic option. `pairChoice` lets the caller force a specific slot (used to
  * trigger OTHER_CLASS + its free-text field at least once). Returns the phase
  * kind that was answered, or null if no trial was present.
+ *
+ * Order matters: the Next button is `disabled={!answered || !ready}` — it only
+ * enables once an answer IS selected AND onset has fired. So we select the
+ * answer FIRST, then wait for Next to enable (this is where onset/decode is
+ * awaited), then click it.
  */
 async function answerOneTrial(
   page: Page,
@@ -96,6 +166,7 @@ async function answerOneTrial(
   // A pair trial exposes the ANCHOR_WORD option; a likert trial exposes points.
   const pairAnchor = page.getByTestId("pair-option-ANCHOR_WORD");
   const isPair = await pairAnchor.isVisible().catch(() => false);
+  const next = page.getByTestId("trial-next");
 
   if (isPair) {
     const slot = opts.pairSlot ?? "ANCHOR_WORD";
@@ -105,7 +176,9 @@ async function answerOneTrial(
       await expect(free).toBeVisible();
       await free.fill(opts.otherText ?? "a different animal");
     }
-    await page.getByTestId("trial-next").click();
+    // Answer is selected; wait for onset to fire so Next enables, then advance.
+    await expect(next).toBeEnabled({ timeout: 15_000 });
+    await next.click();
     return "pair";
   }
 
@@ -113,7 +186,8 @@ async function answerOneTrial(
   const likert = page.getByTestId(`likert-point-${point}`);
   if (await likert.isVisible().catch(() => false)) {
     await likert.click();
-    await page.getByTestId("trial-next").click();
+    await expect(next).toBeEnabled({ timeout: 15_000 });
+    await next.click();
     return "likert";
   }
   return null;
@@ -132,7 +206,7 @@ async function walkToDemographics(page: Page) {
       return;
     }
     await passInstructionsIfPresent(page);
-    if (!(await trialNextEnabled(page))) {
+    if (!(await trialPresent(page))) {
       // Could be an instructions screen that just appeared, or demographics.
       if (await page.getByTestId("demographics-submit").isVisible().catch(() => false)) {
         return;
@@ -275,13 +349,14 @@ test("reload mid-study resumes on an unanswered trial; final record validates", 
 
   // Answer a couple of text trials, then reload mid-study.
   await passInstructionsIfPresent(page);
-  await trialNextEnabled(page);
+  await expect(page.getByTestId("likert-point-4")).toBeVisible({ timeout: 10_000 });
   await answerOneTrial(page, { likertPoint: 4 });
-  await trialNextEnabled(page);
+  await expect(page.getByTestId("likert-point-2")).toBeVisible({ timeout: 10_000 });
   await answerOneTrial(page, { likertPoint: 2 });
 
-  // Record the count of answered trials before reload.
-  const before = (readNewestRecord().trials as unknown[]).length;
+  // Record the count of answered trials before reload (from localStorage, the
+  // per-trial durability layer — disk only updates at phase exit / submit).
+  const before = await lsTrialCount(page);
   expect(before).toBeGreaterThanOrEqual(2);
 
   await page.reload();
@@ -290,9 +365,9 @@ test("reload mid-study resumes on an unanswered trial; final record validates", 
   // Resume must land on a live, unanswered trial (a Next button), NOT replay an
   // already-answered one — and not jump to /done.
   await passInstructionsIfPresent(page);
-  expect(await trialNextEnabled(page)).toBe(true);
+  expect(await trialPresent(page)).toBe(true);
   // No new trial was appended just by reloading.
-  expect((readNewestRecord().trials as unknown[]).length).toBe(before);
+  expect(await lsTrialCount(page)).toBe(before);
 
   // Finish the run; the submitted record must still validate with all phases.
   await walkToDemographics(page);

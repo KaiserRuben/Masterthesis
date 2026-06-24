@@ -275,7 +275,7 @@
   ],
   "consent": {
     "consent_version": "v1",
-    "text_sha256": "04ce489222ded770dd2f4ec814fb96692596d64c131742d035ffc35b8130feb7",
+    "text_sha256": "a97cc9c01dd3e9e79313c5a3a4ca76d0093b380f28ff04e408708afca6a66709",
     "required": true
   },
   "quality": {

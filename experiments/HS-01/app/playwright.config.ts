@@ -23,6 +23,11 @@ export default defineConfig({
     // min_rendered_image_css_px (256) so the image/pair phases are not gated by
     // the too-small refusal screen.
     viewport: { width: 1440, height: 1000 },
+    // Honor reduced motion in the browser so framer-motion (configured with
+    // reducedMotion="user") skips transform animations. This removes the
+    // position-animation that otherwise makes controls read as "not stable"
+    // and lets clicks land on the first attempt.
+    contextOptions: { reducedMotion: "reduce" },
   },
   projects: [
     {
