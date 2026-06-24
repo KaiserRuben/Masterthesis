@@ -241,6 +241,10 @@ describe("createSession()", () => {
     expect(Array.isArray(r.phases)).toBe(true);
     expect(r.phases.length).toBeGreaterThan(0);
 
+    // quality block forwarded so the viewport gate tracks the config
+    expect(r.quality).toBeDefined();
+    expect(r.quality?.min_rendered_image_css_px).toBe(256);
+
     // Presentation blocks must NOT introduce analysis-field leakage
     const payloadStr = JSON.stringify(r);
     expect(payloadStr).not.toMatch(/tgtbal/);

@@ -69,6 +69,30 @@ export default function StudyPage() {
     return <Centered>Submitting your responses…</Centered>;
   }
 
+  if (s.phase === "submit_failed") {
+    return (
+      <Centered>
+        <div className="max-w-md text-center" role="alert" aria-live="assertive">
+          <h2 className="mb-3 text-xl font-semibold text-neutral-900">
+            We couldn&apos;t confirm your submission
+          </h2>
+          <p className="mb-6 leading-relaxed text-neutral-600">
+            Your responses are saved and have not been lost. We just need to
+            confirm them with the server. Please check your connection and try
+            again.
+          </p>
+          <button
+            type="button"
+            onClick={() => void s.retrySubmit()}
+            className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            Retry submit
+          </button>
+        </div>
+      </Centered>
+    );
+  }
+
   if (s.phase === "done") {
     // Route to the dedicated done page so a reload won't re-enter the runner.
     router.replace("/done");

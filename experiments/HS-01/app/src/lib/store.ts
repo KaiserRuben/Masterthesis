@@ -27,6 +27,7 @@ import type {
   PairResponse,
   DemographicsField,
   Phase,
+  StudyConfig,
 } from "./types";
 
 // ─── RecruitmentChannel type ─────────────────────────────────────────────────
@@ -61,6 +62,12 @@ export interface CreateResult {
   pair_response: PairResponse;
   demographics_fields: DemographicsField[];
   phases: Phase[];
+  /**
+   * Read-only quality block from the study config. Forwarded so the viewport
+   * gate (min_rendered_image_css_px) tracks the config instead of hardcoding a
+   * default. Read-only config, no analysis fields.
+   */
+  quality?: StudyConfig["quality"];
 }
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────
@@ -379,6 +386,9 @@ export async function createSession(
       pair_response: config.pair_response,
       demographics_fields: config.demographics_fields,
       phases: config.phases,
+      // Read-only quality block so the rater UI's viewport gate honours
+      // min_rendered_image_css_px from the config (no analysis fields here).
+      quality: config.quality,
     };
   });
 }

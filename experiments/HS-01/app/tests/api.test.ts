@@ -153,6 +153,10 @@ describe("POST /api/sessions", () => {
     expect(body.demographics_fields.length).toBeGreaterThan(0);
     expect(Array.isArray(body.phases)).toBe(true);
     expect(body.phases.length).toBeGreaterThan(0);
+
+    // quality block forwarded at the HTTP boundary (drives the viewport gate)
+    expect(body.quality).toBeDefined();
+    expect(body.quality.min_rendered_image_css_px).toBe(256);
   });
 
   it("rejects an invalid recruitment_channel with 400", async () => {

@@ -9,9 +9,15 @@
  *    entered_ms.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
-import { countByPhase, resumePhase, closePhase } from "../src/state/useSession";
+import {
+  countByPhase,
+  resumePhase,
+  closePhase,
+  durableSubmit,
+  getMinPx,
+} from "../src/state/useSession";
 import { SessionClock } from "../src/lib/timing";
 import type { CreateResult } from "../src/lib/store";
 import type { SessionRecord, Trial } from "../src/lib/types";
@@ -168,5 +174,116 @@ describe("closePhase", () => {
     expect(out.phase_timings.filter((p) => p.phase_id === "text").length).toBe(
       closed.length
     );
+  });
+});
+
+// ─── durableSubmit — checkpoint-before-submit + failure safety ────────────────
+
+/**
+ * A complete final record as submitDemographics would build it: trials,
+ * demographics, quality_summary and total timing all present. Status stays
+ * "abandoned" until the submit confirms (the server promotes it to completed).
+ */
+function completeFinalRecord(): SessionRecord {
+  return {
+    ...baseRecord([trial("text", 0), trial("image", 1), trial("pair", 2)]),
+    phase_timings: [
+      { phase_id: "text" as const, entered_ms: 0, exited_ms: 100 },
+      { phase_id: "demographics" as const, entered_ms: 100, exited_ms: 200 },
+    ],
+    demographics: {
+      age_band: "25_34",
+      ml_familiarity: "no_experience",
+      english_proficiency: "B2",
+      comment: null,
+    },
+    quality_summary: {
+      attention_total: 0,
+      attention_failed: 0,
+      focus_loss_count: 0,
+    },
+    timing: {
+      started_at_utc: "2026-01-01T00:00:00.000Z",
+      completed_at_utc: "2026-01-01T00:10:00.000Z",
+      total_duration_ms: 600000,
+    },
+  };
+}
+
+describe("durableSubmit", () => {
+  it("checkpoints the COMPLETE record (carrying demographics) BEFORE attempting submit", async () => {
+    const order: string[] = [];
+    const checkpoint = vi.fn(async (rec: SessionRecord) => {
+      order.push("checkpoint");
+      // The checkpoint must carry the full record so the server holds it even
+      // if the fallible submit never lands.
+      expect(rec.demographics).toBeTruthy();
+      expect(rec.quality_summary).toBeTruthy();
+      expect(rec.timing.total_duration_ms).toBe(600000);
+      expect(rec.phase_timings.some((p) => p.phase_id === "demographics")).toBe(true);
+    });
+    const submit = vi.fn(async () => {
+      order.push("submit");
+      return { ok: true };
+    });
+
+    const out = await durableSubmit(completeFinalRecord(), { checkpoint, submit });
+
+    expect(checkpoint).toHaveBeenCalledTimes(1);
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(["checkpoint", "submit"]); // checkpoint strictly first
+    expect(out.submitted).toBe(true);
+  });
+
+  it("returns submitted:false when submit REJECTS (record already safe via checkpoint)", async () => {
+    const checkpoint = vi.fn(async () => {});
+    const submit = vi.fn(async () => {
+      throw new Error("network down");
+    });
+
+    const out = await durableSubmit(completeFinalRecord(), { checkpoint, submit });
+
+    expect(checkpoint).toHaveBeenCalledTimes(1); // record was preserved server-side
+    expect(out.submitted).toBe(false); // caller must NOT mark completed
+  });
+
+  it("returns submitted:false when submit responds !ok", async () => {
+    const checkpoint = vi.fn(async () => {});
+    const submit = vi.fn(async () => ({ ok: false }));
+
+    const out = await durableSubmit(completeFinalRecord(), { checkpoint, submit });
+
+    expect(checkpoint).toHaveBeenCalledTimes(1);
+    expect(out.submitted).toBe(false);
+  });
+
+  it("still attempts submit even if the checkpoint PUT fails (best-effort)", async () => {
+    const checkpoint = vi.fn(async () => {
+      throw new Error("checkpoint flaked");
+    });
+    const submit = vi.fn(async () => ({ ok: true }));
+
+    const out = await durableSubmit(completeFinalRecord(), { checkpoint, submit });
+
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(out.submitted).toBe(true);
+  });
+});
+
+// ─── getMinPx — viewport gate tracks the config quality block ─────────────────
+
+describe("getMinPx", () => {
+  it("uses the config quality.min_rendered_image_css_px when present", () => {
+    const create = { ...makeCreate(), quality: { log_integrity_events: true, render_check: true, min_rendered_image_css_px: 384 } };
+    expect(getMinPx(create)).toBe(384);
+  });
+
+  it("falls back to 256 when quality is absent", () => {
+    expect(getMinPx(makeCreate())).toBe(256);
+  });
+
+  it("falls back to 256 when min_rendered_image_css_px is null", () => {
+    const create = { ...makeCreate(), quality: { log_integrity_events: true, render_check: true, min_rendered_image_css_px: null } };
+    expect(getMinPx(create)).toBe(256);
   });
 });

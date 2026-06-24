@@ -10,13 +10,18 @@
 import { useEffect } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-import { LS_CREATE, LS_RECORD } from "@/state/useSession";
+import { LS_COMPLETED, LS_CREATE, LS_RECORD } from "@/state/useSession";
 
 export default function DonePage() {
   useEffect(() => {
     try {
-      window.localStorage.removeItem(LS_RECORD);
-      window.localStorage.removeItem(LS_CREATE);
+      // Only clear the in-progress caches once the session is CONFIRMED
+      // completed (the submit succeeded). Guarding on LS_COMPLETED ensures an
+      // erroneous arrival here can never wipe an unsubmitted record.
+      if (window.localStorage.getItem(LS_COMPLETED)) {
+        window.localStorage.removeItem(LS_RECORD);
+        window.localStorage.removeItem(LS_CREATE);
+      }
     } catch {
       /* ignore */
     }

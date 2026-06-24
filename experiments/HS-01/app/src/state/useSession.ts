@@ -57,6 +57,7 @@ export type FlowPhase =
   | JudgmentPhase
   | "demographics"
   | "submitting"
+  | "submit_failed"
   | "done"
   | "too_small"
   | "missing";
@@ -141,6 +142,12 @@ export interface UseSession {
   submitTrial: (answer: TrialAnswer) => void;
   /** Submit demographics and finalize/POST the session. */
   submitDemographics: (values: DemographicsValues) => Promise<void>;
+  /**
+   * Re-attempt the final submit after a failure. The complete record is already
+   * safe on the server (checkpointed before the first attempt); this confirms
+   * the `completed` status and routes to /done on success.
+   */
+  retrySubmit: () => Promise<void>;
   /** Record an integrity event (wired to attachIntegrityListeners' sink). */
   pushIntegrity: (ev: IntegrityEvent) => void;
 }
@@ -401,6 +408,46 @@ export function useSession(): UseSession {
     lsSet(LS_RECORD, JSON.stringify(next));
   }, []);
 
+  // Holds the COMPLETE final record awaiting a confirmed submit, so a retry can
+  // re-attempt without rebuilding (and without re-reading demographics).
+  const pendingSubmitRef = useRef<SessionRecord | null>(null);
+
+  // Run the durable submit for an already-built complete record: checkpoint the
+  // full record first (so the server holds it even if submit fails), then POST
+  // submit. Only a confirmed success flips us to `completed` + /done.
+  const runSubmit = useCallback(
+    async (complete: SessionRecord) => {
+      setPhase("submitting");
+      const { submitted } = await durableSubmit(complete, {
+        checkpoint, // PUT — persists verbatim regardless of validity
+        submit: async (rec) => {
+          const res = await fetch(`/api/sessions/${rec.session_id}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rec),
+          });
+          return { ok: res.ok };
+        },
+      });
+
+      if (!submitted) {
+        // Record is already safe on the server (checkpoint step). Do NOT mark
+        // completed, do NOT clear localStorage, do NOT navigate — offer a retry.
+        setPhase("submit_failed");
+        return;
+      }
+
+      // Confirmed: stamp the completed status locally, persist, set the flag,
+      // and route to /done (which then clears the in-progress caches).
+      const done: SessionRecord = { ...complete, status: "completed" };
+      persist(done);
+      pendingSubmitRef.current = null;
+      lsSet(LS_COMPLETED, new Date().toISOString());
+      setPhase("done");
+    },
+    [checkpoint, persist]
+  );
+
   const submitDemographics = useCallback(
     async (values: DemographicsValues) => {
       const rec = recordRef.current;
@@ -414,9 +461,11 @@ export function useSession(): UseSession {
       // Close the demographics phase (merges into prior loads' phase_timings).
       withDemo = closePhase(withDemo, clock, "demographics");
       withDemo = finalizeQualitySummary(withDemo, create);
+      // Final timing is stamped now, but status stays "abandoned" until the
+      // submit confirms — the checkpoint write below carries this complete
+      // record so the server never holds a demographics-less copy.
       withDemo = {
         ...withDemo,
-        status: "completed",
         timing: {
           ...withDemo.timing,
           completed_at_utc: new Date().toISOString(),
@@ -424,23 +473,20 @@ export function useSession(): UseSession {
         },
       };
 
+      // Persist the complete record locally and stash it for retry.
       persist(withDemo);
+      pendingSubmitRef.current = withDemo;
 
-      try {
-        await fetch(`/api/sessions/${withDemo.session_id}/submit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(withDemo),
-        });
-      } catch {
-        /* network failure — record is in localStorage; user is told below */
-      }
-
-      lsSet(LS_COMPLETED, new Date().toISOString());
-      setPhase("done");
+      await runSubmit(withDemo);
     },
-    [create, persist]
+    [create, persist, runSubmit]
   );
+
+  const retrySubmit = useCallback(async () => {
+    const complete = pendingSubmitRef.current ?? recordRef.current;
+    if (!complete) return;
+    await runSubmit(complete);
+  }, [runSubmit]);
 
   // Mark demographics-phase entry once (latched against re-renders).
   const demoEntered = useRef(false);
@@ -471,6 +517,7 @@ export function useSession(): UseSession {
     beginPhase,
     submitTrial,
     submitDemographics,
+    retrySubmit,
     pushIntegrity,
   };
 }
@@ -518,6 +565,45 @@ export function closePhase(
   return { ...record, phase_timings: [...existing, ...additions] };
 }
 
+/**
+ * durableSubmit — make the final submit survive a flaky network.
+ *
+ * The LAST write to reach the server before this point is the pair-phase EXIT
+ * checkpoint: it has status "abandoned" and NO demographics / quality_summary /
+ * final timing. If the submit POST then fails, the participant's completed work
+ * would be lost. To prevent that we FIRST checkpoint the COMPLETE record
+ * (demographics + quality_summary + all phase_timings, status still
+ * "abandoned") — writeCheckpoint persists verbatim regardless of validity, so
+ * the server now holds the full record — and only THEN attempt the fallible
+ * submit. A failed checkpoint is non-fatal (we still try to submit); a failed
+ * submit returns {submitted:false} so the caller withholds the `completed`
+ * flag and offers a retry.
+ *
+ * Pure w.r.t. I/O: both side effects are injected, so this is unit-testable.
+ */
+export async function durableSubmit(
+  record: SessionRecord,
+  io: {
+    checkpoint: (rec: SessionRecord) => Promise<void>;
+    submit: (rec: SessionRecord) => Promise<{ ok: boolean }>;
+  }
+): Promise<{ submitted: boolean }> {
+  // 1) Durably persist the complete record server-side BEFORE the fallible
+  //    submit. Best-effort: a checkpoint failure must not block the submit.
+  try {
+    await io.checkpoint(record);
+  } catch {
+    /* transient — the submit attempt below may still land the record */
+  }
+  // 2) Attempt the confirming submit. Only a truthy `ok` counts as completed.
+  try {
+    const res = await io.submit(record);
+    return { submitted: res.ok };
+  } catch {
+    return { submitted: false };
+  }
+}
+
 type ResumeTarget =
   | "demographics"
   | { phase: JudgmentPhase; atPosition: number };
@@ -550,13 +636,10 @@ function nextImageUrl(
 /** Default minimum rendered CSS px when the create payload omits `quality`. */
 const DEFAULT_MIN_RENDERED_PX = 256;
 
-function getMinPx(create: CreateResult): number {
-  // quality.min_rendered_image_css_px lives on the config; the create payload
-  // does not forward `quality`, so default to the known study value (256) when
-  // not explicitly present.
-  const q = (create as unknown as { quality?: { min_rendered_image_css_px?: number | null } })
-    .quality;
-  return q?.min_rendered_image_css_px ?? DEFAULT_MIN_RENDERED_PX;
+export function getMinPx(create: CreateResult): number {
+  // quality.min_rendered_image_css_px is forwarded on the create payload (see
+  // store.ts). Fall back to the known study default only when absent/null.
+  return create.quality?.min_rendered_image_css_px ?? DEFAULT_MIN_RENDERED_PX;
 }
 
 /**
