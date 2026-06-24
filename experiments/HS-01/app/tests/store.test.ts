@@ -180,7 +180,73 @@ describe("createSession()", () => {
       expect(item).toHaveProperty("kind");
       expect(item).toHaveProperty("is_attention_check");
       expect(item).toHaveProperty("prompt");
+      // check_rule must always be present (null for regular items)
+      expect(item).toHaveProperty("check_rule");
     }
+  });
+
+  it("emits check_rule for attention items and null for regular items", async () => {
+    const { createSession, _resetStoreCache } = await import("../src/lib/store");
+    _resetStoreCache();
+
+    const r = await createSession(null);
+
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const phase of Object.values(r.items) as Record<string, unknown>[][]) {
+      for (const item of phase) byId.set(item.item_id as string, item);
+    }
+
+    // The text nonsense attention item: scale_leq 2
+    const txtAttn = byId.get("txt-attn-nonsense-01");
+    expect(txtAttn).toBeDefined();
+    expect(txtAttn!.is_attention_check).toBe(true);
+    expect(txtAttn!.check_rule).toEqual({ metric: "scale_leq", value: 2 });
+
+    // The obvious pair attention item: choice_equals "green iguana"
+    const pairAttn = byId.get("pair-attn-obvious-01");
+    expect(pairAttn).toBeDefined();
+    expect(pairAttn!.is_attention_check).toBe(true);
+    expect(pairAttn!.check_rule).toEqual({
+      metric: "choice_equals",
+      value: "green iguana",
+    });
+
+    // At least one regular (non-attention) item, all with check_rule === null
+    const regular = [...byId.values()].filter(
+      (i) => i.is_attention_check !== true
+    );
+    expect(regular.length).toBeGreaterThan(0);
+    for (const item of regular) {
+      expect(item.check_rule).toBeNull();
+    }
+  });
+
+  it("exposes read-only presentation config blocks for the rater UI", async () => {
+    const { createSession, _resetStoreCache } = await import("../src/lib/store");
+    _resetStoreCache();
+
+    const r = await createSession(null);
+
+    // scales: 2 entries (text + image)
+    expect(Array.isArray(r.scales)).toBe(true);
+    expect(r.scales).toHaveLength(2);
+
+    // pair_response presentation labels
+    expect(r.pair_response).toBeDefined();
+    expect(r.pair_response.display_labels.CANT_TELL).toBeTruthy();
+
+    // demographics_fields + phases present and non-empty
+    expect(Array.isArray(r.demographics_fields)).toBe(true);
+    expect(r.demographics_fields.length).toBeGreaterThan(0);
+    expect(Array.isArray(r.phases)).toBe(true);
+    expect(r.phases.length).toBeGreaterThan(0);
+
+    // Presentation blocks must NOT introduce analysis-field leakage
+    const payloadStr = JSON.stringify(r);
+    expect(payloadStr).not.toMatch(/tgtbal/);
+    expect(payloadStr).not.toMatch(/"drift":/);
+    expect(payloadStr).not.toMatch(/"sut":/);
+    expect(payloadStr).not.toMatch(/"strata":/);
   });
 
   it("includes config_sha256 and config_version in create result", async () => {

@@ -142,7 +142,17 @@ describe("POST /api/sessions", () => {
       expect(item).toHaveProperty("source_id");
       expect(item).toHaveProperty("kind");
       expect(item).toHaveProperty("is_attention_check");
+      expect(item).toHaveProperty("check_rule");
     }
+
+    // Presentation config blocks present at the HTTP boundary
+    expect(Array.isArray(body.scales)).toBe(true);
+    expect(body.scales).toHaveLength(2);
+    expect(body.pair_response.display_labels.CANT_TELL).toBeTruthy();
+    expect(Array.isArray(body.demographics_fields)).toBe(true);
+    expect(body.demographics_fields.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.phases)).toBe(true);
+    expect(body.phases.length).toBeGreaterThan(0);
   });
 
   it("rejects an invalid recruitment_channel with 400", async () => {

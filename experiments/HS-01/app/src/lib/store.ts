@@ -18,7 +18,16 @@ import crypto from "crypto";
 import { loadConfig } from "./config";
 import { loadPool } from "./pool";
 import { validateSession } from "./schemas";
-import type { SessionRecord, Source, Item } from "./types";
+import type {
+  SessionRecord,
+  Source,
+  Item,
+  CheckRule,
+  Scale,
+  PairResponse,
+  DemographicsField,
+  Phase,
+} from "./types";
 
 // ─── RecruitmentChannel type ─────────────────────────────────────────────────
 
@@ -31,6 +40,7 @@ export interface ItemPayload {
   source_id: string;
   kind: "text" | "image" | "pair";
   is_attention_check: boolean;
+  check_rule: CheckRule | null;
   prompt: string | null;
   image: { uri_name: string; natural_w: number; natural_h: number } | null;
   option_labels: { ANCHOR_WORD: string; TARGET_WORD: string } | null;
@@ -46,6 +56,11 @@ export interface CreateResult {
   consent_version: string;
   /** Per-phase item payloads. Keys are phase_ids. */
   items: Record<string, ItemPayload[]>;
+  /** Read-only presentation config for the rater UI. */
+  scales: Scale[];
+  pair_response: PairResponse;
+  demographics_fields: DemographicsField[];
+  phases: Phase[];
 }
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────
@@ -268,6 +283,7 @@ function resolveItems(formId: string): Record<string, ItemPayload[]> {
         source_id: item.source_id,
         kind: item.kind,
         is_attention_check: item.is_attention_check ?? false,
+        check_rule: item.check_rule ?? null,
         prompt,
         image,
         option_labels,
@@ -358,6 +374,11 @@ export async function createSession(
       config_sha256: configSha256,
       consent_version: config.consent.consent_version,
       items,
+      // Read-only presentation config for the rater UI (no analysis internals).
+      scales: config.scales,
+      pair_response: config.pair_response,
+      demographics_fields: config.demographics_fields,
+      phases: config.phases,
     };
   });
 }
