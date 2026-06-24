@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * HS-01 fidelity rule: stimulus prompts must render verbatim.
+ * Use a system monospace stack — no remote webfont that could
+ * normalize glyphs or alter character shapes.
+ *
+ * Apply .font-prompt to any element that renders a stimulus text.
+ */
+:root {
+  --font-prompt: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: #ffffff;
+  color: #111111;
+}
+
+/* Utility class for stimulus text rendering */
+.font-prompt {
+  font-family: var(--font-prompt);
+  font-variant-ligatures: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
