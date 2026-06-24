@@ -2,7 +2,7 @@
 # (not the app dir), a `.dockerignore` sitting in the app dir is NOT at the
 # context root and is therefore ignored by BuildKit. BuildKit instead reads the
 # file named "<dockerfile>.dockerignore" next to the Dockerfile — this one. It
-# is kept byte-identical to app/.dockerignore (the human-readable deliverable).
+# is kept functionally identical to app/.dockerignore (the human-readable copy).
 #
 # Paths here are relative to the build context root (experiments/HS-01/), NOT
 # the app dir. Keep pool_frozen/ and schemas/ IN the context — they are baked
@@ -43,5 +43,8 @@ data_raw
 pool_staging
 tests
 *.py
+# Exclude loose markdown docs but keep app/config/consent.en.md — it is required
+# at runtime (the landing page reads it; missing file → "Consent text is unavailable").
 *.md
+!app/config/consent.en.md
 schemas/examples

@@ -3,9 +3,9 @@
 #
 # NOTE: because that context root is the parent dir, BuildKit does not read THIS
 # file (it is not at the context root). The build is actually filtered by the
-# byte-identical sibling app/Dockerfile.dockerignore, which BuildKit reads next
-# to the Dockerfile. This file is kept as the readable, conventionally-named
-# copy; edit both together (they must stay identical).
+# functionally identical sibling app/Dockerfile.dockerignore, which BuildKit reads
+# next to the Dockerfile. This file is kept as the readable, conventionally-named
+# copy; edit both together (rules must stay functionally identical).
 #
 # Keep pool_frozen/ and schemas/ IN the context — they are baked into the image.
 # Trim everything that would only bloat the context or get rebuilt anyway.
@@ -45,5 +45,8 @@ data_raw
 pool_staging
 tests
 *.py
+# Exclude loose markdown docs but keep app/config/consent.en.md — it is required
+# at runtime (the landing page reads it; missing file → "Consent text is unavailable").
 *.md
+!app/config/consent.en.md
 schemas/examples
