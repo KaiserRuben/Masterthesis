@@ -199,6 +199,17 @@ class RosterConfig:
 
 
 @dataclass(frozen=True)
+class RefCocoPlusConfig:
+    """RefCOCO+ two-referent seed source for grounding-modality runs."""
+
+    data_root: Path                       # COCO images + refcoco+ annotations (refer-API layout)
+    split: str = "testA"                  # testA = multi-person; testB = multi-object
+    splitBy: str = "unc"
+    n_items: int = 40
+    same_category: bool = True            # keep items whose two referents share a category
+
+
+@dataclass(frozen=True)
 class SeedConfig:
     """Seed-selection parameters — dispatches between two generation modes.
 
@@ -221,20 +232,22 @@ class SeedConfig:
     even if it is the only seed that runs). An empty tuple disables
     filtering.
 
-    :param mode: ``"gap_filter"`` | ``"roster"``.
+    :param mode: ``"gap_filter"`` | ``"roster"`` | ``"refcocoplus"``.
     :param filter_indices: Post-generation index filter. Empty = keep all.
     :param gap_filter: Parameters when ``mode == "gap_filter"``.
     :param roster: Parameters when ``mode == "roster"``.
+    :param refcocoplus: Parameters when ``mode == "refcocoplus"``.
     """
 
     mode: str = "gap_filter"
     filter_indices: tuple[int, ...] = ()
     gap_filter: GapFilterConfig | None = None
     roster: RosterConfig | None = None
+    refcocoplus: "RefCocoPlusConfig | None" = None
 
     def __post_init__(self) -> None:
         if self.mode == "gap_filter":
-            if self.roster is not None:
+            if self.roster is not None or self.refcocoplus is not None:
                 raise ValueError(
                     "seeds.mode='gap_filter' but seeds.roster is set; "
                     "drop one or the other."
@@ -243,7 +256,7 @@ class SeedConfig:
                 # Fill in the default; frozen dataclass requires setattr.
                 object.__setattr__(self, "gap_filter", GapFilterConfig())
         elif self.mode == "roster":
-            if self.gap_filter is not None:
+            if self.gap_filter is not None or self.refcocoplus is not None:
                 raise ValueError(
                     "seeds.mode='roster' but seeds.gap_filter is set; "
                     "drop one or the other."
@@ -252,9 +265,18 @@ class SeedConfig:
                 raise ValueError(
                     "seeds.mode='roster' requires a seeds.roster config block."
                 )
+        elif self.mode == "refcocoplus":
+            if self.gap_filter is not None or self.roster is not None:
+                raise ValueError(
+                    "seeds.mode='refcocoplus' but gap_filter/roster is set; drop one."
+                )
+            if self.refcocoplus is None:
+                raise ValueError(
+                    "seeds.mode='refcocoplus' requires a seeds.refcocoplus config block."
+                )
         else:
             raise ValueError(
-                f"seeds.mode must be 'gap_filter' or 'roster'; "
+                f"seeds.mode must be 'gap_filter' | 'roster' | 'refcocoplus'; "
                 f"got {self.mode!r}"
             )
 
@@ -512,6 +534,30 @@ class ParallelConfig:
 
 
 # ---------------------------------------------------------------------------
+# Grounding config
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GroundingConfig:
+    """Coordinate-output (visual grounding) settings. Active when
+    ``ExperimentConfig.modality == 'grounding'``. The boundary objective is
+    ``TargetedBalance`` over two candidate *box strings* (the referents)."""
+
+    coordinate_space: str = "norm_1000"   # norm_1000 (Qwen3-VL/3.5) | abs_pixels (Qwen2.5-VL)
+    bbox_format: str = "bare_array"       # "[x1, y1, x2, y2]" candidate-string format
+    referent_prompt: str = "Locate the {referent}."
+    answer_format: str = " Report the bounding box as a JSON array [x1, y1, x2, y2]."
+
+    def __post_init__(self) -> None:
+        if self.coordinate_space not in ("norm_1000", "abs_pixels"):
+            raise ValueError(
+                f"grounding.coordinate_space must be 'norm_1000' | 'abs_pixels'; "
+                f"got {self.coordinate_space!r}"
+            )
+
+
+# ---------------------------------------------------------------------------
 # Top-level experiment config
 # ---------------------------------------------------------------------------
 
@@ -597,12 +643,13 @@ class ExperimentConfig:
     seeds: SeedConfig = field(default_factory=SeedConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     parallel: "ParallelConfig" = field(default_factory=lambda: ParallelConfig())
+    grounding: GroundingConfig = field(default_factory=GroundingConfig)
 
     def __post_init__(self) -> None:
-        if self.modality not in ("joint", "image_only", "text_only"):
+        if self.modality not in ("joint", "image_only", "text_only", "grounding"):
             raise ValueError(
                 f"modality must be one of 'joint' | 'image_only' | "
-                f"'text_only'; got {self.modality!r}"
+                f"'text_only' | 'grounding'; got {self.modality!r}"
             )
 
 
@@ -660,6 +707,9 @@ def apply_modality(exp: ExperimentConfig) -> ExperimentConfig:
             exp,
             image=dataclasses.replace(exp.image, patch_ratio=0.0),
         )
+    if exp.modality == "grounding":
+        logger.info("modality=grounding → joint genome; grounding answer_format; boundary over box-string candidates")
+        return dataclasses.replace(exp, answer_format=exp.grounding.answer_format)
     return exp
 
 
@@ -672,10 +722,12 @@ __all__ = [
     "EarlyStopCfg",
     "ExperimentConfig",
     "GapFilterConfig",
+    "GroundingConfig",
     "ImageConfig",
     "MutationConfig",
     "OptimizerConfig",
     "ParallelConfig",
+    "RefCocoPlusConfig",
     "RosterConfig",
     "SamplingConfig",
     "SamplingTier",

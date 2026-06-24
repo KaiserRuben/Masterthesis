@@ -348,14 +348,28 @@ def main():
             "runs": reports,
         }
 
-    # ── LLaVA / Exp-101 + Exp-102, Qwen / Exp-101q (flat layout) ──────────
+    # ── LLaVA / Exp-101 + Exp-102 + HS-GEN-01, Qwen / Exp-101q (flat) ─────
+    # 4th tuple element = name_filter: when set, only run dirs whose name
+    # contains it are scanned. HS-GEN-01 holds the 1024-run gap_filter SCREEN
+    # (4-gen, no stimuli) alongside the 6 promoted full runs; only the promoted
+    # runs are study stimulus sources. HS-GEN-01 is modality=image_only
+    # (text_dim=0) → every qualifier is strictly image_only_drift.
     flat = [("Exp-101", "llava", dict(modality="joint", sut_backend="openvino",
-                                      cone_alpha_deg=20.0)),
+                                      cone_alpha_deg=20.0), None),
             ("Exp-102", "llava", dict(modality="joint", sut_backend="openvino",
-                                      cone_alpha_deg=20.0)),
+                                      cone_alpha_deg=20.0), None),
             ("Exp-101q", "qwen", dict(modality="joint", sut_backend="torch",
-                                      cone_alpha_deg=20.0))]
-    for exp, sut, extra in flat:
+                                      cone_alpha_deg=20.0), None),
+            ("HS-GEN-01", "llava", dict(modality="image_only",
+                                        sut_backend="openvino",
+                                        cone_alpha_deg=20.0), "promoted"),
+            ("HS-GEN-02", "llava", dict(modality="joint",
+                                        sut_backend="openvino",
+                                        cone_alpha_deg=20.0), None),
+            ("HS-GEN-03", "llava", dict(modality="joint",
+                                        sut_backend="openvino",
+                                        cone_alpha_deg=20.0), None)]
+    for exp, sut, extra, name_filter in flat:
         edir = os.path.join(runs, exp)
         if not os.path.isdir(edir):
             summary["experiments"][exp] = {"runs_found": 0,
@@ -365,6 +379,8 @@ def main():
         for sd in sorted(os.listdir(edir)):
             run_dir = os.path.join(edir, sd)
             if not os.path.isdir(run_dir):
+                continue
+            if name_filter and name_filter not in sd:
                 continue
             sp = os.path.join(run_dir, "stats.json")
             if not os.path.exists(sp):
@@ -401,7 +417,8 @@ def main():
             out, sut, exp, "boundary_individuals.parquet"))
         summary["experiments"][exp] = {
             "runs_found": len([d for d in os.listdir(edir)
-                               if os.path.isdir(os.path.join(edir, d))]),
+                               if os.path.isdir(os.path.join(edir, d))
+                               and (not name_filter or name_filter in d)]),
             "n_extracted": n, "runs": reports}
 
     # ── Qwen / Exp-27 cone-enabled fallback ───────────────────────────────
@@ -521,6 +538,9 @@ def main():
                  + glob.glob(os.path.join(root, "configs/Exp-101/*"))
                  + glob.glob(os.path.join(root, "configs/Exp-101q/*.yaml"))
                  + glob.glob(os.path.join(root, "configs/Exp-102/*"))
+                 + glob.glob(os.path.join(root, "configs/HS-GEN-01/*.yaml"))
+                 + glob.glob(os.path.join(root, "configs/HS-GEN-02/*.yaml"))
+                 + glob.glob(os.path.join(root, "configs/HS-GEN-03/*.yaml"))
                  + glob.glob(os.path.join(root, "configs/Exp-26/qwen_*.yaml"))
                  + glob.glob(os.path.join(root, "configs/Exp-27/qwen_*.yaml")))
     for p in cfg_paths:

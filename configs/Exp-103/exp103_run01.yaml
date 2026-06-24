@@ -1,0 +1,54 @@
+# Exp-103 — first coordinate-grounding dataset run (small).
+# Uses the merged grounding extension + RefCOCO+ adapter. Run from repo root:
+#   conda run -n uni python experiments/runners/run_boundary_test.py configs/Exp-103/exp103_run01.yaml
+name: exp103_run01
+save_dir: runs/Exp-103
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+  enable_thinking: false
+
+modality: grounding
+grounding:
+  coordinate_space: norm_1000
+
+cache_dirs:
+  - ~/.cache/imagenet
+
+generations: 12
+pop_size: 20
+
+seeds:
+  mode: refcocoplus
+  refcocoplus:
+    data_root: ~/.cache/refcoco
+    split: testA
+    n_items: 6
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+
+text:
+  composite:
+    profile: full_stack
+
+parallel:
+  workers: 1
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: true
+    plateau_patience: 8
