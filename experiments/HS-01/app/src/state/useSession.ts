@@ -150,6 +150,12 @@ export interface UseSession {
   retrySubmit: () => Promise<void>;
   /** Record an integrity event (wired to attachIntegrityListeners' sink). */
   pushIntegrity: (ev: IntegrityEvent) => void;
+  /**
+   * Schema validation errors reported by the server on a failed submit
+   * (HTTP 200 with body.ok === false). Surfaced for the submit-failed retry
+   * panel; null when the last submit had no schema errors.
+   */
+  submitValidationErrors: object[] | null;
 }
 
 export interface TrialAnswer {
@@ -170,6 +176,10 @@ export function useSession(): UseSession {
   const [phase, setPhase] = useState<FlowPhase>("loading");
   // When entering a judgment phase we first show instructions; this holds which.
   const [instructionsFor, setInstructionsFor] = useState<JudgmentPhase | null>(null);
+  // Schema validation errors from a failed submit (HTTP 200 + body.ok === false).
+  const [submitValidationErrors, setSubmitValidationErrors] = useState<
+    object[] | null
+  >(null);
 
   const clockRef = useRef<SessionClock | null>(null);
   // Mirror the latest record in a ref so async callbacks don't capture stale state.
@@ -418,6 +428,9 @@ export function useSession(): UseSession {
   const runSubmit = useCallback(
     async (complete: SessionRecord) => {
       setPhase("submitting");
+      // Captured across the durableSubmit boundary so the failure branch can
+      // surface the server's schema validation_errors for the retry panel.
+      let lastValidationErrors: object[] | null = null;
       const { submitted } = await durableSubmit(complete, {
         checkpoint, // PUT — persists verbatim regardless of validity
         submit: async (rec) => {
@@ -426,19 +439,30 @@ export function useSession(): UseSession {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(rec),
           });
-          return { ok: res.ok };
+          // HTTP 200 is NOT success: the route returns 200 even for a
+          // schema-invalid record (body.ok === false). interpretSubmitResponse
+          // reads the body and only reports ok when body.ok === true, so an
+          // invalid final record never gets recorded as `completed`.
+          const { ok, validation_errors } = await interpretSubmitResponse(res);
+          lastValidationErrors = validation_errors;
+          return { ok };
         },
       });
 
       if (!submitted) {
-        // Record is already safe on the server (checkpoint step). Do NOT mark
-        // completed, do NOT clear localStorage, do NOT navigate — offer a retry.
+        // Either the HTTP request failed OR the server reported the record as
+        // schema-invalid (body.ok === false). The record is already safe on the
+        // server (checkpoint step) and verbatim in LS_RECORD, so retry is safe.
+        // Do NOT mark completed, do NOT clear localStorage, do NOT navigate —
+        // surface any validation errors and offer a retry.
+        setSubmitValidationErrors(lastValidationErrors);
         setPhase("submit_failed");
         return;
       }
 
-      // Confirmed: stamp the completed status locally, persist, set the flag,
-      // and route to /done (which then clears the in-progress caches).
+      // Confirmed valid: stamp the completed status locally, persist, set the
+      // flag, and route to /done (which then clears the in-progress caches).
+      setSubmitValidationErrors(null);
       const done: SessionRecord = { ...complete, status: "completed" };
       persist(done);
       pendingSubmitRef.current = null;
@@ -519,6 +543,7 @@ export function useSession(): UseSession {
     submitDemographics,
     retrySubmit,
     pushIntegrity,
+    submitValidationErrors,
   };
 }
 
@@ -563,6 +588,47 @@ export function closePhase(
   );
   const additions = closedNow.filter((p) => !haveEntered.has(p.entered_ms));
   return { ...record, phase_timings: [...existing, ...additions] };
+}
+
+/**
+ * SubmitResponseLike — the minimal shape of the fetch Response the submit route
+ * returns. Exposed so the interpreter below is unit-testable without a network.
+ */
+export interface SubmitResponseLike {
+  ok: boolean;
+  json: () => Promise<unknown>;
+}
+
+/**
+ * interpretSubmitResponse — decide whether a submit POST truly succeeded.
+ *
+ * CRITICAL: the submit route returns HTTP 200 EVEN for a schema-INVALID record
+ * (store.submitSession persists verbatim and returns `body.ok === false`). A
+ * passing HTTP status (`res.ok`) is therefore NOT a successful submit. We must
+ * also read the JSON body and require `body.ok === true`; otherwise a
+ * schema-invalid final record would be recorded as `completed`, LS_COMPLETED set
+ * and LS_RECORD cleared — locking the participant out with only invalid data.
+ *
+ * Returns `{ ok, validation_errors }` where `ok` is true only when BOTH the HTTP
+ * status is ok AND the body reports `ok === true`. validation_errors carries the
+ * server's schema errors (for the retry panel) when present.
+ */
+export async function interpretSubmitResponse(
+  res: SubmitResponseLike
+): Promise<{ ok: boolean; validation_errors: object[] | null }> {
+  let body: { ok?: boolean; validation_errors?: object[] | null } | null = null;
+  try {
+    body = (await res.json()) as {
+      ok?: boolean;
+      validation_errors?: object[] | null;
+    };
+  } catch {
+    /* non-JSON / empty body → treated as not-ok below */
+  }
+  return {
+    ok: res.ok && body?.ok === true,
+    validation_errors: body?.validation_errors ?? null,
+  };
 }
 
 /**

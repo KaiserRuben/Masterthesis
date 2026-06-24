@@ -122,6 +122,7 @@ export function Demographics({
 
       <button
         type="submit"
+        data-testid="demographics-submit"
         disabled={!requiredComplete || submitting}
         className={[
           "mt-10 rounded-lg px-6 py-3 font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",

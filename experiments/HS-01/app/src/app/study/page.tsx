@@ -70,9 +70,15 @@ export default function StudyPage() {
   }
 
   if (s.phase === "submit_failed") {
+    const errCount = s.submitValidationErrors?.length ?? 0;
     return (
       <Centered>
-        <div className="max-w-md text-center" role="alert" aria-live="assertive">
+        <div
+          className="max-w-md text-center"
+          role="alert"
+          aria-live="assertive"
+          data-testid="submit-failed"
+        >
           <h2 className="mb-3 text-xl font-semibold text-neutral-900">
             We couldn&apos;t confirm your submission
           </h2>
@@ -81,8 +87,18 @@ export default function StudyPage() {
             confirm them with the server. Please check your connection and try
             again.
           </p>
+          {errCount > 0 && (
+            <p
+              className="mb-6 text-sm text-neutral-500"
+              data-testid="submit-validation-errors"
+            >
+              The server reported {errCount} issue{errCount === 1 ? "" : "s"} with
+              the recorded data. Your responses are still saved.
+            </p>
+          )}
           <button
             type="button"
+            data-testid="retry-submit"
             onClick={() => void s.retrySubmit()}
             className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
@@ -285,6 +301,7 @@ function TrialView({
         {!ready && <span className="text-xs text-neutral-400">Preparing…</span>}
         <button
           type="button"
+          data-testid="trial-next"
           onClick={submit}
           disabled={!answered || !ready}
           className={[

@@ -32,7 +32,7 @@ export function initRecord(
 ): SessionRecord {
   return {
     schema_version: "1.0.0",
-    study_id: "HS-01",
+    study_id: create.study_id,
     config_version: create.config_version,
     config_sha256: create.config_sha256,
     session_id: create.session_id,

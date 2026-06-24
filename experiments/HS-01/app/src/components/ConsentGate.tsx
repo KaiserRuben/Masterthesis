@@ -106,6 +106,7 @@ export function ConsentGate() {
     <div className="mt-8">
       <button
         type="button"
+        data-testid="consent-begin"
         onClick={begin}
         disabled={starting}
         className={[

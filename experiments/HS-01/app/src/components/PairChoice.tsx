@@ -93,6 +93,7 @@ export function PairChoice({
               aria-checked={selected}
               disabled={disabled}
               data-slot={slot}
+              data-testid={`pair-option-${slot}`}
               onClick={() => select(slot)}
               className={[
                 "rounded-lg border px-4 py-3 text-left text-base transition-colors",
@@ -121,6 +122,7 @@ export function PairChoice({
           <input
             id="other-class-text"
             type="text"
+            data-testid="other-class-text"
             value={otherClassText}
             disabled={disabled}
             onChange={(e) => onOtherClassText(e.target.value)}

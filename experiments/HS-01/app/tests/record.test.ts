@@ -41,6 +41,7 @@ function makeCreate(): CreateResult {
     participant_code: "P001",
     form_id: "A",
     rng_seed: "seed-fixed",
+    study_id: "HS-01",
     config_version: "1.0.0",
     config_sha256: "a".repeat(64),
     consent_version: "v1",
@@ -155,6 +156,7 @@ describe("initRecord / appendTrial / setDemographics", () => {
     const rec = initRecord(create, ENV, "2026-06-24T10:00:00.000Z");
 
     expect(rec.schema_version).toBe("1.0.0");
+    expect(rec.study_id).toBe(create.study_id); // sourced from config, not hardcoded
     expect(rec.session_id).toBe(create.session_id);
     expect(rec.form_id).toBe(create.form_id);
     expect(rec.rng_seed).toBe(create.rng_seed);
@@ -165,6 +167,12 @@ describe("initRecord / appendTrial / setDemographics", () => {
     expect(rec.timing.started_at_utc).toBe("2026-06-24T10:00:00.000Z");
     expect(rec.trials).toEqual([]);
     expect(rec.phase_timings).toEqual([]);
+  });
+
+  it("initRecord sources study_id from the create payload (not a hardcoded constant)", () => {
+    const create = { ...makeCreate(), study_id: "HS-XX-other" };
+    const rec = initRecord(create, ENV, "2026-06-24T10:00:00.000Z");
+    expect(rec.study_id).toBe("HS-XX-other");
   });
 
   it("appendTrial returns a new record with the trial added (pure)", () => {

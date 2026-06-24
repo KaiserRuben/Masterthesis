@@ -52,6 +52,8 @@ export interface CreateResult {
   participant_code: string;
   form_id: string;
   rng_seed: string;
+  /** Study identity, sourced from the study config (not hardcoded). */
+  study_id: string;
   config_version: string;
   config_sha256: string;
   consent_version: string;
@@ -377,6 +379,7 @@ export async function createSession(
       participant_code: participantCode,
       form_id: formId,
       rng_seed: rngSeed,
+      study_id: config.study_id,
       config_version: config.config_version,
       config_sha256: configSha256,
       consent_version: config.consent.consent_version,
@@ -443,6 +446,11 @@ export async function submitSession(
     validationErrors = validateSession.errors.map((e) => ({ ...e }));
     (submitted as SessionRecord & { x_validation_errors: object[] }).x_validation_errors =
       validationErrors;
+  } else if (valid) {
+    // Clear any stale errors carried over from a prior invalid checkpoint —
+    // mirror writeCheckpoint's valid branch so a now-valid record never keeps
+    // dangling x_validation_errors on disk.
+    delete (submitted as Record<string, unknown>).x_validation_errors;
   }
 
   await atomicWriteJson(sessionPath(id), submitted);

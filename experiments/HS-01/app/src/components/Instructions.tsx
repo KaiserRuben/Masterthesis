@@ -61,6 +61,7 @@ export function Instructions({ phase, onContinue }: InstructionsProps) {
       </div>
       <button
         type="button"
+        data-testid="instructions-continue"
         onClick={onContinue}
         className="rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >

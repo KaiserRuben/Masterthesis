@@ -64,6 +64,7 @@ export function LikertScale({ scale, value, onChange, disabled }: LikertScalePro
               role="radio"
               aria-checked={selected}
               aria-label={label}
+              data-testid={`likert-point-${point}`}
               disabled={disabled}
               onClick={() => select(point)}
               className={[

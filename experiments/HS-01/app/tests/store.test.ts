@@ -10,6 +10,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import crypto from "crypto";
+import type { ItemPayload } from "../src/lib/store";
 
 // Paths to the real config + pool (same as loaders.test.ts)
 const APP_DIR = path.resolve(__dirname, "..");
@@ -191,9 +192,9 @@ describe("createSession()", () => {
 
     const r = await createSession(null);
 
-    const byId = new Map<string, Record<string, unknown>>();
-    for (const phase of Object.values(r.items) as Record<string, unknown>[][]) {
-      for (const item of phase) byId.set(item.item_id as string, item);
+    const byId = new Map<string, ItemPayload>();
+    for (const phase of Object.values(r.items)) {
+      for (const item of phase) byId.set(item.item_id, item);
     }
 
     // The text nonsense attention item: scale_leq 2
@@ -263,6 +264,14 @@ describe("createSession()", () => {
     expect(r.config_sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(r.consent_version).toBe("v1");
     expect(r.rng_seed).toMatch(/^[a-f0-9]+$/);
+  });
+
+  it("sources study_id from the config (HS-01) on the create result", async () => {
+    const { createSession, _resetStoreCache } = await import("../src/lib/store");
+    _resetStoreCache();
+
+    const r = await createSession(null);
+    expect(r.study_id).toBe("HS-01");
   });
 });
 
@@ -483,6 +492,80 @@ describe("submitSession()", () => {
     // File validates against schema
     const valid = validateSession(saved);
     expect(valid).toBe(true);
+  });
+
+  it("clears stale x_validation_errors when the submitted record validates", async () => {
+    const { createSession, submitSession, _resetStoreCache } = await import(
+      "../src/lib/store"
+    );
+    _resetStoreCache();
+
+    const cr = await createSession(null);
+
+    // Pre-seed the on-disk record with a leftover x_validation_errors from a
+    // prior invalid checkpoint, to prove submitSession scrubs it on the valid
+    // branch (mirroring writeCheckpoint).
+    const filePath = path.join(tmpDir, `${cr.session_id}.json`);
+    const seeded = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    seeded.x_validation_errors = [{ instancePath: "/trials", message: "stale" }];
+    fs.writeFileSync(filePath, JSON.stringify(seeded));
+
+    const completeRecord: import("../src/lib/types").SessionRecord & {
+      x_validation_errors?: object[];
+    } = {
+      schema_version: "1.0.0",
+      study_id: "HS-01",
+      config_version: "1.0.0",
+      config_sha256: "a".repeat(64),
+      session_id: cr.session_id,
+      form_id: cr.form_id,
+      rng_seed: cr.rng_seed,
+      status: "abandoned",
+      // Carry a stale error on the in-memory record too: the valid branch must
+      // strip it so it never lands on disk.
+      x_validation_errors: [{ instancePath: "/trials", message: "stale" }],
+      participant: {
+        participant_code: cr.participant_code,
+        recruitment_channel: null,
+        consent: { given: true, consent_version: "v1", at_utc: new Date().toISOString() },
+      },
+      environment: {
+        user_agent: "Mozilla/5.0",
+        viewport: { w: 1280, h: 800 },
+        device_pixel_ratio: 1,
+      },
+      timing: { started_at_utc: new Date().toISOString() },
+      phase_timings: [],
+      trials: [
+        {
+          trial_index: 0,
+          phase_id: "text",
+          position_in_phase: 0,
+          item_id: "txt-clean-llava-American_robin-3",
+          source_id: "src-clean-llava-American_robin-3",
+          item_kind: "text",
+          is_attention_check: false,
+          presented: {},
+          response: { n_changes: 0, scale_value: 3 },
+          timing: { onset_ms: 0, submitted_ms: 1000 },
+        },
+      ],
+      demographics: {
+        age_band: "25_34",
+        ml_familiarity: "no_experience",
+        english_proficiency: "B2",
+        comment: null,
+      },
+    };
+
+    const result = await submitSession(cr.session_id, completeRecord);
+    expect(result.ok).toBe(true);
+    expect(result.validation_errors).toBeNull();
+
+    const saved = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    expect(saved.status).toBe("completed");
+    // The stale error must be gone from the persisted record.
+    expect(saved.x_validation_errors).toBeUndefined();
   });
 });
 

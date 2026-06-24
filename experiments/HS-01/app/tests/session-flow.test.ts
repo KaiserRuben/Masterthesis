@@ -17,6 +17,8 @@ import {
   closePhase,
   durableSubmit,
   getMinPx,
+  interpretSubmitResponse,
+  type SubmitResponseLike,
 } from "../src/state/useSession";
 import { SessionClock } from "../src/lib/timing";
 import type { CreateResult } from "../src/lib/store";
@@ -41,6 +43,7 @@ function makeCreate(): CreateResult {
     participant_code: "P001",
     form_id: "A",
     rng_seed: "seed",
+    study_id: "HS-01",
     config_version: "1.0.0",
     config_sha256: "a".repeat(64),
     consent_version: "v1",
@@ -266,6 +269,95 @@ describe("durableSubmit", () => {
     const out = await durableSubmit(completeFinalRecord(), { checkpoint, submit });
 
     expect(submit).toHaveBeenCalledTimes(1);
+    expect(out.submitted).toBe(true);
+  });
+});
+
+// ─── interpretSubmitResponse — HTTP 200 + body.ok === false is NOT success ────
+
+/**
+ * Build a fetch-Response-like stub. The submit route always returns HTTP 200;
+ * the meaningful success signal is the JSON body's `ok` field. These tests pin
+ * the data-integrity fix: a schema-invalid record (body.ok === false, HTTP 200)
+ * must be treated as a FAILED submit so the caller withholds `completed`.
+ */
+function resLike(httpOk: boolean, body: unknown, throwJson = false): SubmitResponseLike {
+  return {
+    ok: httpOk,
+    json: async () => {
+      if (throwJson) throw new Error("not json");
+      return body;
+    },
+  };
+}
+
+describe("interpretSubmitResponse", () => {
+  it("treats HTTP 200 + {ok:false, validation_errors:[...]} as a FAILED submit", async () => {
+    const errors = [{ instancePath: "/trials", message: "boom" }];
+    const out = await interpretSubmitResponse(
+      resLike(true, { ok: false, validation_errors: errors })
+    );
+    expect(out.ok).toBe(false); // schema-invalid ⇒ NOT a success
+    expect(out.validation_errors).toEqual(errors); // surfaced for the retry panel
+  });
+
+  it("treats HTTP 200 + {ok:true, validation_errors:null} as SUCCESS", async () => {
+    const out = await interpretSubmitResponse(
+      resLike(true, { ok: true, validation_errors: null })
+    );
+    expect(out.ok).toBe(true);
+    expect(out.validation_errors).toBeNull();
+  });
+
+  it("treats a non-ok HTTP status as a FAILED submit even if body.ok is true", async () => {
+    const out = await interpretSubmitResponse(resLike(false, { ok: true }));
+    expect(out.ok).toBe(false);
+  });
+
+  it("treats an unparseable body as a FAILED submit", async () => {
+    const out = await interpretSubmitResponse(resLike(true, null, /* throwJson */ true));
+    expect(out.ok).toBe(false);
+    expect(out.validation_errors).toBeNull();
+  });
+});
+
+/**
+ * End-to-end of the client submit wiring: durableSubmit fed the SAME
+ * interpreter the runSubmit callback uses. A schema-invalid record (HTTP 200 +
+ * body.ok:false) must yield submitted:false — the signal that gates whether the
+ * caller sets LS_COMPLETED / clears LS_RECORD / navigates to /done. This is the
+ * lockout-prevention contract from the data-integrity finding.
+ */
+describe("submit wiring: durableSubmit + interpretSubmitResponse", () => {
+  it("schema-invalid (200 + ok:false) ⇒ submitted:false (caller must NOT complete)", async () => {
+    const checkpoint = vi.fn(async () => {});
+    let surfaced: object[] | null = null;
+    const out = await durableSubmit(completeFinalRecord(), {
+      checkpoint,
+      submit: async () => {
+        const { ok, validation_errors } = await interpretSubmitResponse(
+          resLike(true, { ok: false, validation_errors: [{ msg: "forced" }] })
+        );
+        surfaced = validation_errors;
+        return { ok };
+      },
+    });
+    expect(checkpoint).toHaveBeenCalledTimes(1); // record safely checkpointed verbatim
+    expect(out.submitted).toBe(false); // ⇒ submit_failed flow, no LS_COMPLETED, LS_RECORD kept
+    expect(surfaced).toEqual([{ msg: "forced" }]);
+  });
+
+  it("schema-valid (200 + ok:true) ⇒ submitted:true (caller completes + nav /done)", async () => {
+    const checkpoint = vi.fn(async () => {});
+    const out = await durableSubmit(completeFinalRecord(), {
+      checkpoint,
+      submit: async () => {
+        const { ok } = await interpretSubmitResponse(
+          resLike(true, { ok: true, validation_errors: null })
+        );
+        return { ok };
+      },
+    });
     expect(out.submitted).toBe(true);
   });
 });
