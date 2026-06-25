@@ -18,6 +18,8 @@ import {
   durableSubmit,
   getMinPx,
   interpretSubmitResponse,
+  judgmentOrder,
+  type JudgmentPhase,
   type SubmitResponseLike,
 } from "../src/state/useSession";
 import { SessionClock } from "../src/lib/timing";
@@ -119,25 +121,94 @@ describe("countByPhase", () => {
   });
 });
 
+/** Smallest `s<i>` seed (i from 0) whose realized arm leads with `first`. */
+function seedStartingWith(first: JudgmentPhase): string {
+  for (let i = 0; i < 1000; i++) {
+    const seed = `s${i}`;
+    if (judgmentOrder(seed)[0] === first) return seed;
+  }
+  throw new Error(`no seed found starting with ${first}`);
+}
+
+describe("judgmentOrder", () => {
+  it("always ends with the pair (combined) phase", () => {
+    // Combined exposes the candidate class labels, so it must never lead — it
+    // would leak the answer set into the unimodal phases.
+    for (let i = 0; i < 200; i++) {
+      expect(judgmentOrder(`s${i}`).at(-1)).toBe("pair");
+    }
+  });
+
+  it("returns a permutation of the three judgment phases", () => {
+    expect([...judgmentOrder("seed")].sort()).toEqual(["image", "pair", "text"]);
+  });
+
+  it("only ever counterbalances text-first vs image-first (pair never leads)", () => {
+    for (let i = 0; i < 200; i++) {
+      expect(["text", "image"]).toContain(judgmentOrder(`s${i}`)[0]);
+    }
+  });
+
+  it("is reproducible: same seed ⇒ same order", () => {
+    expect(judgmentOrder("abc123")).toEqual(judgmentOrder("abc123"));
+  });
+
+  it("produces BOTH arms across seeds (not a constant order)", () => {
+    const firsts = new Set(
+      Array.from({ length: 50 }, (_, i) => judgmentOrder(`s${i}`)[0])
+    );
+    expect(firsts).toEqual(new Set(["text", "image"]));
+  });
+
+  it("splits the two arms ~50/50 across many seeds", () => {
+    const N = 2000;
+    let textFirst = 0;
+    for (let i = 0; i < N; i++) {
+      if (judgmentOrder(`seed-${i}`)[0] === "text") textFirst++;
+    }
+    const frac = textFirst / N;
+    // p=0.5, n=2000 ⇒ σ≈0.011; [0.44,0.56] is ~5σ, effectively never flakes.
+    expect(frac).toBeGreaterThan(0.44);
+    expect(frac).toBeLessThan(0.56);
+  });
+});
+
 describe("resumePhase", () => {
   const create = makeCreate();
 
-  it("resumes at the first text item when nothing is done", () => {
+  it("resumes at the FIRST phase of the session's realized order when nothing is done", () => {
+    const first = judgmentOrder(create.rng_seed)[0];
     expect(resumePhase(create, { text: 0, image: 0, pair: 0 })).toEqual({
+      phase: first,
+      atPosition: 0,
+    });
+  });
+
+  it("starts the image-first arm at the image phase", () => {
+    const c = { ...makeCreate(), rng_seed: seedStartingWith("image") };
+    expect(resumePhase(c, { text: 0, image: 0, pair: 0 })).toEqual({
+      phase: "image",
+      atPosition: 0,
+    });
+  });
+
+  it("starts the text-first arm at the text phase", () => {
+    const c = { ...makeCreate(), rng_seed: seedStartingWith("text") };
+    expect(resumePhase(c, { text: 0, image: 0, pair: 0 })).toEqual({
       phase: "text",
       atPosition: 0,
     });
   });
 
-  it("skips a finished phase and resumes mid next phase", () => {
-    // text complete (2/2), image at 0/1
+  it("skips a finished unimodal phase and resumes in the other (arm-independent)", () => {
+    // text complete (2/2), image at 0/1 ⇒ image is next in EITHER arm.
     expect(resumePhase(create, { text: 2, image: 0, pair: 0 })).toEqual({
       phase: "image",
       atPosition: 0,
     });
   });
 
-  it("resumes mid-pair at the unanswered position", () => {
+  it("resumes mid-pair once both unimodal phases are done (arm-independent)", () => {
     expect(resumePhase(create, { text: 2, image: 1, pair: 1 })).toEqual({
       phase: "pair",
       atPosition: 1,

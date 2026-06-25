@@ -67,15 +67,33 @@ export interface CurrentTrial {
   position: number; // 1-based within phase
   total: number; // items in phase
   item: ItemPayload;
+  /** 1-based position of this phase within the session's realized order. */
+  partIndex: number;
   /** For pair items: the realized per-trial option order. */
   optionDisplayOrder?: SemanticChoice[];
   /** The scale to show for text/image phases. */
   scale?: Scale;
 }
 
+/** Canonical (text-first) order; the per-session order comes from judgmentOrder. */
 const JUDGMENT_ORDER: JudgmentPhase[] = ["text", "image", "pair"];
 
 // ─── deterministic ordering ─────────────────────────────────────────────────
+
+/**
+ * judgmentOrder — the per-session phase sequence (a counterbalancing factor).
+ *
+ * The pair (combined) phase is ALWAYS last: it exposes the candidate class
+ * labels, which must not leak into the unimodal phases. The two unimodal phases
+ * (text / image) are counterbalanced 50/50 from the session seed — so phase
+ * order is a between-subjects factor, balanced in expectation, reproducible on
+ * resume, and recoverable in analysis (the arm is `judgmentOrder(rng_seed)[0]`).
+ * Seed-derived like every other ordering in this module — never Math.random.
+ */
+export function judgmentOrder(seed: string | number): JudgmentPhase[] {
+  const textFirst = makeRng(`${seed}:phaseorder`)() < 0.5;
+  return textFirst ? ["text", "image", "pair"] : ["image", "text", "pair"];
+}
 
 /** Stable per-phase order: a fresh rng namespaced by phase ⇒ reproducible. */
 function phaseOrder(items: ItemPayload[], seed: string | number, phase: JudgmentPhase): ItemPayload[] {
@@ -130,6 +148,8 @@ export interface UseSession {
   phase: FlowPhase;
   /** Instructions are shown before each judgment phase. */
   instructionsFor: JudgmentPhase | null;
+  /** This session's counterbalanced phase order (pair always last). */
+  order: JudgmentPhase[];
   current: CurrentTrial | null;
   create: CreateResult | null;
   clock: SessionClock | null;
@@ -245,6 +265,12 @@ export function useSession(): UseSession {
     lsSet(LS_RECORD, JSON.stringify(rec));
   }, []);
 
+  // ── derived: this session's counterbalanced phase order ────────────────────
+  const order = useMemo<JudgmentPhase[]>(
+    () => (create ? judgmentOrder(create.rng_seed) : JUDGMENT_ORDER),
+    [create]
+  );
+
   // ── derived: per-phase ordered item lists ─────────────────────────────────
   const orders = useMemo(() => {
     if (!create) return null;
@@ -274,6 +300,7 @@ export function useSession(): UseSession {
       position: pos + 1,
       total: list.length,
       item,
+      partIndex: order.indexOf(phase) + 1,
     };
     if (phase === "pair") {
       trial.optionDisplayOrder = pairOptionOrder(create.rng_seed, item.item_id);
@@ -281,7 +308,7 @@ export function useSession(): UseSession {
       trial.scale = scaleFor(create, phase);
     }
     return trial;
-  }, [create, orders, phase, completedByPhase]);
+  }, [create, orders, order, phase, completedByPhase]);
 
   // ── preload the NEXT trial's image during the current trial ────────────────
   useEffect(() => {
@@ -345,8 +372,8 @@ export function useSession(): UseSession {
       persist(withTimings);
       void checkpoint(withTimings); // checkpoint at phase EXIT
 
-      const idx = JUDGMENT_ORDER.indexOf(fromPhase);
-      const next = JUDGMENT_ORDER[idx + 1];
+      const idx = order.indexOf(fromPhase);
+      const next = order[idx + 1];
       if (next && (orders?.[next]?.length ?? 0) > 0) {
         setInstructionsFor(next);
         setPhase("instructions");
@@ -357,7 +384,7 @@ export function useSession(): UseSession {
         setPhase("demographics");
       }
     },
-    [persist, checkpoint, orders]
+    [persist, checkpoint, orders, order]
   );
 
   const submitTrial = useCallback(
@@ -538,6 +565,7 @@ export function useSession(): UseSession {
   return {
     phase,
     instructionsFor,
+    order,
     current,
     create,
     clock: clockRef.current,
@@ -683,7 +711,9 @@ export function resumePhase(
   create: CreateResult,
   done: Record<JudgmentPhase, number>
 ): ResumeTarget {
-  for (const p of JUDGMENT_ORDER) {
+  // Walk THIS session's counterbalanced order, not the canonical one, so resume
+  // lands on the correct first-unanswered phase for an image-first arm too.
+  for (const p of judgmentOrder(create.rng_seed)) {
     const total = create.items[p]?.length ?? 0;
     if (done[p] < total) {
       return { phase: p, atPosition: done[p] };
