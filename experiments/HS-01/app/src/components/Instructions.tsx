@@ -33,8 +33,8 @@ const COPY: Record<
   pair: {
     title: "Part 3 of 3 — Image and question",
     body: [
-      "You will see an image together with a short question.",
-      "Choose the answer that best matches what you see. If none of the named options fit, you can say it is something else, that nothing is recognizable, or that you can't tell.",
+      "You will see an image together with a short question. Please read both carefully; they belong together, and each one matters.",
+      "Base your answer on the image and the question combined. If none of the named options fit, you can say it is something else, that nothing is recognizable, or that you can't tell.",
     ],
   },
 };
