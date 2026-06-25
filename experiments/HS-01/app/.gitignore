@@ -7,3 +7,9 @@ data
 test-results
 playwright-report
 *.tmp.js
+
+# Browser-review byproducts (throwaway): Playwright MCP page dumps and ad-hoc
+# review screenshots at the app root. /*.png is anchored here, so reference
+# photos under config/refs/ are unaffected.
+.playwright-mcp
+/*.png
