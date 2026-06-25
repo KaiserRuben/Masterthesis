@@ -162,7 +162,7 @@ describe("POST /api/sessions", () => {
     expect(body.references).toBeDefined();
     expect(body.references.tench.gloss).toBeTruthy();
     expect(body.references.tench.image).toBe("ref-tench.png");
-    expect(body.references.cock.image).toBeNull(); // gloss-only entry
+    expect(body.references.cock.image).toBe("ref-cock.png"); // every entry now carries a disjoint photo
   });
 
   it("rejects an invalid recruitment_channel with 400", async () => {

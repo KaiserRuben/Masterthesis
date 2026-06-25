@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "entries": {
     "American bullfrog": {
       "gloss": "a large frog native to North America",
@@ -17,6 +17,10 @@
       "gloss": "a large bird of prey with a white head and tail",
       "image": "ref-bald_eagle.png"
     },
+    "boa constrictor": {
+      "gloss": "a large, heavy-bodied snake that kills prey by squeezing",
+      "image": "ref-boa_constrictor.png"
+    },
     "box turtle": {
       "gloss": "a small land turtle with a high, domed shell that can close tightly",
       "image": "ref-box_turtle.png"
@@ -31,11 +35,19 @@
     },
     "cock": {
       "gloss": "an adult male chicken; a rooster",
-      "image": null
+      "image": "ref-cock.png"
+    },
+    "constrictor": {
+      "gloss": "a large snake that kills prey by squeezing, such as a boa",
+      "image": "ref-constrictor.png"
     },
     "desert grassland whiptail lizard": {
       "gloss": "a slender, long-tailed lizard of North American grasslands",
       "image": "ref-desert_grassland_whiptail_lizard.png"
+    },
+    "equine": {
+      "gloss": "a horse or a close relative such as a zebra or donkey",
+      "image": "ref-equine.png"
     },
     "fire salamander": {
       "gloss": "a black salamander with bright yellow markings",
@@ -52,6 +64,14 @@
     "great white shark": {
       "gloss": "a large shark with a grey back and white underside",
       "image": "ref-great_white_shark.png"
+    },
+    "green iguana": {
+      "gloss": "a large green, tree-dwelling lizard with a spiny crest and a throat fan",
+      "image": "ref-green_iguana.png"
+    },
+    "iguana": {
+      "gloss": "a large plant-eating lizard with a row of spines along its back",
+      "image": "ref-iguana.png"
     },
     "indigo bunting": {
       "gloss": "a small songbird; the breeding male is bright blue",
@@ -72,6 +92,34 @@
     "ostrich": {
       "gloss": "the largest living bird; flightless, with a long neck and legs",
       "image": "ref-ostrich.png"
+    },
+    "percussion instrument": {
+      "gloss": "an instrument played by striking, such as a drum or xylophone",
+      "image": "ref-percussion_instrument.png"
+    },
+    "ratite": {
+      "gloss": "a large flightless bird such as an ostrich or emu",
+      "image": "ref-ratite.png"
+    },
+    "reptile": {
+      "gloss": "a cold-blooded, scaly animal such as a snake, lizard or turtle",
+      "image": "ref-reptile.png"
+    },
+    "retriever": {
+      "gloss": "a breed of dog originally bred to fetch game",
+      "image": "ref-retriever.png"
+    },
+    "snake": {
+      "gloss": "a long, legless reptile",
+      "image": "ref-snake.png"
+    },
+    "songbird": {
+      "gloss": "a small perching bird known for its song",
+      "image": "ref-songbird.png"
+    },
+    "sparrow": {
+      "gloss": "a small, plump brownish songbird",
+      "image": "ref-sparrow.png"
     },
     "stingray": {
       "gloss": "a flat-bodied fish with a long, whip-like tail",
