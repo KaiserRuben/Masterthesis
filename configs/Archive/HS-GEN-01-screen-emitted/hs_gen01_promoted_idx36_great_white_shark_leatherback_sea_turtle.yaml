@@ -1,0 +1,71 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# HS-GEN-01 promoted pair — great white shark → leatherback sea turtle (gap_filter idx 36)
+#                    AUTO-EMITTED by promote_pairs.py from the screen.
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Screen result (cone ON + heavy mutation): gen0_min=0.7398,
+#   best(4 gen)=0.2518, rel_slope=0.66 → marginal.
+# Distinguishability: present as L0: 'shark' vs 'sea turtle'.
+#
+# Standard HS-GEN-01 full-run template — VQGAN, cone α=20° ON, dense
+# image-only init, annealed heavy mutation (prob=0.1, eta=3.0). Only `name`,
+# `filter_indices`, and these comments differ per pair. Knob justifications:
+# README knob table. Verify with validate_configs.py.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: hs_gen01_promoted_idx36_great_white_shark_leatherback_sea_turtle
+save_dir: runs/HS-GEN-01
+
+modality: image_only
+
+generations: 150
+pop_size: 30
+
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet
+
+n_categories: 50
+
+seeds:
+  mode: gap_filter
+  filter_indices: [36]              # great white shark → leatherback sea turtle
+  gap_filter:
+    n_per_class: 3
+    max_logprob_gap: 3.5
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 20.0
+    target_m: 10
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.0
+    tiers:
+      - {p_active: 0.03, fraction: 0.10}
+      - {p_active: 0.10, fraction: 0.20}
+      - {p_active: 0.20, fraction: 0.30}
+      - {p_active: 0.35, fraction: 0.25}
+      - {p_active: 0.55, fraction: 0.15}
+  mutation:
+    prob: 0.1
+    eta: 3.0
+  early_stop:
+    enable: true
+    epsilon_margin: 1.0e-30
+    plateau_patience: 50
+    no_improvement_warmup: 40
+    hypervolume_reference: [1.0, 10.0]
