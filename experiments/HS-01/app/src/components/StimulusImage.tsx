@@ -4,10 +4,15 @@
  * StimulusImage — frozen-asset image renderer with onset instrumentation.
  *
  * Measurement contract:
- *  - NO UPSCALING (inline): the <img> is sized to its NATURAL pixels (width/height
- *    attrs = natural_w/natural_h, and an explicit max-width:none so a container
- *    can never stretch it). css == natural is the invariant; it is measured and
- *    logged via awaitOnset's rendered_image.
+ *  - NO UPSCALING (inline): the <img> is capped at its NATURAL pixels (width set
+ *    to natural_w, never exceeded) so it is never enlarged past source. On a
+ *    viewport narrower than the image it DOWNSCALES to fit (max-width:100%,
+ *    height:auto, aspect preserved) instead of overflowing — many raters are on
+ *    phones and a ~500px stimulus would otherwise spill past a ~390px screen.
+ *    css <= natural is the invariant (the schema's "no upscaling" rule); the
+ *    realized css size is measured + logged per-trial via awaitOnset's
+ *    rendered_image, so analysis sees exactly which trials were shown downscaled.
+ *    Tap-to-zoom (below) restores full detail on demand.
  *  - Onset: once the bitmap is decoded (image_loaded_ms) and one rAF has passed
  *    (onset_ms), `onReady` fires with the full OnsetResult. The element ref is
  *    threaded through awaitOnset so decode()/getBoundingClientRect run on the
@@ -103,7 +108,7 @@ export function StimulusImage({
         onClick={() => setZoomed(true)}
         aria-label="Enlarge image to full screen"
         aria-haspopup="dialog"
-        className="block cursor-zoom-in rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="block cursor-zoom-in rounded-control"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -112,11 +117,13 @@ export function StimulusImage({
           alt={altText}
           width={naturalW}
           height={naturalH}
-          // No upscaling: natural pixels, never stretched by the container.
+          // No upscaling (width capped at natural), but downscale to fit a
+          // narrow viewport instead of overflowing it. height:auto keeps the
+          // aspect ratio; the width/height attrs reserve correct space.
           style={{
             width: `${naturalW}px`,
-            height: `${naturalH}px`,
-            maxWidth: "none",
+            height: "auto",
+            maxWidth: "100%",
           }}
           decoding="async"
           draggable={false}

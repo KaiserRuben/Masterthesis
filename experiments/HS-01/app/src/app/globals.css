@@ -25,12 +25,64 @@
     "Courier New", monospace;
   --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /*
+   * Design tokens — "calm clinical instrument", TUM-derived palette.
+   * Accent is the TUM blue family (#3070B3). Button fills use the darker
+   * shades so white text clears WCAG AA (>=4.5:1). Neutrals are cool, tied to
+   * the TUM dark blue, so the whole UI reads as one institutional family.
+   * Tokens are mirrored as Tailwind colors in tailwind.config.ts.
+   */
+  --tum-50: #eef4fa;
+  --tum-100: #d8e6f3;
+  --tum-200: #b3cde6;
+  --tum-300: #7fa9d2;
+  --tum-400: #4d8bc4;
+  --tum-500: #3070b3; /* TUM brand blue — accents, selected border, focus ring */
+  --tum-600: #2a6299; /* primary button fill (white text ~5.3:1) */
+  --tum-700: #245486; /* button hover */
+  --tum-900: #003359; /* TUM dark blue — strong headings / ink-blue */
+
+  --ink: #0f1f33; /* primary text + headings */
+  --body: #33414f; /* body copy */
+  --muted: #6b7b8c; /* secondary / captions / chrome */
+  --line: #dde3ea; /* hairline borders */
+  --surface: #f6f8fb; /* subtle raised/sunken surface */
+  --bg: #ffffff;
+
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --shadow-card: 0 1px 2px rgba(15, 31, 51, 0.04),
+    0 12px 28px -16px rgba(15, 31, 51, 0.14);
+  --shadow-pop: 0 8px 24px -6px rgba(15, 31, 51, 0.18);
 }
 
 body {
   font-family: var(--font-ui);
-  background-color: #ffffff;
-  color: #111111;
+  background-color: var(--bg);
+  color: var(--body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings adopt the ink-blue and tighter tracking for a refined hierarchy. */
+h1,
+h2,
+h3 {
+  color: var(--ink);
+  letter-spacing: -0.011em;
+}
+
+/* One strong, consistent focus ring everywhere — accessibility + polish. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--tum-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--tum-100);
+  color: var(--ink);
 }
 
 /* Utility class for stimulus text rendering */

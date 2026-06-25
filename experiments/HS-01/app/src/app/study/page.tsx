@@ -100,7 +100,7 @@ export default function StudyPage() {
             type="button"
             data-testid="retry-submit"
             onClick={() => void s.retrySubmit()}
-            className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="rounded-control bg-tum-600 px-6 py-3 font-medium text-white hover:bg-tum-700"
           >
             Retry submit
           </button>
@@ -118,7 +118,11 @@ export default function StudyPage() {
   if (s.phase === "instructions" && s.instructionsFor) {
     return (
       <Shell phaseKey={`instructions:${s.instructionsFor}`}>
-        <Instructions phase={s.instructionsFor} onContinue={s.beginPhase} />
+        <Instructions
+          phase={s.instructionsFor}
+          part={s.order.indexOf(s.instructionsFor) + 1}
+          onContinue={s.beginPhase}
+        />
       </Shell>
     );
   }
@@ -137,18 +141,12 @@ export default function StudyPage() {
   if (s.current && s.clock) {
     return (
       <Shell phaseKey={`trial:${s.current.item.item_id}`}>
-        {/* Viewport-height column: the progress bar (top) and the Next control
-            (bottom, inside TrialView) stay pinned in view; only the stimulus +
-            response region between them scrolls when an image is taller than the
-            viewport. So "the last part" is never pushed below the fold. */}
+        {/* Viewport-height column: the stimulus leads (content first); the
+            footer (progress strip + Next control, inside TrialView) pins to the
+            bottom as one unit. Only the stimulus + response region above it
+            scrolls when an image is taller than the viewport, so "the last part"
+            is never pushed below the fold. */}
         <div className="mx-auto flex h-screen max-w-2xl flex-col px-6 py-6">
-          {/* A single bar: overall progress across the whole session (text +
-              image + pair), labelled by the section the rater is currently in. */}
-          <PhaseProgress
-            position={Math.min(s.completedTrials + 1, s.totalTrials)}
-            total={s.totalTrials}
-            label={phaseLabel(s.current.phase)}
-          />
           <TrialView
             // key forces a fresh mount per trial → answer state + onset reset.
             key={s.current.item.item_id}
@@ -158,6 +156,8 @@ export default function StudyPage() {
             pairDisplayLabels={s.create?.pair_response.display_labels}
             otherClassFreeText={s.create?.pair_response.other_class_free_text ?? true}
             references={s.create?.references}
+            position={Math.min(s.completedTrials + 1, s.totalTrials)}
+            total={s.totalTrials}
           />
         </div>
       </Shell>
@@ -168,6 +168,12 @@ export default function StudyPage() {
 }
 
 // ─── per-trial view ───────────────────────────────────────────────────────────
+
+// Brief highlight window after a pick before the trial auto-advances. Long
+// enough to confirm the selection landed (and to allow a quick re-pick to
+// correct a misclick), short enough not to feel like a wait. The e2e walker
+// mirrors this with its own post-pick wait.
+const AUTO_ADVANCE_MS = 250;
 
 interface PairDisplayLabels {
   OTHER_CLASS: string;
@@ -182,6 +188,9 @@ interface TrialViewProps {
   pairDisplayLabels?: PairDisplayLabels;
   otherClassFreeText: boolean;
   references?: Record<string, ReferenceEntry>;
+  /** Overall (whole-session) progress, rendered in the pinned footer. */
+  position: number;
+  total: number;
 }
 
 function TrialView({
@@ -191,6 +200,8 @@ function TrialView({
   pairDisplayLabels,
   otherClassFreeText,
   references,
+  position,
+  total,
 }: TrialViewProps) {
   // Onset for image/pair comes from StimulusImage's onReady; for text we await
   // a single frame here on mount.
@@ -206,6 +217,8 @@ function TrialView({
   const responseSelectedMs = useRef<number | null>(null);
   // Word-option ⓘ helpers opened during this trial (insertion-ordered set).
   const revealedRef = useRef<Set<"ANCHOR_WORD" | "TARGET_WORD">>(new Set());
+  // Pending auto-advance timer (the highlight window before the trial commits).
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isText = trial.phase === "text";
   const isImage = trial.phase === "image";
@@ -223,8 +236,61 @@ function TrialView({
     };
   }, [isText, clock]);
 
+  // Never let a scheduled advance fire after this trial has unmounted.
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current !== null) clearTimeout(advanceTimer.current);
+    };
+  }, []);
+
+  // Onset must have fired before an answer can be committed (text waits for the
+  // frame; image/pair wait for decode+frame via StimulusImage). The response
+  // widget is disabled until then, so a pick cannot beat its own onset.
+  const ready = onset !== null;
+
   const markInteraction = () => {
     if (firstInteractionMs.current === null) firstInteractionMs.current = clock.nowMs();
+  };
+
+  // Build + emit the trial answer. The answer values are passed in explicitly
+  // (not read from state) so a delayed auto-advance commits the chosen answer,
+  // not a stale render's snapshot. onset / timing refs are live, so they read
+  // correctly at fire time.
+  const commit = (payload: {
+    scaleValue?: number;
+    choice?: SemanticChoice;
+    otherText?: string;
+    nChanges: number;
+  }) => {
+    if (!onset) return;
+    const answer: TrialAnswer = {
+      n_changes: payload.nChanges,
+      onset,
+      first_interaction_ms: firstInteractionMs.current,
+      response_selected_ms: responseSelectedMs.current,
+    };
+    if (isPair) {
+      answer.choice = payload.choice ?? undefined;
+      answer.other_class_text =
+        payload.choice === "OTHER_CLASS" ? payload.otherText ?? "" : null;
+      if (revealedRef.current.size > 0) {
+        answer.references_revealed = [...revealedRef.current];
+      }
+    } else {
+      answer.scale_value = payload.scaleValue;
+    }
+    onSubmit(answer);
+  };
+
+  // No Next button: a pick auto-advances after AUTO_ADVANCE_MS. A re-pick within
+  // the window resets the timer (and the widget counts it as a change), so a
+  // quick correction is still possible before the trial commits.
+  const scheduleAdvance = (run: () => void) => {
+    if (advanceTimer.current !== null) clearTimeout(advanceTimer.current);
+    advanceTimer.current = setTimeout(() => {
+      advanceTimer.current = null;
+      run();
+    }, AUTO_ADVANCE_MS);
   };
 
   const handleScale = (value: number, changes: number) => {
@@ -232,6 +298,7 @@ function TrialView({
     setScaleValue(value);
     setNChanges(changes);
     responseSelectedMs.current = clock.nowMs();
+    scheduleAdvance(() => commit({ scaleValue: value, nChanges: changes }));
   };
 
   const handleChoice = (c: SemanticChoice, changes: number) => {
@@ -239,44 +306,45 @@ function TrialView({
     setChoice(c);
     setNChanges(changes);
     responseSelectedMs.current = clock.nowMs();
-    if (c !== "OTHER_CLASS") setOtherText("");
-  };
-
-  const answered = isPair ? choice !== null : scaleValue !== null;
-  // Onset must have fired before we let the answer be committed (text waits for
-  // the frame; image/pair wait for decode+frame via StimulusImage).
-  const ready = onset !== null;
-
-  const submit = () => {
-    if (!answered || !onset) return;
-    const answer: TrialAnswer = {
-      n_changes: nChanges,
-      onset,
-      first_interaction_ms: firstInteractionMs.current,
-      response_selected_ms: responseSelectedMs.current,
-    };
-    if (isPair) {
-      answer.choice = choice ?? undefined;
-      answer.other_class_text = choice === "OTHER_CLASS" ? otherText : null;
-      if (revealedRef.current.size > 0) {
-        answer.references_revealed = [...revealedRef.current];
-      }
-    } else {
-      answer.scale_value = scaleValue ?? undefined;
+    // "Something else" + its free-text field must NOT auto-advance: the rater
+    // needs a beat to (optionally) type, then commits via Confirm. Every other
+    // option auto-advances like the rating phases.
+    if (c === "OTHER_CLASS" && otherClassFreeText) {
+      if (advanceTimer.current !== null) clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+      return;
     }
-    onSubmit(answer);
+    setOtherText("");
+    scheduleAdvance(() => commit({ choice: c, otherText: "", nChanges: changes }));
   };
 
   return (
     // Fill the height the parent column hands us, so the Next footer can pin to
     // the bottom while the stimulus/response region above it scrolls if needed.
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* ── scrollable stimulus + response ──
-          min-h-0 lets this flex child shrink below its content; `my-auto` on the
-          inner block centres short trials but collapses to 0 (scroll from the
-          top) when an image makes the content taller than the viewport. */}
+      {/* ── scrollable column: stimulus (top) + response (bottom) ──
+          min-h-0 lets this flex child shrink below its content. The stimulus
+          pins to the top; the response block pins to the BOTTOM (mt-auto) so its
+          click targets hold a stable position across trials — see the response
+          comment below. Both collapse to flush + scroll when a tall image fills
+          the space. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="my-auto">
+        {/* ── stimulus: top of the scroll area ── */}
+        <div className="pt-1">
+          {/* Text phase is intentionally image-free. Without a cue, the empty
+              zone where the image normally sits reads as a failed/missing image,
+              so raters report "the image is gone". A quiet, neutral chrome pill
+              (UI font, not the stimulus font) occupies that zone and states the
+              absence is by design. Neutral wording only — it must not hint that
+              the question text is altered, which would bias the rating. */}
+          {isText && (
+            <div className="mb-6 flex justify-center">
+              <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-muted">
+                Text only — no image in this part
+              </span>
+            </div>
+          )}
+
           {(isImage || isPair) && trial.item.image && (
             <div className="mb-5">
               <StimulusImage
@@ -290,55 +358,90 @@ function TrialView({
           )}
 
           {(isText || isPair) && trial.item.prompt != null && (
-            <div className="mb-5">
+            <div>
               <PromptText text={trial.item.prompt} />
             </div>
           )}
+        </div>
 
-          {/* ── response ── */}
-          <div>
-            {(isText || isImage) && trial.scale && (
-              <LikertScale scale={trial.scale} value={scaleValue} onChange={handleScale} />
+        {/* ── response: pinned to the FOOT of the scroll area (mt-auto) ──
+            With auto-advance the option you click is ALSO what advances the
+            trial — so the options must hold a stable vertical position, or they
+            jump under the cursor as each trial's stimulus height changes.
+            Anchoring the whole response block to the bottom keeps every option
+            in the same place trial-to-trial; the variable gap lands harmlessly
+            in the middle. The hairline + TUM eyebrow still fence it off from the
+            stimulus above. Until onset fires the widget is disabled (greyed): a
+            pick commits the trial, so we must not accept one before its onset is
+            recorded. */}
+        <div className="mt-auto border-t border-line pt-6">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-tum-600">
+            {responseKicker(trial.phase)}
+          </p>
+          {(isText || isImage) && trial.scale && (
+            <LikertScale
+              scale={trial.scale}
+              value={scaleValue}
+              onChange={handleScale}
+              disabled={!ready}
+            />
+          )}
+
+          {isPair &&
+            trial.optionDisplayOrder &&
+            trial.item.option_labels &&
+            pairDisplayLabels && (
+              <PairChoice
+                optionLabels={trial.item.option_labels}
+                displayLabels={pairDisplayLabels}
+                displayOrder={trial.optionDisplayOrder}
+                otherClassFreeText={otherClassFreeText}
+                value={choice}
+                otherClassText={otherText}
+                onChange={handleChoice}
+                onOtherClassText={setOtherText}
+                references={references}
+                onReveal={(slot) => revealedRef.current.add(slot)}
+                disabled={!ready}
+              />
             )}
 
-            {isPair &&
-              trial.optionDisplayOrder &&
-              trial.item.option_labels &&
-              pairDisplayLabels && (
-                <PairChoice
-                  optionLabels={trial.item.option_labels}
-                  displayLabels={pairDisplayLabels}
-                  displayOrder={trial.optionDisplayOrder}
-                  otherClassFreeText={otherClassFreeText}
-                  value={choice}
-                  otherClassText={otherText}
-                  onChange={handleChoice}
-                  onOtherClassText={setOtherText}
-                  references={references}
-                  onReveal={(slot) => revealedRef.current.add(slot)}
-                />
-              )}
-          </div>
+          {/* The ONE commit button left in the flow: "Something else" + its
+              optional free text doesn't auto-advance, so the rater confirms it
+              explicitly once they've (optionally) typed. */}
+          {isPair && choice === "OTHER_CLASS" && otherClassFreeText && (
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                data-testid="trial-confirm"
+                onClick={() => commit({ choice: "OTHER_CLASS", otherText, nChanges })}
+                disabled={!ready}
+                className={[
+                  "rounded-control px-6 py-3 font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-tum-500",
+                  !ready
+                    ? "bg-neutral-300 cursor-not-allowed"
+                    : "bg-tum-600 hover:bg-tum-700",
+                ].join(" ")}
+              >
+                Confirm
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── pinned footer: always in view regardless of stimulus height ── */}
-      <div className="mt-4 flex shrink-0 items-center justify-end gap-3 border-t border-neutral-100 pt-4">
-        {!ready && <span className="text-xs text-neutral-400">Preparing…</span>}
-        <button
-          type="button"
-          data-testid="trial-next"
-          onClick={submit}
-          disabled={!answered || !ready}
-          className={[
-            "rounded-lg px-6 py-3 font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-            !answered || !ready
-              ? "bg-neutral-300 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700",
-          ].join(" ")}
-        >
-          Next
-        </button>
+      {/* ── pinned footer: just the progress strip ──
+          There is no Next button in the judgment phases — a pick auto-advances
+          (see scheduleAdvance) — so the only thing pinned here is overall
+          progress, divided from the scrolling content by a single hairline. */}
+      <div className="mt-4 shrink-0 border-t border-line pt-4">
+        <PhaseProgress
+          part={trial.partIndex}
+          partCount={3}
+          sectionLabel={phaseLabel(trial.phase)}
+          position={position}
+          total={total}
+        />
       </div>
     </div>
   );
@@ -347,9 +450,16 @@ function TrialView({
 // ─── small chrome helpers ─────────────────────────────────────────────────────
 
 function phaseLabel(phase: "text" | "image" | "pair"): string {
-  if (phase === "text") return "Question";
-  if (phase === "image") return "Image";
+  if (phase === "text") return "Questions";
+  if (phase === "image") return "Images";
   return "Image and question";
+}
+
+// Eyebrow that labels the response zone as the rater's task. Neutral wording
+// (it must not hint at the answer): the rating phases ask for a rating, the
+// pair phase asks for a choice.
+function responseKicker(phase: "text" | "image" | "pair"): string {
+  return phase === "pair" ? "Your answer" : "Your rating";
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

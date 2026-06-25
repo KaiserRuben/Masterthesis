@@ -148,16 +148,22 @@ async function trialPresent(page: Page): Promise<boolean> {
   );
 }
 
+/** Covers the auto-advance highlight window (AUTO_ADVANCE_MS in the app) plus
+ *  the next-trial mount + cross-fade, so the walker never acts on the outgoing
+ *  trial after committing one. */
+const ADVANCE_WAIT_MS = 450;
+
 /**
  * Answer one judgment trial. Likert phases pick a scale point; pair phases pick
- * a semantic option. `pairChoice` lets the caller force a specific slot (used to
+ * a semantic option. `pairSlot` lets the caller force a specific slot (used to
  * trigger OTHER_CLASS + its free-text field at least once). Returns the phase
  * kind that was answered, or null if no trial was present.
  *
- * Order matters: the Next button is `disabled={!answered || !ready}` — it only
- * enables once an answer IS selected AND onset has fired. So we select the
- * answer FIRST, then wait for Next to enable (this is where onset/decode is
- * awaited), then click it.
+ * There is NO Next button: response options are disabled until onset fires, and
+ * a pick AUTO-ADVANCES after a brief highlight. So we wait for the option to be
+ * enabled (this is where onset/decode is awaited), pick it, then wait out the
+ * highlight window. The lone exception is OTHER_CLASS + free text, which reveals
+ * a Confirm button instead of auto-advancing.
  */
 async function answerOneTrial(
   page: Page,
@@ -166,28 +172,32 @@ async function answerOneTrial(
   // A pair trial exposes the ANCHOR_WORD option; a likert trial exposes points.
   const pairAnchor = page.getByTestId("pair-option-ANCHOR_WORD");
   const isPair = await pairAnchor.isVisible().catch(() => false);
-  const next = page.getByTestId("trial-next");
 
   if (isPair) {
     const slot = opts.pairSlot ?? "ANCHOR_WORD";
-    await page.getByTestId(`pair-option-${slot}`).click();
+    const opt = page.getByTestId(`pair-option-${slot}`);
+    // Options are disabled until onset/decode fires; wait for it, then pick.
+    await expect(opt).toBeEnabled({ timeout: 15_000 });
+    await opt.click();
     if (slot === "OTHER_CLASS") {
       const free = page.getByTestId("other-class-text");
       await expect(free).toBeVisible();
       await free.fill(opts.otherText ?? "a different animal");
+      // "Something else" does NOT auto-advance — confirm explicitly.
+      const confirm = page.getByTestId("trial-confirm");
+      await expect(confirm).toBeEnabled({ timeout: 15_000 });
+      await confirm.click();
     }
-    // Answer is selected; wait for onset to fire so Next enables, then advance.
-    await expect(next).toBeEnabled({ timeout: 15_000 });
-    await next.click();
+    await page.waitForTimeout(ADVANCE_WAIT_MS);
     return "pair";
   }
 
   const point = opts.likertPoint ?? 3;
   const likert = page.getByTestId(`likert-point-${point}`);
   if (await likert.isVisible().catch(() => false)) {
+    await expect(likert).toBeEnabled({ timeout: 15_000 });
     await likert.click();
-    await expect(next).toBeEnabled({ timeout: 15_000 });
-    await next.click();
+    await page.waitForTimeout(ADVANCE_WAIT_MS);
     return "likert";
   }
   return null;
@@ -314,8 +324,14 @@ test("walks the entire flow and persists a schema-valid completed record", async
   for (const t of stimulusTrials) {
     const ri = t.presented.rendered_image;
     expect(ri).toBeTruthy();
-    expect(ri.css_w).toBe(ri.natural_w);
-    expect(ri.css_h).toBe(ri.natural_h);
+    // No UPSCALING: css never exceeds natural. On a viewport narrower than the
+    // image the stimulus DOWNSCALES to fit (rather than overflow), so css may be
+    // < natural with the aspect ratio preserved.
+    expect(ri.css_w).toBeLessThanOrEqual(ri.natural_w);
+    expect(ri.css_h).toBeLessThanOrEqual(ri.natural_h);
+    expect(
+      Math.abs(ri.css_w / ri.css_h - ri.natural_w / ri.natural_h)
+    ).toBeLessThan(0.02);
   }
 
   // ── attention checks: exactly 2 (one text, one pair) ──
@@ -362,8 +378,8 @@ test("reload mid-study resumes on an unanswered trial; final record validates", 
   await page.reload();
   await page.waitForURL(/\/study/);
 
-  // Resume must land on a live, unanswered trial (a Next button), NOT replay an
-  // already-answered one — and not jump to /done.
+  // Resume must land on a live, unanswered trial (a response widget), NOT replay
+  // an already-answered one — and not jump to /done.
   await passInstructionsIfPresent(page);
   expect(await trialPresent(page)).toBe(true);
   // No new trial was appended just by reloading.

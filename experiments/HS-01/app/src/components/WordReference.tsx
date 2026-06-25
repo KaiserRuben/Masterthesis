@@ -113,9 +113,8 @@ export function WordReference({
           toggle();
         }}
         className={[
-          "inline-flex h-7 w-7 items-center justify-center rounded-full text-neutral-400",
-          "hover:text-neutral-700 hover:bg-neutral-100",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+          "inline-flex h-7 w-7 items-center justify-center rounded-full text-muted transition-colors",
+          "hover:text-tum-600 hover:bg-tum-50",
           disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
         ].join(" ")}
       >
@@ -130,19 +129,23 @@ export function WordReference({
           aria-label={`About “${word}”`}
           tabIndex={-1}
           className={[
-            "absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-neutral-200",
-            "bg-white p-3 text-left shadow-lg focus:outline-none",
+            // Right-anchored; width capped to the viewport so the popover
+            // never overflows a narrow (~390px) phone screen.
+            "absolute right-0 top-full z-50 mt-2 w-[min(16rem,calc(100vw-2rem))]",
+            "rounded-card border border-line bg-white p-3 text-left shadow-pop",
           ].join(" ")}
         >
           {image && (
             <img
               src={`/api/refs/${image}`}
               alt={`Example: ${word}`}
-              className="mb-2 max-h-40 w-full rounded object-cover"
+              // object-contain on a sunken surface frames the photo without
+              // upscaling past its native size.
+              className="mb-2 max-h-40 w-full rounded-control bg-surface object-contain"
             />
           )}
-          <p className="text-sm font-medium text-neutral-900">{word}</p>
-          <p className="mt-0.5 text-sm leading-snug text-neutral-600">{gloss}</p>
+          <p className="text-sm font-medium text-ink">{word}</p>
+          <p className="mt-0.5 text-sm leading-snug text-body">{gloss}</p>
         </div>
       )}
     </span>

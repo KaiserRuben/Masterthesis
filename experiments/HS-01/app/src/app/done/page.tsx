@@ -28,13 +28,15 @@ export default function DonePage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="max-w-md text-center">
-        <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-green-600" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold text-neutral-900 mb-3">
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md rounded-card border border-line bg-white px-8 py-10 text-center shadow-card">
+        <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-tum-50">
+          <CheckCircle2 className="h-7 w-7 text-tum-600" aria-hidden="true" />
+        </span>
+        <h1 className="text-2xl font-semibold text-ink mb-3">
           Thank you for taking part
         </h1>
-        <p className="text-neutral-600 leading-relaxed">
+        <p className="text-body leading-relaxed">
           Your responses have been recorded. You can close this tab now. Your
           help with this research is much appreciated.
         </p>

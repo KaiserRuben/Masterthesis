@@ -95,28 +95,38 @@ export function ConsentGate() {
 
   if (alreadyDone) {
     return (
-      <div className="mt-8 rounded-lg border border-green-200 bg-green-50 px-6 py-5 text-green-900">
-        <p className="font-medium">You&rsquo;ve already completed this study.</p>
-        <p className="mt-1 text-sm">Thank you for taking part.</p>
+      <div className="mt-10 rounded-card border border-line bg-surface px-6 py-5 text-body shadow-card">
+        <p className="font-medium text-ink">
+          You&rsquo;ve already completed this study.
+        </p>
+        <p className="mt-1 text-sm text-muted">Thank you for taking part.</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-10">
       <button
         type="button"
         data-testid="consent-begin"
         onClick={begin}
         disabled={starting}
+        aria-busy={starting}
         className={[
-          "rounded-lg px-6 py-3 font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-          starting ? "bg-neutral-400 cursor-wait" : "bg-blue-600 hover:bg-blue-700",
+          "inline-flex w-full items-center justify-center rounded-control px-6 py-3.5",
+          "text-base font-medium text-white transition-colors sm:w-auto",
+          starting
+            ? "cursor-wait bg-tum-400"
+            : "bg-tum-600 hover:bg-tum-700",
         ].join(" ")}
       >
         {starting ? "Starting…" : "I consent and want to begin"}
       </button>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-red-700">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

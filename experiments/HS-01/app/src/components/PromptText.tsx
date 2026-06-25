@@ -20,7 +20,7 @@ export interface PromptTextProps {
 export function PromptText({ text }: PromptTextProps) {
   return (
     <div
-      className="font-prompt rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-4 text-lg leading-relaxed text-neutral-900"
+      className="font-prompt rounded-card border border-line bg-surface px-5 py-5 text-lg leading-relaxed text-ink"
       // No dangerouslySetInnerHTML — {text} is rendered as a text node verbatim.
     >
       {text}

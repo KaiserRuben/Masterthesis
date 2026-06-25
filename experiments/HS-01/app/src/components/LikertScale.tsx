@@ -50,10 +50,10 @@ export function LikertScale({ scale, value, onChange, disabled }: LikertScalePro
       role="radiogroup"
       aria-label={scale.statement}
     >
-      <legend className="text-base font-medium text-neutral-900 mb-4">
+      <legend className="text-base font-medium text-ink mb-4">
         {scale.statement}
       </legend>
-      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-2.5">
         {scale.point_labels.map((label, idx) => {
           const point = idx + 1;
           const selected = value === point;
@@ -68,18 +68,26 @@ export function LikertScale({ scale, value, onChange, disabled }: LikertScalePro
               disabled={disabled}
               onClick={() => select(point)}
               className={[
-                "flex-1 rounded-lg border px-3 py-3 text-sm text-center transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                // Mobile: compact single-line rows (number badge + anchor),
+                // ample tap height. Desktop (sm+): equal columns, stacked.
+                "flex min-h-[44px] w-full items-center gap-3 rounded-control border px-3.5 py-2.5 text-left text-sm transition-colors",
+                "sm:min-h-[88px] sm:flex-1 sm:flex-col sm:justify-center sm:gap-1.5 sm:px-3 sm:py-3 sm:text-center",
                 selected
-                  ? "border-blue-600 bg-blue-50 text-blue-900 font-medium"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400",
+                  ? "border-tum-500 bg-tum-50 text-tum-900 font-medium"
+                  : "border-line bg-white text-body hover:border-tum-300",
                 disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
               ].join(" ")}
             >
-              <span aria-hidden="true" className="block text-xs text-neutral-400 mb-1">
+              <span
+                aria-hidden="true"
+                className={[
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs tabular-nums sm:h-auto sm:w-auto sm:rounded-none",
+                  selected ? "bg-tum-100 text-tum-700 sm:bg-transparent" : "bg-surface text-muted sm:bg-transparent",
+                ].join(" ")}
+              >
                 {point}
               </span>
-              {label}
+              <span className="leading-snug">{label}</span>
             </button>
           );
         })}

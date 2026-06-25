@@ -72,52 +72,54 @@ export function Demographics({
         if (requiredComplete && !submitting) onSubmit(values);
       }}
     >
-      <h2 className="text-2xl font-semibold text-neutral-900 mb-2">
+      <h2 className="text-2xl font-semibold text-ink mb-2">
         A few questions about you
       </h2>
-      <p className="text-neutral-600 mb-8">
+      <p className="text-body leading-relaxed mb-8">
         This helps us describe who took part. It stays anonymous.
       </p>
 
-      <div className="space-y-6">
-        {fields.map((field) => {
-          const id = `demo-${field.field_id}`;
-          return (
-            <div key={field.field_id}>
-              <label htmlFor={id} className="block text-sm font-medium text-neutral-800 mb-1">
-                {field.label}
-                {field.required && <span className="text-red-600"> *</span>}
-              </label>
+      <div className="rounded-card border border-line bg-white p-6 shadow-card sm:p-8">
+        <div className="space-y-6">
+          {fields.map((field) => {
+            const id = `demo-${field.field_id}`;
+            return (
+              <div key={field.field_id}>
+                <label htmlFor={id} className="block text-sm font-medium text-ink mb-1.5">
+                  {field.label}
+                  {field.required && <span className="text-tum-600"> *</span>}
+                </label>
 
-              {field.type === "select" && field.options ? (
-                <select
-                  id={id}
-                  value={values[field.field_id] ?? ""}
-                  onChange={(e) => set(field.field_id, e.target.value)}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  <option value="" disabled>
-                    Select…
-                  </option>
-                  {field.options.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {optionLabel(opt)}
+                {field.type === "select" && field.options ? (
+                  <select
+                    id={id}
+                    value={values[field.field_id] ?? ""}
+                    onChange={(e) => set(field.field_id, e.target.value)}
+                    className="w-full rounded-control border border-line bg-white px-3 py-2.5 text-base text-ink"
+                  >
+                    <option value="" disabled>
+                      Select…
                     </option>
-                  ))}
-                </select>
-              ) : (
-                <textarea
-                  id={id}
-                  value={values[field.field_id] ?? ""}
-                  onChange={(e) => set(field.field_id, e.target.value)}
-                  rows={3}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  placeholder="(optional)"
-                />
-              )}
-            </div>
-          );
-        })}
+                    {field.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {optionLabel(opt)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <textarea
+                    id={id}
+                    value={values[field.field_id] ?? ""}
+                    onChange={(e) => set(field.field_id, e.target.value)}
+                    rows={3}
+                    className="w-full rounded-control border border-line bg-white px-3 py-2.5 text-base text-ink placeholder:text-muted"
+                    placeholder="(optional)"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <button
@@ -125,10 +127,10 @@ export function Demographics({
         data-testid="demographics-submit"
         disabled={!requiredComplete || submitting}
         className={[
-          "mt-10 rounded-lg px-6 py-3 font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+          "mt-8 w-full rounded-control px-6 py-3 font-medium text-white transition-colors sm:w-auto",
           !requiredComplete || submitting
-            ? "bg-neutral-300 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700",
+            ? "bg-tum-300 cursor-not-allowed"
+            : "bg-tum-600 hover:bg-tum-700",
         ].join(" ")}
       >
         {submitting ? "Submitting…" : "Finish and submit"}

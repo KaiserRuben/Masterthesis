@@ -30,33 +30,42 @@ export default function Home() {
   const blocks = renderConsentMarkdown(md);
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
-      <article className="prose-neutral">
-        {blocks.map((block, i) => {
-          if (block.type === "h1") {
+    <main className="mx-auto max-w-xl px-6 py-12 sm:py-16">
+      <div className="rounded-card border border-line bg-white p-6 shadow-card sm:p-8">
+        <article>
+          {blocks.map((block, i) => {
+            if (block.type === "h1") {
+              return (
+                <h1 key={i} className="mb-6 text-3xl font-semibold tracking-tight text-ink">
+                  {block.children}
+                </h1>
+              );
+            }
+            if (block.type === "ul") {
+              return (
+                <ul
+                  key={i}
+                  className="my-5 list-disc space-y-2.5 pl-5 leading-relaxed text-body marker:text-tum-500"
+                >
+                  {block.items.map((item, j) => (
+                    <li key={j} className="pl-1">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              );
+            }
             return (
-              <h1 key={i} className="text-3xl font-semibold text-neutral-900 mb-6">
+              <p key={i} className="my-4 leading-relaxed text-body">
                 {block.children}
-              </h1>
+              </p>
             );
-          }
-          if (block.type === "ul") {
-            return (
-              <ul key={i} className="my-4 list-disc space-y-2 pl-6 text-neutral-700">
-                {block.items.map((item, j) => (
-                  <li key={j}>{item}</li>
-                ))}
-              </ul>
-            );
-          }
-          return (
-            <p key={i} className="my-4 leading-relaxed text-neutral-700">
-              {block.children}
-            </p>
-          );
-        })}
-      </article>
-      <ConsentGate />
+          })}
+        </article>
+        <div className="mt-8 border-t border-line pt-6">
+          <ConsentGate />
+        </div>
+      </div>
     </main>
   );
 }
