@@ -43,27 +43,29 @@ NEED = {
     ("checks", "synthetic"): 2,
 }
 
+# Strata still genuinely empty/manual after the HS-GEN-01 + Exp-101q ingest.
+# (pair/image_heavy + image/image_heavy are now filled from HS-GEN-01;
+#  the Qwen arm is now ingested via Exp-101q — both no longer pending.)
 PENDING = {
-    ("pair", "image_heavy"): "0 strict candidates exist (all boundary positioning is text-paid). "
-                             "Pending: HS-GEN image_only runs on easy pairs, or drop-cell decision. "
-                             "weak_proxy_candidates.parquet (d_text<%.2f) included for reference — "
-                             "junco/Exp-100-clustered, NOT a defensible stratum fill." % IMG_HEAVY_DTEXT_MAX,
-    ("image", "image_heavy"): "Same gap as pair/image_heavy — pending HS-GEN runs or drop decision.",
     ("image", "raw"): "ImageNet source paths were never logged by the pipeline. "
                       "Pending: host-side recovery via seed roster, or drop the raw micro-control.",
     ("checks", "synthetic"): "2 attention-check stimuli (1 nonsense prompt, 1 obvious-class pair) — "
                              "constructed by hand at pool freeze.",
-    ("__qwen__", ""): "Qwen arm: 0 qualifying rows so far; 5/46 Exp-101q shallow-screen runs scanned. "
-                      "Pending sync; re-run extract_boundary_samples.py then this script.",
 }
 
 
 def load_raw() -> pd.DataFrame:
+    # Both SUTs, every experiment incl. HS-GEN-01 (image-only) and Exp-101q
+    # (Qwen). Glob excludes Exp-27's NONQUALIFYING_best3_reference.parquet by
+    # name. `sut` / `modality` columns keep the SUT and channel separable.
     frames = []
-    for p in sorted(RAW.glob("llava/Exp-*/boundary_individuals*.parquet")):
+    for p in sorted(RAW.glob("*/*/boundary_individuals*.parquet")):
         frames.append(pd.read_parquet(p))
     d = pd.concat(frames, ignore_index=True)
     assert (d.tgtbal <= TGTBAL_MAX).all(), "non-qualifying row in data_raw"
+    # d_text_embed is NaN for image_only rows (no TextDist); coerce so the
+    # mixed-source column stays numeric for the band comparisons below.
+    d["d_text_embed"] = pd.to_numeric(d["d_text_embed"], errors="coerce")
     d["png_ready"] = d.pareto_png.notna()
     d["q_le_1e3"] = d.tgtbal <= 1e-3
     return d
@@ -97,22 +99,28 @@ def main() -> None:
     d = load_raw()
     runs = origin_assets(d)
 
+    # Strict image-heavy = image_only_drift (0 active text genes). These exist
+    # only from the HS-GEN-01 image_only campaign; joint runs never produce them
+    # (boundary positioning is text-paid). Feeds BOTH image-heavy strata.
+    img_heavy = d[d.drift_class == "image_only_drift"]
+
     # ---- PAIR ----
     strict_th = d.drift_class == "text_only_drift"
     prag_th = (d.d_img_matrix < TEXT_HEAVY_DIMG_MAX) & (d.d_text_embed > TEXT_HEAVY_DTEXT_MIN)
     text_heavy = d[strict_th | prag_th].assign(strict_text_only=lambda x: x.drift_class == "text_only_drift")
     balanced = d[d.d_text_embed.between(*BAL_DTEXT) & (d.d_img_matrix > BAL_DIMG_MIN) & ~(strict_th | prag_th)]
-    img_heavy_proxy = d[d.d_text_embed < IMG_HEAVY_DTEXT_MAX]
     write(text_heavy, "pair", "text_heavy")
     write(balanced, "pair", "balanced")
     write(runs, "pair", "baseline")
-    write(img_heavy_proxy, "pair", "image_heavy", "weak_proxy_candidates.parquet")
+    write(img_heavy, "pair", "image_heavy")            # strict; supersedes the old weak proxy
 
     # ---- IMAGE ----
-    write(d[d.png_ready], "image", "boundary_joint")   # prefer rows with rendered PNGs
+    # boundary_joint = joint-modality boundary images (exclude image_only, which
+    # is the image_heavy stratum); prefer rows with rendered PNGs.
+    write(d[d.png_ready & (d.modality == "joint")], "image", "boundary_joint")
     write(runs, "image", "roundtrip")
     (OUT / "image" / "raw").mkdir(parents=True, exist_ok=True)
-    (OUT / "image" / "image_heavy").mkdir(parents=True, exist_ok=True)
+    write(img_heavy, "image", "image_heavy")           # strict image_only_drift
 
     # ---- TEXT ----
     write(runs, "text", "clean")  # clean prompt = prompt_template per run
@@ -147,7 +155,12 @@ def main() -> None:
                          + (" (weak proxy only)" if "weak_proxy" in files[0].name else ""))
         else:
             lines.append(f"| {phase}/{stratum} | {target} | **0 — pending** | — | — | — |")
-    lines += ["", f"Source rows: {len(d)} qualifying LLaVA individuals, {d.run_dir.nunique()} runs. Qwen: pending (see README_QWEN_PENDING.md).",
+    sut_str = ", ".join(f"{k}={v}" for k, v in sorted(d.groupby("sut").size().items()))
+    n_imgonly = int((d.drift_class == "image_only_drift").sum())
+    lines += ["",
+              f"Source rows: {len(d)} qualifying individuals across {d.run_dir.nunique()} runs "
+              f"and {d.sut.nunique()} SUT(s) ({sut_str}).",
+              f"Strict image_only_drift (HS-GEN-01) feeding both image_heavy strata: {n_imgonly} rows.",
               f"origin.png resolved for {int(runs.origin_png_exists.sum())}/{len(runs)} runs."]
     (OUT / "STAGING_REPORT.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))

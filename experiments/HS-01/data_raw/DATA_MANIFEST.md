@@ -11,6 +11,32 @@ genotypes* per run are kept (not just best-3); duplicates from re-evaluation /
 caching are collapsed (`n_occurrences_in_trace` preserves multiplicity, the
 row kept is the one with the lowest TgtBal / earliest generation).
 
+## Update — HS-GEN-01 + full Exp-101q/Exp-102 consolidation
+
+`extract_boundary_samples.py` gained an **HS-GEN-01** run-group (promoted full
+runs only; `modality=image_only`, `text_dim=0` → every qualifier is strictly
+`image_only_drift`) and was re-run after the workstation delivered the complete
+Exp-101q (46/46) and Exp-102 (27/27) syncs. New totals:
+
+- **HS-GEN-01 (LLaVA, image_only): 511** unique `image_only_drift` items (66
+  ≤ 1e-3) from the 6 promoted pairs → `llava/HS-GEN-01/boundary_individuals.parquet`.
+  The first strict image-only-drift items in the pool (joint runs still yield 0).
+- **Exp-101q (Qwen): 641** qualifiers (77 ≤ 1e-3) from 25/46 yielding runs →
+  `qwen/Exp-101q/boundary_individuals.parquet`. Supersedes the "zero yield"
+  reading below — that rested on 5 early-synced high-probe wall cells (a
+  sync-order artifact; the 5 stale `_cache/Exp-101q__*.json` were purged before
+  this re-run).
+- **Exp-102 (LLaVA): 1363** (full 27 runs; was 191 from 10).
+- Pool total **15,219** qualifying individuals across 2 SUTs (LLaVA 14,578 incl.
+  511 image-only / Qwen 641). `pool_staging` rebuilt accordingly
+  (`STAGING_REPORT.md`); both image_heavy strata are now filled from the strict
+  image-only items and the weak-proxy file is retired.
+
+The 06-11 sections below are retained as the historical record; their
+"image-heavy = 0" / "Qwen arm = 0" / Exp-102 "10/27" statements are **superseded**
+by this update. Analysis write-up: Obsidian diary
+`2026-06-17-Exp101q-Exp102-HSGen01-Analyse`.
+
 ## Update 2026-06-11 (refresh)
 
 Re-ran the extraction after the workstation sync delivered new Exp-102 /

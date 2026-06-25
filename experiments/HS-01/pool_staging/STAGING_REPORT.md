@@ -1,22 +1,23 @@
-# HS-01 Pool Staging Report — 2026-06-12
+# HS-01 Pool Staging Report — 2026-06-24
 
 Provisional thresholds — see script header. Counts are CANDIDATES, not selected items.
 
 | phase/stratum | target | candidates | runs | <=1e-3 | png-ready |
 |---|---|---|---|---|---|
-| pair/baseline | 8 | 121 | 121 | — | — |
-| pair/image_heavy | 14 | 800 | 4 | 225 | 191 | (weak proxy only)
-| pair/text_heavy | 14 | 8773 | 108 | 1600 | 5030 |
-| pair/balanced | 14 | 2247 | 74 | 367 | 764 |
+| pair/baseline | 8 | 224 | 224 | — | — |
+| pair/image_heavy | 14 | 2139 | 18 | 250 | 115 |
+| pair/text_heavy | 14 | 9909 | 166 | 1854 | 5691 |
+| pair/balanced | 14 | 2831 | 126 | 421 | 991 |
 | image/raw | 6 | **0 — pending** | — | — | — |
-| image/roundtrip | 6 | 121 | 121 | — | — |
-| image/boundary_joint | 12 | 6471 | 121 | 1459 | 6471 |
-| image/image_heavy | 6 | **0 — pending** | — | — | — |
-| text/clean | 6 | 121 | 121 | — | — |
-| text/low_drift | 8 | 1709 | 17 | 501 | 481 |
-| text/medium_drift | 8 | 5486 | 94 | 947 | 2847 |
-| text/high_drift | 8 | 5700 | 118 | 1018 | 3143 |
+| image/roundtrip | 6 | 224 | 224 | — | — |
+| image/boundary_joint | 12 | 7727 | 206 | 1775 | 7727 |
+| image/image_heavy | 6 | 2139 | 18 | 250 | 115 |
+| text/clean | 6 | 224 | 224 | — | — |
+| text/low_drift | 8 | 2201 | 40 | 560 | 679 |
+| text/medium_drift | 8 | 6550 | 146 | 1070 | 3432 |
+| text/high_drift | 8 | 6620 | 177 | 1216 | 3616 |
 | checks/synthetic | 2 | **0 — pending** | — | — | — |
 
-Source rows: 12895 qualifying LLaVA individuals, 121 runs. Qwen: pending (see README_QWEN_PENDING.md).
-origin.png resolved for 121/121 runs.
+Source rows: 17510 qualifying individuals across 224 runs and 2 SUT(s) (llava=16869, qwen=641).
+Strict image_only_drift (HS-GEN-01) feeding both image_heavy strata: 2139 rows.
+origin.png resolved for 224/224 runs.
