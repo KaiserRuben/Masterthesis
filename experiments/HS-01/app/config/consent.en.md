@@ -1,6 +1,6 @@
 # Study consent
 
-Thank you for helping with this research.
+Thank you taking part in this research!
 
 In this short task you will look at some questions and images that an AI system
 was shown, and tell us how clearly **you** can understand them. There are no
