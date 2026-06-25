@@ -17,6 +17,24 @@ describe("renderConsentMarkdown", () => {
     expect(ul && ul.type === "ul" && ul.items.length).toBe(2);
   });
 
+  it("folds an indented continuation line into the current bullet (one list, no split)", () => {
+    // Mirrors config/consent.en.md: a bullet wrapped across two lines must stay
+    // ONE list item and must NOT split the list into ul / p / ul.
+    const md = [
+      "- one",
+      "- two: first line",
+      "  continued second line",
+      "- three",
+    ].join("\n");
+    const blocks = renderConsentMarkdown(md);
+    expect(blocks.map((b) => b.type)).toEqual(["ul"]);
+    const ul = blocks[0];
+    if (ul.type !== "ul") throw new Error("expected ul");
+    expect(ul.items.length).toBe(3);
+    // The continuation text is part of the 2nd item.
+    expect(JSON.stringify(ul.items[1])).toContain("continued second line");
+  });
+
   it("keeps an angle-bracket literal verbatim (no markup interpretation)", () => {
     const nodes = inlineToNodes("Questions: <researcher email>");
     // Plain string node, unchanged — no HTML, no entity folding.

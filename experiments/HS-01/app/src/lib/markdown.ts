@@ -74,6 +74,15 @@ export function renderConsentMarkdown(md: string): ConsentBlock[] {
       list.push(inlineToNodes(line.slice(2).trim()));
       continue;
     }
+    // Indented continuation of the current bullet (a wrapped list line). Append
+    // it to the last item rather than flushing the list into a spurious
+    // paragraph — which would split one list into two and break the rhythm
+    // (the consent file wraps its "anonymous" bullet across two lines).
+    if (list && list.length > 0 && /^\s/.test(raw)) {
+      const i = list.length - 1;
+      list[i] = [...list[i], " ", ...inlineToNodes(line.trim())];
+      continue;
+    }
     // paragraph line
     flushList();
     para.push(line.trim());
