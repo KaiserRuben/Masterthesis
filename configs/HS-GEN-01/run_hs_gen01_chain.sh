@@ -65,8 +65,17 @@ fi
 
 if [ "${HS_GEN_ONLY_SCREEN:-0}" != "1" ]; then
   # ── screen-promoted pair configs (run promote_pairs.py, then list here) ──
-  # PROMOTED=(configs/HS-GEN-01/hs_gen01_promoted_idx<N>_<a>_<b>.yaml ...)
-  PROMOTED=()
+  # Selected from the 1024-pair screen (06-15): 6 distinct-anchor pairs spanning
+  # amphibian/bird/fish/reptile, deepest crossings, lay-distinguishable. Full
+  # promotable set (176) archived under configs/Archive/HS-GEN-01-screen-emitted/.
+  PROMOTED=(
+    configs/HS-GEN-01/hs_gen01_promoted_idx564_fire_salamander_american_bullfrog.yaml   # fire salamander → American bullfrog     (best 1.0e-5)
+    configs/HS-GEN-01/hs_gen01_promoted_idx249_cock_ostrich.yaml                         # cock → ostrich                          (best 5.5e-5)
+    configs/HS-GEN-01/hs_gen01_promoted_idx71_hammerhead_shark_nile_crocodile.yaml       # hammerhead shark → Nile crocodile       (best 3.2e-4)
+    configs/HS-GEN-01/hs_gen01_promoted_idx639_loggerhead_sea_turtle_carolina_anole.yaml # loggerhead sea turtle → Carolina anole  (best 1.3e-4)
+    configs/HS-GEN-01/hs_gen01_promoted_idx442_bald_eagle_american_robin.yaml            # bald eagle → American robin             (best 3.7e-4)
+    configs/HS-GEN-01/hs_gen01_promoted_idx137_stingray_indigo_bunting.yaml              # stingray → indigo bunting               (best 9.1e-4)
+  )
   if [ "${#PROMOTED[@]}" -eq 0 ]; then
     echo "No promoted configs listed. Run the screen, then promote_pairs.py,"
     echo "then append the emitted YAMLs to PROMOTED in this script."
@@ -88,6 +97,11 @@ echo "n_runs: ${#CONFIGS[@]}"
 for i in "${!CONFIGS[@]}"; do
   cfg="${CONFIGS[$i]}"
   label="$(basename "$cfg" .yaml)"
+  # NOTE: --resume is NOT wired here. src/common/resume.py keys completion on a
+  # `seed_metadata` block that only roster-mode runs write; gap_filter stats.json
+  # (this campaign) has none, so --resume mis-detects every finished seed as
+  # unfinished and re-runs the whole chain. Until resume.py supports gap_filter,
+  # restart a stopped chain by running only the missing pair config directly.
   extra=()
   if [ "$i" -eq 0 ]; then
     extra+=("--preflight")

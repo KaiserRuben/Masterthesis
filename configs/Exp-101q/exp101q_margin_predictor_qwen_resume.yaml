@@ -1,0 +1,221 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-101q — Gen-0 Margin Predictor, Qwen replication (cross-SUT transfer test)
+# ═══════════════════════════════════════════════════════════════════════════
+# Diary: [[Exp-101q-Margin-Predictor-Qwen]]  (100-series = geometry series)
+# Base : configs/Exp-101/exp101_margin_predictor.yaml — IDENTICAL design
+#        (roster, class order, filter_indices, abstraction grid, budget, init,
+#        cone backend, text profile). ONLY the SUT/host block differs:
+#        LLaVA-OV-INT8 / Arc A770 / workstation  ->  Qwen3.5-4B / torch / MPS.
+# Run  : python experiments/runners/run_boundary_test.py \
+#            configs/Exp-101q/exp101q_margin_predictor_qwen.yaml
+#        (run `--preflight` FIRST — no Qwen/MPS per-call cost measurement
+#         exists for this joint-modality 50x30 setup; budget math is open)
+#
+# ─── (a) WHY: CROSS-SUT TRANSFER ────────────────────────────────────────────
+# Exp-101 (LLaVA-OV-INT8) validated the gen-0 margin predictor pre-registered
+# from Exp-100: between-cell Spearman probe vs dex_eroded@50 = -0.757 on the
+# 31 non-junco cells (CI [-0.876, -0.556]; falsification bar |rho| < 0.3);
+# perfect P2 separation (0/14 cells with probe >= 3 nats crossed; empirical
+# wall ~2.7 nats); ICC(1) = 0.845; snake wall word-attached AND slot-asymmetric
+# (target-word 'snake' walls 4/4 anchors, anchor-word 'snake' is an anti-wall).
+# All of it is conditional on ONE SUT. Exp-101q reruns the identical protocol
+# on Qwen3.5-4B to separate:
+#   * structural claims (lexical hardness, zeroth-order predictability) —
+#     candidates for cross-model laws; vs
+#   * token-level claims (which words wall, threshold values, attractor) —
+#     expected SUT-specific (cf. blind-spot asymmetry: LLaVA sink = boa,
+#     Qwen sink = green iguana).
+# Mechanism discriminator: Qwen (Qwen tokenizer) vs LLaVA (Mistral tokenizer).
+# If walls are lexical/semantic priors they should (partially) transfer; if
+# they are tokenizer/teacher-forced-scoring artifacts they should not.
+#
+# ─── (b) PRE-REGISTERED PREDICTIONS (Q1-Q4) ─────────────────────────────────
+#   Q1  P1-transfer: between-cell Spearman of gen-0 median margin vs
+#       dex_eroded@50 is strongly negative on all 40 cells AND on the 31
+#       non-junco cells. FALSIFICATION: |rho| < 0.3 on the non-junco subset
+#       -> the predictor is SUT-specific, not a structural law.
+#   Q2  Threshold-vs-separation split: a separating band exists for Qwen
+#       (cell-level AUC(probe -> never-crossed) >= 0.8), but the THRESHOLD
+#       VALUE is re-fit per SUT — no commitment that Qwen's wall sits at
+#       ~2.7-3 nats. Report Qwen's empirical threshold.
+#   Q3  Snake-wall transfer (mechanism discriminator) — both outcomes
+#       pre-registered with interpretation:
+#         (i) TRANSFERS: every snake-TARGET cell (junco->boa(0,1),
+#             iguana->boa(0,1)+(1,1), marimba->boa(1,1)) is >= 1 dex harder
+#             than its constrictor-target control, AND snake-ANCHOR cells
+#             (boa->iguana(1,1), boa->marimba(1,1)) stay easy (directional
+#             asymmetry) -> lexical-prior mechanism, shared across tokenizers.
+#         (ii) NO TRANSFER: word effect absent or attached to other words
+#             -> SUT-conditional walls; tokenizer/scoring-artifact or
+#             model-idiosyncratic mechanism. (Songbird carries NO transfer
+#             prediction: it already failed as a word property on LLaVA.)
+#   Q4  Cross-SUT probe-map correlation (headline statistic, gen-0 only):
+#       Spearman between cell-level probe_Qwen and probe_LLaVA over the 40
+#       matched cells (LLaVA values: experiments/analysis/output/exp101/
+#       exp101_per_cell.csv). rho >= 0.5 -> hardness map substantially shared
+#       across SUTs; rho ~ 0 -> per-SUT maps. No falsification bar — this is
+#       an estimation target, not a test.
+#   P3-analog (secondary): within-cell residual ~ 0 on the 6 n=2 cells.
+#   OUT OF SCOPE: basin/watershed questions (pair-only scoring logs no 6-cat
+#   argmax) — that is Exp-102 territory; a 102q would be its Qwen twin.
+#
+# ─── (c) WHAT IS PINNED vs WHAT NECESSARILY VARIES ──────────────────────────
+# PINNED (byte-identical to Exp-101): categories + class_list ORDER (load-
+#   bearing for enumeration), seeds_per_class=2, filter_indices (the 480-row
+#   enumeration depends only on class_list/levels/directions/seeds_per_class,
+#   all unchanged -> indices transfer verbatim; provenance:
+#   configs/Exp-101/make_filter_indices.py), abstraction grid (0,1,2)x(0,1,2)
+#   both directions, modality joint, generations=50, pop_size=30,
+#   sparse_multitier tiers (the probe IS this init distribution pi_0 —
+#   changing any tier redefines the predictor), early_stop disabled, cone
+#   alpha=20 / target_m=10 (cone geometry is built from VQGAN codebook +
+#   ImageNet exemplars, NO SUT involvement -> same lattice G on both SUTs;
+#   the comparison holds G fixed and varies only the field g), text
+#   full_stack, prompt/answer defaults, pair-only scoring.
+# NECESSARILY VARIES: SUT block, device (mps), host cache paths, workers=1
+#   (single MPS device — no OV-GPU/torch-CPU split to exploit).
+# PROTOCOL-FAITHFUL VARIATION: anchor IMAGES are re-selected by
+#   RosterSeedGenerator under Qwen (same procedure, possibly different
+#   photographs). Justified by Exp-101 P3: probe is image-invariant
+#   (rho = 0.943 across anchor images); the cell, not the photo, carries the
+#   signal. Pinning LLaVA's images would violate the anchor-quality gate.
+# KNOWN SHARED LIMITATION (kept deliberately): anchor word is prompt option A
+#   in every run — option-order bias is confounded in BOTH experiments
+#   identically; an order-swapped control remains a separate follow-up.
+#
+# ─── (d) PREFLIGHT GATES (all BEFORE launch) ────────────────────────────────
+#   1. Roster preflight on Qwen: ostrich + marimba were never Qwen-validated
+#      (they replaced macaw/drum due to LLaVA's boa sink; Qwen's sink differs:
+#      green iguana). Probe ALL 6 classes:
+#        python experiments/analysis/probe_class.py --config \
+#            configs/Exp-101q/exp101q_margin_predictor_qwen.yaml \
+#            --candidate "<class>" --n 20
+#      If RosterSeedGenerator fail-fasts on a class: LOWER min_anchor_confidence
+#      (per-class if supported, else globally) — do NOT swap classes; the
+#      matched-cell design is the point of the experiment. Record the final
+#      threshold here. Confidence gate affects seed quality only, not cell
+#      identity.
+#      RESULT (gate run, n=20/class): ALL 6 SAFE at threshold 3.5. Hit rates
+#      junco/ostrich/iguana/boa/cello 20/20, marimba 13/20 (65%); correct-image
+#      gt_logprob ranges all within -3.5 (worst: marimba min -3.357, iguana
+#      median -3.15). Marimba misclasses -> 4x junco, 3x cello (NOT iguana) —
+#      Qwen's sink differs from LLaVA's boa, as predicted. Threshold UNCHANGED.
+#   2. Timing preflight: `--preflight` on this config; 46 x 1500 = 69k calls.
+#      At 2/3/4 s/call -> ~38/57/77 h single-worker. If > ~60 h, split
+#      filter_indices into 2-3 tranche configs (sequential overnight runs)
+#      rather than cutting cells.
+#   3. Infra: SanDisk mounted (/Volumes/SanDisk), Redis inference-cache
+#      container up, ~/.cache/vqgan_knn/f8_16384_full.npz present (Exp-27
+#      used it on this host). Cone modal grids for the 6 roster classes are
+#      computed fresh on first run (SUT-independent, redis-cached).
+#
+# ─── (e) ANALYSIS PLAN ──────────────────────────────────────────────────────
+# Identical extraction to Exp-101 (probe / dex_eroded@N / gen_first_cross /
+# crossed@N from trace.parquet + stats.json seed_metadata), then:
+#   * Q1/Q2: same scripts as exp101 (experiments/analysis/output/exp101/
+#     scripts/) pointed at runs/Exp-101q; same cell definitions.
+#   * Q3: walls_table contrast snake-target vs constrictor-target cells,
+#     slot-asymmetry contrast at fixed target word (boa->iguana (0,1) vs (1,1)).
+#   * Q4: join per-cell probes with exp101_per_cell.csv on cell_id.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp101q_margin_predictor_qwen
+save_dir: runs/Exp-101q
+
+device: mps
+
+# 6-class roster — identical to Exp-100/101 (matched cells/words are the point).
+categories:
+  - junco
+  - ostrich
+  - green iguana
+  - boa constrictor
+  - cello
+  - marimba
+
+modality: joint
+
+# ───────────────────────────────────────────────────────────────────────────
+# SUT — Qwen3.5-4B on Mac MPS (torch backend; Exp-27-validated host setup)
+# ───────────────────────────────────────────────────────────────────────────
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+
+# ───────────────────────────────────────────────────────────────────────────
+# Budget — identical short uniform run (speed metrics, not deep floors)
+# ───────────────────────────────────────────────────────────────────────────
+generations: 50
+pop_size: 30
+
+# ───────────────────────────────────────────────────────────────────────────
+# Roster + filter — byte-identical to Exp-101. Class-list ORDER is load-bearing
+# (enumeration index space). Do NOT reorder; indices transfer verbatim because
+# the enumeration is SUT-independent.
+# ───────────────────────────────────────────────────────────────────────────
+seeds:
+  mode: roster
+  filter_indices: [0, 1, 2, 6, 26, 28, 29, 30, 44, 50,
+                   56, 80, 82, 86, 88, 96, 196, 198, 202, 203,
+                   204, 205, 212, 240, 242, 243, 244, 276, 278, 282,
+                   302, 310, 320, 322, 324, 338, 354, 392, 393, 394,
+                   398, 454, 462, 472, 474, 478]
+  roster:
+    class_list:
+      - junco
+      - ostrich
+      - green iguana
+      - boa constrictor
+      - cello
+      - marimba
+    seeds_per_class: 2
+    # LLaVA-calibrated starting point; Qwen preflight (gate d.1) may lower it.
+    # Seed-quality gate only — never swap classes to satisfy it.
+    min_anchor_confidence: 3.5
+    abstraction:
+      levels_anchor: [0, 1, 2]
+      levels_target: [0, 1, 2]
+      apply_disjointness: true
+      directions: both
+
+# ───────────────────────────────────────────────────────────────────────────
+# Image manipulator — VQGAN cone, identical lattice geometry to Exp-101
+# (cone construction is SUT-independent: codebook + ImageNet exemplars)
+# ───────────────────────────────────────────────────────────────────────────
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 20.0
+    target_m: 10
+
+text:
+  composite:
+    profile: full_stack
+
+parallel:
+  workers: 1                              # single MPS device — no dual-device split
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Optimizer — EXACT sparse_multitier block from Exp-100/101. The gen-0 probe
+# IS this init distribution; any tier change redefines the predictor and
+# breaks cross-SUT comparability. early_stop DISABLED -> uniform 50-gen length.
+# ═══════════════════════════════════════════════════════════════════════════
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}   # spike       E[n_active] ≈ 1
+      - {p_active: 0.030, fraction: 0.20}   # sparse      E[n_active] ≈ 7
+      - {p_active: 0.100, fraction: 0.25}   # medium      E[n_active] ≈ 22
+      - {p_active: 0.300, fraction: 0.20}   # heavy       E[n_active] ≈ 67
+      - {p_active: 0.500, fraction: 0.10}   # very heavy  E[n_active] ≈ 111
+  early_stop:
+    enable: false                           # uniform 50-gen length for clean
+                                            # convergence-speed comparison
