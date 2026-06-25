@@ -150,6 +150,17 @@ class ImageConfig:
     :param n_candidates: Codebook-replacement count per patch (vqgan only).
     :param candidate_strategy: How candidates are picked from KNN (vqgan).
     :param resolution: VQGAN input resolution (vqgan only).
+    :param decode_batch_size: Sub-batch size for the VQGAN decoder
+        forward (vqgan only). The whole optimiser population (and, at
+        seed finalize, the full Pareto front of 200+ candidates) is
+        decoded through :meth:`ImageManipulator.apply_batch`; decoder
+        activations scale linearly with this number. ``8`` caps the
+        per-forward peak well under a 30-image batch (~4× lower) at a
+        negligible throughput cost, which matters on MPS/CPU where the
+        device heap is never returned once a high-water mark is hit.
+        Decode output is identical regardless of batching, so search
+        behaviour is unaffected. Raise on large-VRAM GPUs to trade
+        memory for throughput.
     :param knn_cache_path: Optional KNN cache path (vqgan only).
     :param cone_filter: Cone-filter sub-config (vqgan only).
     :param stylegan: StyleGAN-XL sub-config (stylegan only).
@@ -162,6 +173,7 @@ class ImageConfig:
     n_candidates: int = 25
     candidate_strategy: CandidateStrategy = CandidateStrategy.KNN
     resolution: int = 256
+    decode_batch_size: int = 8
     knn_cache_path: Path | None = None
     cone_filter: ConeFilterConfig = field(default_factory=ConeFilterConfig)
     stylegan: StyleGANConfig = field(default_factory=StyleGANConfig)
@@ -472,7 +484,9 @@ class ImageManipulator:
             apply_genotype(ctx.original_grid, ctx.selection, g)
             for g in genotypes
         ]
-        return self._codec.decode_batch(grids)
+        return self._codec.decode_batch(
+            grids, chunk_size=self._config.decode_batch_size
+        )
 
 
 # ---------------------------------------------------------------------------
