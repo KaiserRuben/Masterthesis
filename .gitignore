@@ -48,3 +48,12 @@ runs/obsidian_assets
 # Submodules
 tools/alpamayo/
 tools/refer/
+
+# Generated experiment artifacts (large / regenerable)
+# Tracked reports, manifests, and figure-generating scripts under these
+# paths stay tracked; only untracked data outputs are ignored.
+runs/
+experiments/analysis/output/
+experiments/HS-01/data_raw/
+experiments/HS-01/pool_frozen/
+experiments/HS-01/pool_staging/
