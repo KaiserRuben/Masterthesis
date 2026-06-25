@@ -40,9 +40,11 @@ COPY app/ ./
 COPY schemas/hs01.itempool.schema.json      /inputs/schemas/hs01.itempool.schema.json
 COPY schemas/hs01.study-config.schema.json  /inputs/schemas/hs01.study-config.schema.json
 COPY schemas/hs01.session.schema.json       /inputs/schemas/hs01.session.schema.json
+COPY schemas/hs01.references.schema.json    /inputs/schemas/hs01.references.schema.json
 
 # CRITICAL: next.config.js declares an `env` block for HS01_POOL / HS01_CONFIG /
-# HS01_DATA_DIR / HS01_IMAGE_DIR. Next *inlines* those `process.env.*` reads into
+# HS01_DATA_DIR / HS01_IMAGE_DIR / HS01_REFERENCES / HS01_REFS_DIR. Next *inlines*
+# those `process.env.*` reads into
 # the bundle at BUILD TIME (`process.env.X || <default>`). If they are unset
 # here, the build bakes in the app-dir-relative DEFAULTS (e.g.
 # /pool_frozen/itempool.json), and any runtime `ENV` for them is ignored. So the
@@ -55,6 +57,8 @@ ENV HS01_IMAGE_DIR=/inputs/pool_frozen/assets/images
 ENV HS01_SCHEMAS_DIR=/inputs/schemas
 ENV HS01_CONFIG=/app/config/study-config.json
 ENV HS01_DATA_DIR=/app/data/sessions
+ENV HS01_REFERENCES=/app/config/references.json
+ENV HS01_REFS_DIR=/app/config/refs
 
 # Produce the standalone server bundle (next.config.js sets output: "standalone").
 RUN npm run build
@@ -83,6 +87,7 @@ COPY pool_frozen/assets/images        /inputs/pool_frozen/assets/images
 COPY schemas/hs01.itempool.schema.json      /inputs/schemas/hs01.itempool.schema.json
 COPY schemas/hs01.study-config.schema.json  /inputs/schemas/hs01.study-config.schema.json
 COPY schemas/hs01.session.schema.json       /inputs/schemas/hs01.session.schema.json
+COPY schemas/hs01.references.schema.json    /inputs/schemas/hs01.references.schema.json
 
 # COPY preserves source file modes. The schema files on disk are 0600
 # (owner-only), so without this the non-root "node" user gets EACCES reading
@@ -98,6 +103,8 @@ ENV HS01_IMAGE_DIR=/inputs/pool_frozen/assets/images
 ENV HS01_SCHEMAS_DIR=/inputs/schemas
 ENV HS01_CONFIG=/app/config/study-config.json
 ENV HS01_DATA_DIR=/app/data/sessions
+ENV HS01_REFERENCES=/app/config/references.json
+ENV HS01_REFS_DIR=/app/config/refs
 
 # Writable session output. node:alpine ships the unprivileged "node" user
 # (uid/gid 1000). Create the data dir and hand it to that user, then drop root.

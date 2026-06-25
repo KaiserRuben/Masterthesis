@@ -157,6 +157,12 @@ describe("POST /api/sessions", () => {
     // quality block forwarded at the HTTP boundary (drives the viewport gate)
     expect(body.quality).toBeDefined();
     expect(body.quality.min_rendered_image_css_px).toBe(256);
+
+    // curated word references forwarded (drives the pair-option ⓘ helper)
+    expect(body.references).toBeDefined();
+    expect(body.references.tench.gloss).toBeTruthy();
+    expect(body.references.tench.image).toBe("ref-tench.png");
+    expect(body.references.cock.image).toBeNull(); // gloss-only entry
   });
 
   it("rejects an invalid recruitment_channel with 400", async () => {
@@ -292,6 +298,67 @@ describe("POST /api/sessions/[id]/submit", () => {
     expect(saved.status).toBe("completed");
     expect(saved.timing.completed_at_utc).toBeTruthy();
     expect(validateSession(saved)).toBe(true);
+  });
+});
+
+// ─── session schema: references_revealed (1.1.0) ─────────────────────────────
+
+describe("session schema — references_revealed", () => {
+  const dummyCr = {
+    session_id: "00000000-0000-4000-8000-000000000000",
+    form_id: "A",
+    rng_seed: "deadbeef",
+    participant_code: "P001",
+  };
+
+  function pairTrial(referencesRevealed?: string[]) {
+    return {
+      trial_index: 1,
+      phase_id: "pair",
+      position_in_phase: 0,
+      item_id: "pair-base-llava-box_turtle-5",
+      source_id: "src-base-llava-box_turtle-5",
+      item_kind: "pair",
+      is_attention_check: false,
+      presented: {
+        option_display_order: [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL",
+        ],
+        option_labels: { ANCHOR_WORD: "box turtle", TARGET_WORD: "tench" },
+      },
+      response: {
+        n_changes: 0,
+        choice: "ANCHOR_WORD",
+        ...(referencesRevealed ? { references_revealed: referencesRevealed } : {}),
+      },
+      timing: { onset_ms: 0, submitted_ms: 1000 },
+    };
+  }
+
+  it("accepts a pair response with references_revealed and schema_version 1.1.0", async () => {
+    const { validateSession } = await import("../src/lib/schemas");
+    const rec = completeRecord(dummyCr) as Record<string, unknown>;
+    rec.schema_version = "1.1.0";
+    (rec.trials as unknown[]).push(pairTrial(["ANCHOR_WORD"]));
+    expect(validateSession(rec)).toBe(true);
+  });
+
+  it("still accepts an old record (schema_version 1.0.0, no references_revealed)", async () => {
+    const { validateSession } = await import("../src/lib/schemas");
+    const rec = completeRecord(dummyCr);
+    expect(validateSession(rec)).toBe(true);
+  });
+
+  it("rejects an invalid references_revealed value", async () => {
+    const { validateSession } = await import("../src/lib/schemas");
+    const rec = completeRecord(dummyCr) as Record<string, unknown>;
+    rec.schema_version = "1.1.0";
+    (rec.trials as unknown[]).push(pairTrial(["NOT_A_SLOT"]));
+    expect(validateSession(rec)).toBe(false);
   });
 });
 

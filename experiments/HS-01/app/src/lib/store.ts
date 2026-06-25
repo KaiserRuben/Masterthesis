@@ -17,6 +17,7 @@ import crypto from "crypto";
 
 import { loadConfig } from "./config";
 import { loadPool } from "./pool";
+import { loadReferences } from "./references";
 import { validateSession } from "./schemas";
 import type {
   SessionRecord,
@@ -27,6 +28,7 @@ import type {
   PairResponse,
   DemographicsField,
   Phase,
+  ReferenceEntry,
   StudyConfig,
 } from "./types";
 
@@ -64,6 +66,12 @@ export interface CreateResult {
   pair_response: PairResponse;
   demographics_fields: DemographicsField[];
   phases: Phase[];
+  /**
+   * Curated word → {gloss, image} map for fine-grained pair-option words.
+   * Read-only presentation data; the rater UI shows an ⓘ helper for any word
+   * with an entry. No analysis fields.
+   */
+  references: Record<string, ReferenceEntry>;
   /**
    * Read-only quality block from the study config. Forwarded so the viewport
    * gate (min_rendered_image_css_px) tracks the config instead of hardcoding a
@@ -389,6 +397,7 @@ export async function createSession(
       pair_response: config.pair_response,
       demographics_fields: config.demographics_fields,
       phases: config.phases,
+      references: loadReferences().entries,
       // Read-only quality block so the rater UI's viewport gate honours
       // min_rendered_image_css_px from the config (no analysis fields here).
       quality: config.quality,

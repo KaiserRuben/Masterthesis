@@ -31,7 +31,9 @@ export function initRecord(
   startedAtUtc: string
 ): SessionRecord {
   return {
-    schema_version: "1.0.0",
+    // 1.1.0 adds the optional response.references_revealed field (the pair-option
+    // ⓘ reveal log). Backward-compatible: 1.0.0 records remain valid.
+    schema_version: "1.1.0",
     study_id: create.study_id,
     config_version: create.config_version,
     config_sha256: create.config_sha256,

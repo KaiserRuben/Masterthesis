@@ -14,7 +14,12 @@ import addFormats from "ajv-formats";
 import path from "path";
 import fs from "fs";
 import type { ValidateFunction } from "ajv";
-import type { ItemPool, StudyConfig, SessionRecord } from "./types";
+import type {
+  ItemPool,
+  StudyConfig,
+  SessionRecord,
+  ReferenceData,
+} from "./types";
 
 /**
  * Locate the schemas directory. Resolution order:
@@ -60,11 +65,13 @@ addFormats(ajv);
 const itempoolSchema = readSchema("hs01.itempool.schema.json");
 const studyConfigSchema = readSchema("hs01.study-config.schema.json");
 const sessionSchema = readSchema("hs01.session.schema.json");
+const referencesSchema = readSchema("hs01.references.schema.json");
 
 // Add all schemas first so cross-references can resolve
 ajv.addSchema(itempoolSchema);
 ajv.addSchema(studyConfigSchema);
 ajv.addSchema(sessionSchema);
+ajv.addSchema(referencesSchema);
 
 export const validatePool = ajv.getSchema(
   "https://masterthesis.local/schemas/hs01/itempool-1.0.0.schema.json"
@@ -78,6 +85,11 @@ export const validateSession = ajv.getSchema(
   "https://masterthesis.local/schemas/hs01/session-1.0.0.schema.json"
 ) as ValidateFunction<SessionRecord>;
 
+export const validateReferences = ajv.getSchema(
+  "https://masterthesis.local/schemas/hs01/references-1.0.0.schema.json"
+) as ValidateFunction<ReferenceData>;
+
 if (!validatePool) throw new Error("Failed to compile validatePool");
 if (!validateConfig) throw new Error("Failed to compile validateConfig");
 if (!validateSession) throw new Error("Failed to compile validateSession");
+if (!validateReferences) throw new Error("Failed to compile validateReferences");

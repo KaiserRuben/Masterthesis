@@ -71,6 +71,7 @@ function makeCreate(): CreateResult {
     },
     demographics_fields: [],
     phases: [],
+    references: {},
   };
 }
 

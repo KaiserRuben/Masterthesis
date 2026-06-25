@@ -18,7 +18,7 @@ import type { CurrentTrial, TrialAnswer } from "@/state/useSession";
 import { attachIntegrityListeners } from "@/lib/instrumentation";
 import { awaitOnset, type OnsetResult } from "@/lib/instrumentation";
 import type { SessionClock } from "@/lib/timing";
-import type { SemanticChoice } from "@/lib/types";
+import type { ReferenceEntry, SemanticChoice } from "@/lib/types";
 
 import { Instructions } from "@/components/Instructions";
 import { PhaseProgress } from "@/components/PhaseProgress";
@@ -137,17 +137,16 @@ export default function StudyPage() {
   if (s.current && s.clock) {
     return (
       <Shell phaseKey={`trial:${s.current.item.item_id}`}>
-        <div className="mx-auto max-w-2xl px-6 py-10">
-          {/* Overall progress across the whole session (text + image + pair). */}
+        {/* Viewport-height column: the progress bar (top) and the Next control
+            (bottom, inside TrialView) stay pinned in view; only the stimulus +
+            response region between them scrolls when an image is taller than the
+            viewport. So "the last part" is never pushed below the fold. */}
+        <div className="mx-auto flex h-screen max-w-2xl flex-col px-6 py-6">
+          {/* A single bar: overall progress across the whole session (text +
+              image + pair), labelled by the section the rater is currently in. */}
           <PhaseProgress
             position={Math.min(s.completedTrials + 1, s.totalTrials)}
             total={s.totalTrials}
-            label="Overall progress"
-          />
-          {/* Progress within the current section. */}
-          <PhaseProgress
-            position={s.current.position}
-            total={s.current.total}
             label={phaseLabel(s.current.phase)}
           />
           <TrialView
@@ -158,6 +157,7 @@ export default function StudyPage() {
             onSubmit={s.submitTrial}
             pairDisplayLabels={s.create?.pair_response.display_labels}
             otherClassFreeText={s.create?.pair_response.other_class_free_text ?? true}
+            references={s.create?.references}
           />
         </div>
       </Shell>
@@ -181,6 +181,7 @@ interface TrialViewProps {
   onSubmit: (answer: TrialAnswer) => void;
   pairDisplayLabels?: PairDisplayLabels;
   otherClassFreeText: boolean;
+  references?: Record<string, ReferenceEntry>;
 }
 
 function TrialView({
@@ -189,6 +190,7 @@ function TrialView({
   onSubmit,
   pairDisplayLabels,
   otherClassFreeText,
+  references,
 }: TrialViewProps) {
   // Onset for image/pair comes from StimulusImage's onReady; for text we await
   // a single frame here on mount.
@@ -202,6 +204,8 @@ function TrialView({
 
   const firstInteractionMs = useRef<number | null>(null);
   const responseSelectedMs = useRef<number | null>(null);
+  // Word-option ⓘ helpers opened during this trial (insertion-ordered set).
+  const revealedRef = useRef<Set<"ANCHOR_WORD" | "TARGET_WORD">>(new Set());
 
   const isText = trial.phase === "text";
   const isImage = trial.phase === "image";
@@ -254,6 +258,9 @@ function TrialView({
     if (isPair) {
       answer.choice = choice ?? undefined;
       answer.other_class_text = choice === "OTHER_CLASS" ? otherText : null;
+      if (revealedRef.current.size > 0) {
+        answer.references_revealed = [...revealedRef.current];
+      }
     } else {
       answer.scale_value = scaleValue ?? undefined;
     }
@@ -261,50 +268,62 @@ function TrialView({
   };
 
   return (
-    <div>
-      {/* ── stimulus ── */}
-      {(isImage || isPair) && trial.item.image && (
-        <div className="mb-6">
-          <StimulusImage
-            uriName={trial.item.image.uri_name}
-            naturalW={trial.item.image.natural_w}
-            naturalH={trial.item.image.natural_h}
-            clock={clock}
-            onReady={setOnset}
-          />
-        </div>
-      )}
-
-      {(isText || isPair) && trial.item.prompt != null && (
-        <div className="mb-6">
-          <PromptText text={trial.item.prompt} />
-        </div>
-      )}
-
-      {/* ── response ── */}
-      <div className="mt-6">
-        {(isText || isImage) && trial.scale && (
-          <LikertScale scale={trial.scale} value={scaleValue} onChange={handleScale} />
-        )}
-
-        {isPair &&
-          trial.optionDisplayOrder &&
-          trial.item.option_labels &&
-          pairDisplayLabels && (
-            <PairChoice
-              optionLabels={trial.item.option_labels}
-              displayLabels={pairDisplayLabels}
-              displayOrder={trial.optionDisplayOrder}
-              otherClassFreeText={otherClassFreeText}
-              value={choice}
-              otherClassText={otherText}
-              onChange={handleChoice}
-              onOtherClassText={setOtherText}
-            />
+    // Fill the height the parent column hands us, so the Next footer can pin to
+    // the bottom while the stimulus/response region above it scrolls if needed.
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* ── scrollable stimulus + response ──
+          min-h-0 lets this flex child shrink below its content; `my-auto` on the
+          inner block centres short trials but collapses to 0 (scroll from the
+          top) when an image makes the content taller than the viewport. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="my-auto">
+          {(isImage || isPair) && trial.item.image && (
+            <div className="mb-5">
+              <StimulusImage
+                uriName={trial.item.image.uri_name}
+                naturalW={trial.item.image.natural_w}
+                naturalH={trial.item.image.natural_h}
+                clock={clock}
+                onReady={setOnset}
+              />
+            </div>
           )}
+
+          {(isText || isPair) && trial.item.prompt != null && (
+            <div className="mb-5">
+              <PromptText text={trial.item.prompt} />
+            </div>
+          )}
+
+          {/* ── response ── */}
+          <div>
+            {(isText || isImage) && trial.scale && (
+              <LikertScale scale={trial.scale} value={scaleValue} onChange={handleScale} />
+            )}
+
+            {isPair &&
+              trial.optionDisplayOrder &&
+              trial.item.option_labels &&
+              pairDisplayLabels && (
+                <PairChoice
+                  optionLabels={trial.item.option_labels}
+                  displayLabels={pairDisplayLabels}
+                  displayOrder={trial.optionDisplayOrder}
+                  otherClassFreeText={otherClassFreeText}
+                  value={choice}
+                  otherClassText={otherText}
+                  onChange={handleChoice}
+                  onOtherClassText={setOtherText}
+                  references={references}
+                  onReveal={(slot) => revealedRef.current.add(slot)}
+                />
+              )}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-end gap-3">
+      {/* ── pinned footer: always in view regardless of stimulus height ── */}
+      <div className="mt-4 flex shrink-0 items-center justify-end gap-3 border-t border-neutral-100 pt-4">
         {!ready && <span className="text-xs text-neutral-400">Preparing…</span>}
         <button
           type="button"

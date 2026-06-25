@@ -168,6 +168,8 @@ export interface TrialAnswer {
   first_interaction_ms?: number | null;
   /** ms offset when the response was selected (optional). */
   response_selected_ms?: number | null;
+  /** Pair trials: word-option ⓘ helpers the rater opened (semantic slots). */
+  references_revealed?: ("ANCHOR_WORD" | "TARGET_WORD")[];
 }
 
 export function useSession(): UseSession {
@@ -385,6 +387,9 @@ export function useSession(): UseSession {
           choice: answer.choice,
           other_class_text: answer.other_class_text ?? null,
           n_changes: answer.n_changes,
+          ...(answer.references_revealed && answer.references_revealed.length > 0
+            ? { references_revealed: answer.references_revealed }
+            : {}),
         },
         timing: {
           image_loaded_ms: answer.onset.image_loaded_ms,

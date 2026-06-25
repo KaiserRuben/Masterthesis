@@ -1,0 +1,32 @@
+{
+  "$id": "https://masterthesis.local/schemas/hs01/references-1.0.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HS-01 pair-option word references",
+  "description": "Curated word -> {gloss, image} map shown on demand for fine-grained pair-option words. Keys are the exact class words used in itempool cell.anchor_word / target_word.",
+  "type": "object",
+  "required": ["schema_version", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "entries": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["gloss", "image"],
+        "additionalProperties": false,
+        "properties": {
+          "gloss": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One-line, neutral definition shown to the rater."
+          },
+          "image": {
+            "type": ["string", "null"],
+            "pattern": "^ref-[a-z0-9_]+\\.png$",
+            "description": "Bundled reference PNG filename served by /api/refs/[name], or null for a gloss-only entry (e.g. a word-confusion case where a photo adds nothing)."
+          }
+        }
+      }
+    }
+  }
+}

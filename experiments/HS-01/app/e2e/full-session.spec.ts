@@ -421,3 +421,88 @@ test("a schema-invalid submit (200 + ok:false) shows submit-failed, never /done"
   );
   expect(recordKept).not.toBeNull();
 });
+
+// ─── Test 4: word-reference ⓘ helper — popover + reveal logging ───────────────
+
+test("opens a pair-option ⓘ helper; the reveal is logged and the record validates", async ({
+  page,
+}) => {
+  await consentAndBegin(page);
+
+  let openedTestId: string | null = null;
+
+  // Walk to demographics; on the first pair trial that offers an ⓘ helper, open
+  // it, verify the in-page popover (and that /api/refs serves a real image when
+  // present), close it with Escape, then answer the trial normally.
+  for (let i = 0; i < 500; i++) {
+    if (await page.getByTestId("demographics-submit").isVisible().catch(() => false)) {
+      break;
+    }
+    await passInstructionsIfPresent(page);
+    if (!(await trialPresent(page))) {
+      await page.waitForTimeout(50);
+      continue;
+    }
+
+    const isPair = await page
+      .getByTestId("pair-option-ANCHOR_WORD")
+      .isVisible()
+      .catch(() => false);
+
+    if (isPair && !openedTestId) {
+      const info = page.locator('[data-testid^="word-ref-"]').first();
+      if (await info.isVisible().catch(() => false)) {
+        openedTestId = await info.getAttribute("data-testid");
+        await info.click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog).toBeVisible();
+        // If this entry has a photo, it must actually load via /api/refs.
+        const img = dialog.locator("img");
+        if (await img.count()) {
+          await expect
+            .poll(async () =>
+              img.first().evaluate((el) => (el as HTMLImageElement).naturalWidth)
+            )
+            .toBeGreaterThan(0);
+        }
+        await page.keyboard.press("Escape");
+        await expect(dialog).toBeHidden();
+        // Opening the helper must NOT have selected the option.
+        await expect(
+          page.getByTestId("pair-option-ANCHOR_WORD")
+        ).toHaveAttribute("aria-checked", "false");
+      }
+    }
+
+    await answerOneTrial(page, { likertPoint: 3, pairSlot: "ANCHOR_WORD" });
+  }
+
+  await fillDemographicsAndSubmit(page);
+  await page.waitForURL(/\/done/, { timeout: 20_000 });
+
+  // We must have found at least one glossed pair option.
+  expect(openedTestId).not.toBeNull();
+
+  // The reveal is persisted on the pair trial whose word we opened, and the
+  // whole record still validates against the (1.1.0) session schema.
+  const rec = readNewestRecord();
+  const trials = (rec.trials ?? []) as Array<Record<string, any>>;
+  const withReveals = trials.filter(
+    (t) =>
+      t.phase_id === "pair" &&
+      Array.isArray(t.response?.references_revealed) &&
+      t.response.references_revealed.length > 0
+  );
+  expect(withReveals.length).toBeGreaterThan(0);
+  for (const t of withReveals) {
+    for (const slot of t.response.references_revealed) {
+      expect(["ANCHOR_WORD", "TARGET_WORD"]).toContain(slot);
+    }
+  }
+
+  const validate = buildValidator();
+  const ok = validate(rec);
+  if (!ok) console.error(validate.errors);
+  expect(ok).toBe(true);
+  expect(rec.schema_version).toBe("1.1.0");
+});

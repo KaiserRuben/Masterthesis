@@ -20,7 +20,10 @@
  */
 
 import { useRef } from "react";
-import type { SemanticChoice } from "@/lib/types";
+import type { ReferenceEntry, SemanticChoice } from "@/lib/types";
+import { WordReference } from "./WordReference";
+
+type WordSlot = "ANCHOR_WORD" | "TARGET_WORD";
 
 export interface PairChoiceProps {
   /** Words for the two AB slots. */
@@ -39,6 +42,14 @@ export interface PairChoiceProps {
   otherClassText: string;
   onChange: (choice: SemanticChoice, nChanges: number) => void;
   onOtherClassText: (text: string) => void;
+  /**
+   * Curated word → {gloss, image} map. A word slot whose label has an entry
+   * gets an ⓘ helper next to it; absence is silent (no helper, word still
+   * selectable).
+   */
+  references?: Record<string, ReferenceEntry>;
+  /** Fired once per word slot, the first time its helper popover is opened. */
+  onReveal?: (slot: WordSlot) => void;
   disabled?: boolean;
 }
 
@@ -56,6 +67,8 @@ export function PairChoice({
   otherClassText,
   onChange,
   onOtherClassText,
+  references,
+  onReveal,
   disabled,
 }: PairChoiceProps) {
   const lastValue = useRef<SemanticChoice | null>(value);
@@ -85,28 +98,46 @@ export function PairChoice({
         {displayOrder.map((slot) => {
           const selected = value === slot;
           const isWord = WORD_SLOTS.has(slot);
+          const label = labelFor(slot);
+          const ref = isWord ? references?.[label] : undefined;
           return (
-            <button
-              key={slot}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              disabled={disabled}
-              data-slot={slot}
-              data-testid={`pair-option-${slot}`}
-              onClick={() => select(slot)}
-              className={[
-                "rounded-lg border px-4 py-3 text-left text-base transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-                selected
-                  ? "border-blue-600 bg-blue-50 text-blue-900 font-medium"
-                  : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-400",
-                isWord ? "" : "italic text-neutral-600",
-                disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-              ].join(" ")}
-            >
-              {labelFor(slot)}
-            </button>
+            <div key={slot} className="relative">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                disabled={disabled}
+                data-slot={slot}
+                data-testid={`pair-option-${slot}`}
+                onClick={() => select(slot)}
+                className={[
+                  "block w-full rounded-lg border px-4 py-3 text-left text-base transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                  selected
+                    ? "border-blue-600 bg-blue-50 text-blue-900 font-medium"
+                    : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-400",
+                  isWord ? "" : "italic text-neutral-600",
+                  ref ? "pr-12" : "",
+                  disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+              {ref && (
+                // inset-y-0 + flex centres the ⓘ vertically WITHOUT a transform.
+                // (A `transform` here would create a stacking context that traps
+                // the popover's z-index behind the later option rows.)
+                <span className="absolute inset-y-0 right-2 flex items-center">
+                  <WordReference
+                    word={label}
+                    gloss={ref.gloss}
+                    image={ref.image}
+                    disabled={disabled}
+                    onReveal={() => onReveal?.(slot as WordSlot)}
+                  />
+                </span>
+              )}
+            </div>
           );
         })}
       </div>

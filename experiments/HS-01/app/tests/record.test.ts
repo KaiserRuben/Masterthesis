@@ -101,6 +101,7 @@ function makeCreate(): CreateResult {
     },
     demographics_fields: [],
     phases: [],
+    references: {},
   };
 }
 
@@ -155,7 +156,7 @@ describe("initRecord / appendTrial / setDemographics", () => {
     const create = makeCreate();
     const rec = initRecord(create, ENV, "2026-06-24T10:00:00.000Z");
 
-    expect(rec.schema_version).toBe("1.0.0");
+    expect(rec.schema_version).toBe("1.1.0");
     expect(rec.study_id).toBe(create.study_id); // sourced from config, not hardcoded
     expect(rec.session_id).toBe(create.session_id);
     expect(rec.form_id).toBe(create.form_id);

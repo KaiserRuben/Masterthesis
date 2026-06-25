@@ -3,7 +3,22 @@
 **Experiment:** HS-01 (Human Validity Study)
 **Component:** `experiments/HS-01/app` (Next.js 14 study runner)
 **Date:** 2026-06-25
-**Status:** design approved, pending spec review
+**Status:** implemented (2026-06-25)
+
+## Implementation notes (deltas from the original design)
+
+Two small, well-justified refinements emerged during the build:
+
+1. **`image` is nullable; one gloss-only entry.** 20 of the 21 words have an
+   example photo. "cock" has no cache folder and the only local rooster image is
+   a VQGAN-pipeline `01_original` (a study seed) — off-limits. Since "cock" is a
+   *word*-confusion case (everyone knows a rooster), it is a **gloss-only** entry
+   (`image: null`, "an adult male chicken; a rooster"). The schema/type allow
+   `image: string | null`; the popover degrades to gloss-only (also the image-404
+   fallback path).
+2. **Schema bump is additive, not a hard cut.** `schema_version` became
+   `enum: ["1.0.0", "1.1.0"]` (not `const: "1.1.0"`), so existing 1.0.0 records
+   stay valid; the writer now emits `1.1.0`.
 
 ## Problem
 

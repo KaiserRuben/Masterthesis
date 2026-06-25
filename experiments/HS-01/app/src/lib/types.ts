@@ -210,6 +210,25 @@ export interface StudyConfig {
   [key: string]: unknown;
 }
 
+// ─── References (pair-option word helper) ───────────────────────────────────────
+
+export interface ReferenceEntry {
+  /** One-line, neutral definition shown to the rater. */
+  gloss: string;
+  /**
+   * Bundled reference PNG filename (ref-<class>.png), served by /api/refs, or
+   * null for a gloss-only entry (a word-confusion case where a photo adds
+   * nothing, e.g. "cock" → rooster).
+   */
+  image: string | null;
+}
+
+export interface ReferenceData {
+  schema_version: string;
+  /** Keyed by the exact class word used in option_labels (e.g. "box turtle"). */
+  entries: Record<string, ReferenceEntry>;
+}
+
 // ─── Session Record ───────────────────────────────────────────────────────────
 
 export type SemanticChoice =
@@ -239,6 +258,11 @@ export interface TrialResponse {
   choice?: SemanticChoice;
   other_class_text?: string | null;
   n_changes: number;
+  /**
+   * Pair trials only: which word-option ⓘ helpers the rater opened (semantic
+   * slots). Whether a rater needed the gloss is validity signal. Schema 1.1.0+.
+   */
+  references_revealed?: ("ANCHOR_WORD" | "TARGET_WORD")[];
 }
 
 export interface TrialTiming {
@@ -288,7 +312,7 @@ export interface IntegrityEvent {
 }
 
 export interface SessionRecord {
-  schema_version: "1.0.0";
+  schema_version: "1.0.0" | "1.1.0";
   study_id: string;
   config_version: string;
   config_sha256: string;

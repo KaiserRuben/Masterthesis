@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "entries": {
+    "American bullfrog": {
+      "gloss": "a large frog native to North America",
+      "image": "ref-american_bullfrog.png"
+    },
+    "American robin": {
+      "gloss": "a North American songbird with a reddish-orange breast",
+      "image": "ref-american_robin.png"
+    },
+    "axolotl": {
+      "gloss": "a salamander that keeps its feathery external gills as an adult",
+      "image": "ref-axolotl.png"
+    },
+    "bald eagle": {
+      "gloss": "a large bird of prey with a white head and tail",
+      "image": "ref-bald_eagle.png"
+    },
+    "box turtle": {
+      "gloss": "a small land turtle with a high, domed shell that can close tightly",
+      "image": "ref-box_turtle.png"
+    },
+    "cello": {
+      "gloss": "a large stringed instrument played upright with a bow",
+      "image": "ref-cello.png"
+    },
+    "chameleon": {
+      "gloss": "a lizard known for changing colour and having a long tongue",
+      "image": "ref-chameleon.png"
+    },
+    "cock": {
+      "gloss": "an adult male chicken; a rooster",
+      "image": null
+    },
+    "desert grassland whiptail lizard": {
+      "gloss": "a slender, long-tailed lizard of North American grasslands",
+      "image": "ref-desert_grassland_whiptail_lizard.png"
+    },
+    "fire salamander": {
+      "gloss": "a black salamander with bright yellow markings",
+      "image": "ref-fire_salamander.png"
+    },
+    "flamingo": {
+      "gloss": "a tall wading bird with pink plumage and long legs",
+      "image": "ref-flamingo.png"
+    },
+    "great grey owl": {
+      "gloss": "a very large grey owl with a round, ringed facial disc",
+      "image": "ref-great_grey_owl.png"
+    },
+    "great white shark": {
+      "gloss": "a large shark with a grey back and white underside",
+      "image": "ref-great_white_shark.png"
+    },
+    "indigo bunting": {
+      "gloss": "a small songbird; the breeding male is bright blue",
+      "image": "ref-indigo_bunting.png"
+    },
+    "loggerhead sea turtle": {
+      "gloss": "a large sea turtle with a big head and a reddish-brown shell",
+      "image": "ref-loggerhead_sea_turtle.png"
+    },
+    "marimba": {
+      "gloss": "a wooden xylophone-like instrument played with mallets",
+      "image": "ref-marimba.png"
+    },
+    "mud turtle": {
+      "gloss": "a small freshwater turtle with a dull, smooth shell",
+      "image": "ref-mud_turtle.png"
+    },
+    "ostrich": {
+      "gloss": "the largest living bird; flightless, with a long neck and legs",
+      "image": "ref-ostrich.png"
+    },
+    "stingray": {
+      "gloss": "a flat-bodied fish with a long, whip-like tail",
+      "image": "ref-stingray.png"
+    },
+    "tench": {
+      "gloss": "a thick-bodied European freshwater fish",
+      "image": "ref-tench.png"
+    },
+    "tiger shark": {
+      "gloss": "a large shark with dark vertical stripes on its sides",
+      "image": "ref-tiger_shark.png"
+    }
+  }
+}

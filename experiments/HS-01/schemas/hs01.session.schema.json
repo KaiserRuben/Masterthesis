@@ -12,7 +12,10 @@
     "participant", "environment", "timing", "phase_timings", "trials"
   ],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
+    "schema_version": {
+      "enum": ["1.0.0", "1.1.0"],
+      "description": "1.1.0 adds the optional response.references_revealed field; 1.0.0 records remain valid (additive change)."
+    },
     "study_id": { "type": "string" },
     "config_version": { "type": "string" },
     "config_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "Binds the session to the exact config file." },
@@ -220,7 +223,13 @@
               "description": "Pair trials; semantic coding, independent of display position."
             },
             "other_class_text": { "type": ["string", "null"], "description": "Optional free text when choice = OTHER_CLASS." },
-            "n_changes": { "type": "integer", "minimum": 0, "description": "Times the answer was changed before submit." }
+            "n_changes": { "type": "integer", "minimum": 0, "description": "Times the answer was changed before submit." },
+            "references_revealed": {
+              "type": "array",
+              "items": { "enum": ["ANCHOR_WORD", "TARGET_WORD"] },
+              "uniqueItems": true,
+              "description": "Pair trials: which word-option ⓘ helpers the rater opened (semantic slots). Whether a rater needed the gloss is validity signal. Schema 1.1.0+."
+            }
           }
         },
         "timing": {
