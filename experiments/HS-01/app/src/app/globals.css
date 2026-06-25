@@ -3,14 +3,26 @@
 @tailwind utilities;
 
 /*
- * HS-01 fidelity rule: stimulus prompts must render verbatim.
- * Use a system monospace stack — no remote webfont that could
- * normalize glyphs or alter character shapes.
+ * HS-01 fidelity rule: stimulus prompts must render verbatim — no glyph
+ * normalization, no character-shape alteration.
+ *
+ * --font-prompt leads with "JetBrains Mono", a SELF-HOSTED monospace webfont
+ * (bundled via next/font/local in src/app/layout.tsx as --font-jetbrains-mono;
+ * NOT a remote fetch — works offline and under the strict CSP). It is pinned
+ * here deliberately: it covers all 7 Cyrillic homoglyph codepoints in the pool
+ * with the SAME advance metrics as their Latin twins, so a homoglyph renders as
+ * its subtle Latin look-alike (as the adversarial perturbation intends) instead
+ * of triggering per-glyph script fallback to a heavier/taller font — the
+ * bold/oversized "tell" raters on phones/Linux/minimal-Docker would otherwise
+ * see. It preserves verbatim fidelity: the codepoints are unchanged, only their
+ * physical rendering is made device-consistent. The system monospace stack
+ * remains as fallback. See tests/prompt-font.test.ts.
  *
  * Apply .font-prompt to any element that renders a stimulus text.
  */
 :root {
-  --font-prompt: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+  --font-prompt: var(--font-jetbrains-mono), ui-monospace, Menlo, Consolas,
+    "Courier New", monospace;
   --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
