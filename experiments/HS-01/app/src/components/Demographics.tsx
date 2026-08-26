@@ -76,7 +76,8 @@ export function Demographics({
         A few questions about you
       </h2>
       <p className="text-body leading-relaxed mb-8">
-        This helps us describe who took part. It stays anonymous.
+        These questions help us understand who took part. Your answers stay
+        anonymous.
       </p>
 
       <div className="rounded-card border border-line bg-white p-6 shadow-card sm:p-8">
