@@ -40,6 +40,11 @@ never delete. Do not create a new repo-root `archive/` — that name is taken by
 - `runs/Archive/`
 - `tools/Archive/`
 
+`runs/` is not tracked in git, so "never delete" buys nothing there — archiving
+a run only moves it on disk. `runs/Archive/` no longer exists and Exp-01's data
+went with it, which is why that experiment is not reproducible. Copy runs worth
+keeping to the external archive (`docs/DATA.md`), not just to `runs/Archive/`.
+
 ## Package boundaries (important)
 
 Both pipelines are allowed to depend on `src/common/` and the other shared
@@ -50,12 +55,15 @@ Private symbols (`_foo`) stay inside the package that defines them. If you find
 yourself wanting to import a `_` -prefixed name across packages, promote it
 to public and move it to `src/common/` instead.
 
-Shared helpers currently exposed by `src/common/`:
-
-- `generate_seeds` — 1-vs-all pair scoring over ImageNet
-- `apply_seed_filter`, `build_context_meta` — seed-pool filtering + context snapshot
-- `seed_matrix.{build_fuzzy_onehot, build_pareto_init, build_precise_scan}`
-- `artifacts.{ParquetBuffer, EVOLUTIONARY_SCHEMA_VERSION, PDQ_SCHEMA_VERSION}`
+`src/common/__init__.py` defines `__all__` — treat that as the authoritative
+list rather than duplicating it here. Broadly it covers seed generation
+(`generate_seeds`, `roster_seeds`, `slot_items_seeds`), seed-pool filtering and
+context capture (`apply_seed_filter`, `build_context_meta`), pipeline bootstrap
+(`init_shared_components`, `prepare_pipeline_seeds`, `precompute_image_backend`),
+resume (`compute_resume_filter`), the Redis byte cache, hex grids, and worker
+dispatch. Not re-exported but equally shared:
+`seed_matrix.{build_fuzzy_onehot, build_pareto_init, build_precise_scan}` and
+`artifacts.{ParquetBuffer, EVOLUTIONARY_SCHEMA_VERSION, PDQ_SCHEMA_VERSION}`.
 
 ## Live objectives (`src/objectives/`)
 
@@ -74,8 +82,8 @@ PDQ does not use this module; it has its own distance metrics under
 ## Running
 
 ```bash
-pip install -e tools/smoo
-pip install -r experiments/requirements.txt
+git submodule update --init tools/smoo   # patched fork, see below
+pip install -r experiments/requirements.txt   # installs tools/smoo editable
 
 # Evolutionary
 python experiments/runners/run_boundary_test.py configs/Exp-NN/<config>.yaml
@@ -83,6 +91,21 @@ python experiments/runners/run_boundary_test.py configs/Exp-NN/<config>.yaml
 # PDQ
 python experiments/runners/run_pdq_test.py configs/Exp-NN/<config>.yaml
 ```
+
+`tools/smoo` tracks `KaiserRuben/SMOO` branch `masterarbeit`, not upstream.
+Upstream ships no packaging metadata (so `pip install -e` fails), cannot load
+the StyleGAN-XL pickles under `timm>=1.0`, and OOMs on CPU without
+`inference_mode`. Do not repoint it at upstream.
+
+Configs with `sut.backend: openvino` (the INT8/INT4 SUTs) need a **separate**
+environment — `experiments/requirements-openvino.txt` pins an older
+`transformers` than the base file, so the two do not co-install.
+
+Reproduction-facing documentation lives in `docs/`:
+[REPRODUCTION.md](docs/REPRODUCTION.md) maps experiments to figures,
+[ENVIRONMENT.md](docs/ENVIRONMENT.md) covers the two hardware stacks, and
+[DATA.md](docs/DATA.md) covers the external run archive. Keep them in sync when
+changing configs, requirements, or figure scripts.
 
 Templates in `configs/templates/evolutionary_template.yaml`,
 `configs/templates/pdq_template.yaml`, `configs/templates/seed_generator.yaml`.
@@ -92,14 +115,39 @@ writes trace/convergence/stats/context incrementally via `ParquetBuffer`).
 
 ## Test baseline
 
-`pytest tests/` is fully green — keep it that way. Any change must leave the
-suite passing.
+`pytest tests/` is fully green (725 passed) — keep it that way. Any change must
+leave the suite passing.
+
+Two tests flake because pymoo's `setup()` is unseeded in their fixtures:
+`test_evolutionary.py::TestVLMBoundaryTester::test_trace_row_count` and
+`test_discrete_optimizer.py::TestConstruction::test_initial_population_shape`.
+Rerun before blaming your change; both pass in isolation.
+
+## Human-subject data (HS-01)
+
+`experiments/HS-01/results/sessions/` holds participant records. The study app
+records a browser environment block for quality control whose
+`user_agent`/`platform`/`screen`/`device_pixel_ratio` combination is a device
+fingerprint — it identified most participants uniquely — and the consent text
+promises no personal data is stored.
+
+Any record added or refreshed here must be scrubbed before it is committed:
+
+```bash
+python experiments/HS-01/tools/anonymize_sessions.py --check     # verify
+python experiments/HS-01/tools/anonymize_sessions.py --in-place  # scrub
+```
+
+The analysis reads the derived `device` field, never the raw fields, so this
+costs nothing. Keep unscrubbed originals outside the repository.
 
 ## External systems referenced by the code
 
 - **Obsidian diary** — `~/Obsidian/Notizen/01 - Active Projects/Master Thesis/`
   - `Experiments/` — `Exp-NN-Title-Case.md` per experiment
-  - `Diary/assets/` — figure output via `analysis/core/style.asset_dir`
+  - `Diary/assets/` — default figure output via `analysis/core/style.asset_dir`,
+    used only when the vault exists; override with `ANALYSIS_ASSET_ROOT`, and
+    point the thesis figure scripts at a checkout with `THESIS_DIR`
 - **Redis (inference cache)** — Docker volume on external SanDisk drive (see `memory/infra_redis_volume.md`)
 
 ## Gotchas
