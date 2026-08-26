@@ -49,6 +49,35 @@ def test_multitier_dispatches_multitier_sampling() -> None:
     assert len(sampler.tiers) == len(DEFAULT_MULTITIER_TIERS)
 
 
+class _Prob:
+    """Minimal pymoo-Problem stand-in for exercising a sampler's `_do`."""
+
+    def __init__(self, n_var: int) -> None:
+        self.n_var = n_var
+        self.xl = np.zeros(n_var, dtype=np.int64)
+        self.xu = np.full(n_var, 15, dtype=np.int64)
+
+
+def test_seed_makes_init_population_reproducible() -> None:
+    """Same seed → identical init draw; different seed → different; the
+    seed forwards through build_sampler_from_config (Exp-104 paired A/B)."""
+    cfg = SamplingConfig(mode="sparse_multitier")
+
+    def draw(seed):
+        s = build_sampler_from_config(cfg, text_dim=20, seed=seed)
+        return s._do(_Prob(200), 30)
+
+    assert np.array_equal(draw(42), draw(42))
+    assert not np.array_equal(draw(42), draw(7))
+
+
+def test_seed_none_is_nondeterministic() -> None:
+    cfg = SamplingConfig(mode="sparse_multitier")
+    s1 = build_sampler_from_config(cfg, text_dim=20, seed=None)
+    s2 = build_sampler_from_config(cfg, text_dim=20, seed=None)
+    assert not np.array_equal(s1._do(_Prob(200), 30), s2._do(_Prob(200), 30))
+
+
 def test_score_guided_dispatches_score_guided_sampling(tmp_path: Path) -> None:
     score_path = tmp_path / "pattern_seed83.npy"
     np.save(score_path, np.linspace(0.0, 1.0, 222))

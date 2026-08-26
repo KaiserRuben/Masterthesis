@@ -246,6 +246,7 @@ def _build_tester(
         mutation_eta=exp.optimizer.mutation.eta,
         crossover_prob=exp.optimizer.crossover.prob,
         crossover_eta=exp.optimizer.crossover.eta,
+        seed=exp.seed,
     )
     manipulator = VLMManipulator(image_manip, text_manip)
     return VLMBoundaryTester(
@@ -306,6 +307,15 @@ def main() -> None:
         help="Override output directory for results",
     )
     parser.add_argument(
+        "--seed", type=int, default=None,
+        help=(
+            "Override the master RNG seed (config `seed`). Makes the "
+            "initial population and GA operator stream reproducible — pass "
+            "the SAME seed to two runs (e.g. raw vs PMI) so scoring is the "
+            "only difference. Omit to keep the config value / unseeded."
+        ),
+    )
+    parser.add_argument(
         "--preflight", action="store_true",
         help=(
             "Measure per-SUT-call wall time on 20 representative calls "
@@ -348,6 +358,8 @@ def main() -> None:
         cfg["device"] = args.device
     if args.save_dir:
         cfg["save_dir"] = args.save_dir
+    if args.seed is not None:
+        cfg["seed"] = args.seed
 
     run_experiment(
         cfg,

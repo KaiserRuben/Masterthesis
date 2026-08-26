@@ -278,6 +278,44 @@ class TestReset:
 
 
 # ===================================================================
+# TestSeed
+# ===================================================================
+
+
+class TestSeed:
+    """Fixed seed → reproducible initial population (Exp-104 paired A/B)."""
+
+    def test_same_seed_identical_init(self) -> None:
+        bounds = np.array([10, 20, 30, 16, 16], dtype=np.int64)
+        a = DiscretePymooOptimizer(gene_bounds=bounds, num_objectives=3,
+                                   pop_size=20, seed=123).get_x_current()
+        b = DiscretePymooOptimizer(gene_bounds=bounds, num_objectives=3,
+                                   pop_size=20, seed=123).get_x_current()
+        assert np.array_equal(a, b)
+
+    def test_different_seed_differs(self) -> None:
+        bounds = np.array([10, 20, 30, 16, 16], dtype=np.int64)
+        a = DiscretePymooOptimizer(gene_bounds=bounds, num_objectives=3,
+                                   pop_size=20, seed=1).get_x_current()
+        b = DiscretePymooOptimizer(gene_bounds=bounds, num_objectives=3,
+                                   pop_size=20, seed=2).get_x_current()
+        assert not np.array_equal(a, b)
+
+    def test_seed_survives_update_gene_bounds(self) -> None:
+        """update_gene_bounds re-inits per seed; the fixed seed re-applies so
+        each cell in a multi-cell run is independently reproducible."""
+        b1 = np.array([8, 8, 8, 8], dtype=np.int64)
+        o1 = DiscretePymooOptimizer(gene_bounds=b1, num_objectives=2,
+                                    pop_size=16, seed=99)
+        o2 = DiscretePymooOptimizer(gene_bounds=b1, num_objectives=2,
+                                    pop_size=16, seed=99)
+        new = np.array([12, 12, 12, 12, 12], dtype=np.int64)
+        o1.update_gene_bounds(new)
+        o2.update_gene_bounds(new)
+        assert np.array_equal(o1.get_x_current(), o2.get_x_current())
+
+
+# ===================================================================
 # TestOperatorConfig
 # ===================================================================
 

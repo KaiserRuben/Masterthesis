@@ -633,6 +633,14 @@ class ExperimentConfig:
         mutation.  Must contain a ``{categories}`` placeholder.
     :param generations: Number of optimizer generations per seed.
     :param pop_size: Population size for the optimizer.
+    :param seed: Master RNG seed for the search. ``None`` (default)
+        preserves the historical nondeterministic behaviour (pymoo and the
+        sparse init sampler draw from unseeded global RNGs). Set an int to
+        make the initial population and the GA operator stream reproducible
+        — required for a paired A/B where the only intended difference
+        between two runs is the scoring (e.g. Exp-104 raw-vs-PMI). Note
+        this does not remove residual nondeterminism from re-selected
+        anchor photos or MPS-kernel float noise.
     :param save_dir: Root directory for saving results.
     :param name: Experiment name (used in directory naming).
     :param sut: VLM scorer settings.
@@ -651,6 +659,7 @@ class ExperimentConfig:
     # Experiment
     generations: int = 100
     pop_size: int = 50
+    seed: int | None = None
     save_dir: Path = field(default_factory=lambda: Path("runs"))
     name: str = "vlm_boundary"
 

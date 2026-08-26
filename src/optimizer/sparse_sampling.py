@@ -642,6 +642,7 @@ def build_sampler_from_config(
     *,
     codebook: NDArray[np.float32] | None = None,
     candidates_per_position: tuple[NDArray[np.int64], ...] | None = None,
+    seed: int | None = None,
 ) -> Sampling | None:
     """Dispatch a :class:`Sampling` instance from a :class:`SamplingConfig`.
 
@@ -657,6 +658,9 @@ def build_sampler_from_config(
         ``sparse_multitier_fps`` mode. Ignored otherwise.
     :param candidates_per_position: Per-position KNN-ordered candidate
         code lists, required for ``sparse_multitier_fps``.
+    :param seed: Optional RNG seed forwarded to the sampler for
+        reproducible initial populations. ``None`` (default) keeps the
+        historical nondeterministic draw.
     :raises ValueError: for unknown modes or missing required fields.
     """
     mode = sampling_cfg.mode
@@ -670,6 +674,7 @@ def build_sampler_from_config(
             geometric_rate=sampling_cfg.geometric_rate,
             zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
             uniform_fallback_fraction=sampling_cfg.uniform_fallback_fraction,
+            seed=seed,
         )
 
     if mode == "sparse_multitier":
@@ -682,6 +687,7 @@ def build_sampler_from_config(
             text_dim=text_dim,
             tiers=[(t.p_active, t.fraction) for t in sampling_cfg.tiers],
             zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
+            seed=seed,
         )
 
     if mode == "sparse_multitier_fps":
@@ -705,6 +711,7 @@ def build_sampler_from_config(
             zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
             fps_subset_size=sampling_cfg.fps_subset_size,
             fps_metric=sampling_cfg.fps_metric,
+            seed=seed,
         )
 
     if mode == "sparse_score_guided":
@@ -728,6 +735,7 @@ def build_sampler_from_config(
                 text_dim=text_dim,
                 tiers=[(t.p_active, t.fraction) for t in sampling_cfg.tiers],
                 zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
+                seed=seed,
             )
         score = np.load(score_path)
         return ScoreGuidedMultiTierSampling(
@@ -735,6 +743,7 @@ def build_sampler_from_config(
             tiers=[(t.p_active, t.fraction) for t in sampling_cfg.tiers],
             score=score,
             zero_anchor_fraction=sampling_cfg.zero_anchor_fraction,
+            seed=seed,
         )
 
     raise ValueError(

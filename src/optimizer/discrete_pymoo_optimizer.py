@@ -103,6 +103,11 @@ class DiscretePymooOptimizer(Optimizer):
         (default ``0.9``, the historical hardcoded value).
     :param crossover_eta: SBX distribution index (default ``3.0``,
         the historical hardcoded value).
+    :param seed: Optional RNG seed passed to pymoo's ``setup`` so the
+        initial population and GA operator stream are reproducible.
+        ``None`` (default) keeps the historical unseeded behaviour.
+        Re-applied on every ``update_gene_bounds`` re-init, so each seed
+        in a multi-cell run is independently reproducible.
     """
 
     _pymoo_algo: GeneticAlgorithm
@@ -126,6 +131,7 @@ class DiscretePymooOptimizer(Optimizer):
         mutation_eta: float = DEFAULT_MUTATION_ETA,
         crossover_prob: float = DEFAULT_CROSSOVER_PROB,
         crossover_eta: float = DEFAULT_CROSSOVER_ETA,
+        seed: int | None = None,
     ) -> None:
         super().__init__(num_objectives)
 
@@ -133,6 +139,7 @@ class DiscretePymooOptimizer(Optimizer):
         self._pop_size = pop_size
         self._algorithm_cls = algorithm
         self._algo_params = dict(algo_params) if algo_params else {}
+        self._seed = seed
         self._mutation_op = build_mutation(prob=mutation_prob, eta=mutation_eta)
         self._crossover_op = build_crossover(
             prob=crossover_prob, eta=crossover_eta
@@ -177,7 +184,15 @@ class DiscretePymooOptimizer(Optimizer):
 
         params = self._build_params()
         self._pymoo_algo = self._algorithm_cls(**params)
-        self._pymoo_algo.setup(self._problem, termination=NoTermination())
+        # A fixed seed makes the initial population and the GA operator
+        # RNG stream reproducible (Exp-104 paired A/B). ``None`` keeps
+        # pymoo's historical unseeded global-RNG draw.
+        if self._seed is not None:
+            self._pymoo_algo.setup(
+                self._problem, termination=NoTermination(), seed=self._seed,
+            )
+        else:
+            self._pymoo_algo.setup(self._problem, termination=NoTermination())
 
         # Draw the first population.
         self._pop_current = self._pymoo_algo.ask()

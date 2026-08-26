@@ -493,6 +493,7 @@ class VLMBoundaryTester(SMOO):
             text_dim=self._manipulator.text_dim,
             codebook=codebook,
             candidates_per_position=candidates_per_position,
+            seed=self._config.seed,
         )
         if sampler is not None:
             self._optimizer.set_sampling(sampler)
