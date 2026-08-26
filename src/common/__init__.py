@@ -2,6 +2,11 @@
 
 from .abstraction import resolve_label, validate_class_list
 from .combinatorial_pair_generator import combinatorial_pairs
+from .hex_grid import (
+    build_hex_grid,
+    filter_equal_token_count,
+    validate_token_counts,
+)
 from .pipeline_bootstrap import (
     SharedComponents,
     init_shared_components,
@@ -38,12 +43,14 @@ __all__ = [
     "SharedComponents",
     "apply_seed_filter",
     "build_context_meta",
+    "build_hex_grid",
     "collect_target_classes",
     "combinatorial_pairs",
     "compute_resume_filter",
     "connect_bytes_redis",
     "default_seed_probe",
     "dispatch_workers",
+    "filter_equal_token_count",
     "generate_seeds",
     "init_shared_components",
     "item_candidates",
@@ -55,4 +62,5 @@ __all__ = [
     "seed_target_class",
     "slot_items_seeds",
     "validate_class_list",
+    "validate_token_counts",
 ]
