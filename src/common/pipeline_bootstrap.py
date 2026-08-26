@@ -188,11 +188,31 @@ def prepare_pipeline_seeds(
     * ``roster`` — :func:`src.common.roster_seeds` collects anchors
       per explicit class, then :func:`src.common.combinatorial_pairs`
       expands across abstraction-level cells.
+    * ``refcocoplus`` — two-referent grounding items (box-string candidates).
 
     :param components: Shared components (uses ``sut`` + ``data_source``).
     :param exp_cfg: Canonical experiment config.
     :returns: List of :class:`SeedTriple` objects (possibly empty).
     """
+    # When PMI is on but not meant to govern seed selection, freeze the
+    # generator's anchor scoring to raw so the chosen photos match a raw
+    # run exactly (PMIConfig.apply_to_seedgen; Exp-104 Phase B). No-op when
+    # PMI is disabled. ``force_raw`` is a scoped override on the SUT.
+    if exp_cfg.pmi.enabled and not exp_cfg.pmi.apply_to_seedgen:
+        logger.info(
+            "PMI enabled but apply_to_seedgen=False → seed generation uses "
+            "raw scoring (anchor selection identical to a raw run)."
+        )
+        with components.sut.force_raw():
+            return _generate_seeds_for_mode(components, exp_cfg)
+    return _generate_seeds_for_mode(components, exp_cfg)
+
+
+def _generate_seeds_for_mode(
+    components: SharedComponents,
+    exp_cfg: "ExperimentConfig",  # noqa: F821
+) -> Sequence:
+    """Dispatch to the configured seed-generation mode."""
     if exp_cfg.seeds.mode == "roster":
         if exp_cfg.seeds.roster is None:
             raise ValueError(

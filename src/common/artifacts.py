@@ -42,7 +42,13 @@ logger = logging.getLogger(__name__)
 # in which the Pareto member appeared, nullable), and ``anchor_source``
 # (``"zero"`` for legacy PDQ, ``"evolutionary"`` for combined-pipeline
 # rows). Default values keep the canonical PDQ path schema-stable.
-EVOLUTIONARY_SCHEMA_VERSION = 4
+# Evolutionary v5 (2026-07-23): PMI calibration (see PMIConfig / Exp-104).
+# When ``pmi.enabled``, the ``logprobs``/``probs``/``predicted_class``/
+# ``p_class_{a,b}`` columns hold the PMI-corrected quantity, and ``stats.json``
+# gains ``pmi_enabled``, ``pmi_null_image``, and ``pmi_baseline`` (the
+# per-class surface-form prior). Raw log-probs are recoverable as
+# ``corrected + pmi_baseline``. Default (PMI off) is schema-stable vs v4.
+EVOLUTIONARY_SCHEMA_VERSION = 5
 PDQ_SCHEMA_VERSION = 5
 
 

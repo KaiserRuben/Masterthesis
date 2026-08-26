@@ -15,6 +15,7 @@ from src.config import (
     DEFAULT_PROMPT_TEMPLATE,
     DEFAULT_ANSWER_FORMAT,
     ExperimentConfig,
+    PMIConfig,
     SUTConfig,
 )
 
@@ -354,6 +355,168 @@ class TestInputValid:
         assert is_valid is True
 
 
+# =========================================================================
+# PMI calibration (PMIConfig / Exp-104)
+# =========================================================================
+
+
+class ImageSensitiveScorer(FakeScorer):
+    """FakeScorer whose norm log-probs depend on the image, so the PMI
+    subtraction is observable. Detects the content-neutral null image
+    (uniform gray 128) and returns a distinct baseline. Counts calls so
+    baseline caching can be asserted. Knows only labels ``"a"`` / ``"b"``.
+    """
+
+    _NULL = {"a": -0.5, "b": -2.5}    # baseline scored on the gray null image
+    _SIGNAL = {"a": -1.0, "b": -1.2}  # any other (real) image
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.n_calls = 0
+
+    def score_categories(self, image, prompt, categories, thinking_ids=None):  # type: ignore[override]
+        import numpy as np
+
+        self.n_calls += 1
+        arr = np.asarray(image)
+        table = self._NULL if bool((arr == 128).all()) else self._SIGNAL
+        scored = [(c, table[c] * 2.0, table[c], 2) for c in categories]
+        return sorted(scored, key=lambda x: x[2], reverse=True)
+
+
+def _make_pmi_sut(scorer: "VLMScorer", pmi: PMIConfig) -> "VLMSUT":
+    """FakeSUT injecting *scorer* + a PMI config. Deliberately does NOT
+    pre-set the PMI caches, exercising the lazy-init fallback that keeps
+    __init__-bypassing test doubles working."""
+    from src.sut.vlm_sut import VLMSUT
+
+    class FakeSUT(VLMSUT):
+        def __init__(self) -> None:
+            self._config = ExperimentConfig(categories=("a", "b"), pmi=pmi)
+            self._device = torch.device("cpu")
+            self._scorer = scorer
+            self._prompt = (
+                self._config.prompt_template
+                + self._config.answer_format.format(categories="a, b")
+            )
+            self._redis = None
+            self._cache_hits = 0
+            self._cache_misses = 0
+            self._last_call_cached = False
+            self._text_embedder = None
+
+    return FakeSUT()
+
+
+class TestPMIConfig:
+    """PMIConfig defaults and validation."""
+
+    def test_defaults(self) -> None:
+        p = PMIConfig()
+        assert p.enabled is False
+        assert p.null_image == "gray"
+        assert p.null_image_size == 448
+        assert p.null_image_seed == 0
+        # Present on ExperimentConfig, default-off (no behaviour change).
+        assert ExperimentConfig().pmi.enabled is False
+
+    def test_invalid_null_image_raises(self) -> None:
+        with pytest.raises(ValueError):
+            PMIConfig(null_image="rainbow")
+
+    def test_null_image_variants_valid(self) -> None:
+        for name in ("gray", "black", "white", "noise"):
+            assert PMIConfig(null_image=name).null_image == name
+
+    def test_apply_to_seedgen_default_on(self) -> None:
+        # Default preserves whole-system behaviour; opt-out is explicit.
+        assert PMIConfig().apply_to_seedgen is True
+        assert PMIConfig(apply_to_seedgen=False).apply_to_seedgen is False
+
+
+class TestNullImage:
+    """The content-neutral baseline image builder."""
+
+    def _null(self, name: str):
+        sut = _make_pmi_sut(
+            ImageSensitiveScorer(),
+            PMIConfig(enabled=True, null_image=name, null_image_size=8),
+        )
+        return sut._null_image()
+
+    def test_solid_colours(self) -> None:
+        assert self._null("gray").getpixel((0, 0)) == (128, 128, 128)
+        assert self._null("black").getpixel((0, 0)) == (0, 0, 0)
+        assert self._null("white").getpixel((0, 0)) == (255, 255, 255)
+
+    def test_noise_is_not_solid(self) -> None:
+        import numpy as np
+
+        arr = np.asarray(self._null("noise"))
+        assert arr.shape == (8, 8, 3)
+        assert arr.std() > 0  # actual noise, not a constant fill
+
+
+class TestPMICalibration:
+    """process_input under the PMI flag."""
+
+    def test_disabled_is_identity(self) -> None:
+        """PMI off → raw scores returned, no baseline call (comparability)."""
+        scorer = ImageSensitiveScorer()
+        sut = _make_pmi_sut(scorer, PMIConfig(enabled=False))
+        out = sut.process_input(_dummy_image())
+        assert out[0].item() == pytest.approx(-1.0)   # a, raw SIGNAL
+        assert out[1].item() == pytest.approx(-1.2)   # b, raw SIGNAL
+        assert scorer.n_calls == 1                    # no null-image baseline
+
+    def test_baseline_subtracted(self) -> None:
+        """PMI on → returns SIGNAL − NULL, per class, in input order."""
+        scorer = ImageSensitiveScorer()
+        sut = _make_pmi_sut(scorer, PMIConfig(enabled=True))
+        out = sut.process_input(_dummy_image())
+        # a: -1.0 - (-0.5) = -0.5 ; b: -1.2 - (-2.5) = +1.3
+        assert out[0].item() == pytest.approx(-0.5)
+        assert out[1].item() == pytest.approx(1.3)
+
+    def test_baseline_cached(self) -> None:
+        """Baseline is scored once per category-tuple, then reused."""
+        scorer = ImageSensitiveScorer()
+        sut = _make_pmi_sut(scorer, PMIConfig(enabled=True))
+        sut.process_input(_dummy_image())   # signal + baseline  → 2
+        sut.process_input(_dummy_image())   # signal only         → +1
+        assert scorer.n_calls == 3
+
+    def test_pmi_baseline_accessor(self) -> None:
+        scorer = ImageSensitiveScorer()
+        sut = _make_pmi_sut(scorer, PMIConfig(enabled=True))
+        assert sut.pmi_baseline(("a", "b")) == pytest.approx([-0.5, -2.5])
+        # Disabled → None (nothing to persist).
+        off = _make_pmi_sut(ImageSensitiveScorer(), PMIConfig(enabled=False))
+        assert off.pmi_baseline(("a", "b")) is None
+
+    def test_force_raw_returns_raw_while_pmi_enabled(self) -> None:
+        """Inside force_raw(), process_input is raw even with PMI on; the
+        override is restored on exit (seed-gen-freeze mechanism)."""
+        scorer = ImageSensitiveScorer()
+        sut = _make_pmi_sut(scorer, PMIConfig(enabled=True))
+        with sut.force_raw():
+            out = sut.process_input(_dummy_image())
+            assert out[0].item() == pytest.approx(-1.0)  # raw SIGNAL, no subtract
+            assert out[1].item() == pytest.approx(-1.2)
+        # Restored: PMI subtraction back in effect.
+        out2 = sut.process_input(_dummy_image())
+        assert out2[0].item() == pytest.approx(-0.5)
+        assert out2[1].item() == pytest.approx(1.3)
+
+    def test_force_raw_noop_when_disabled(self) -> None:
+        scorer = ImageSensitiveScorer()
+        sut = _make_pmi_sut(scorer, PMIConfig(enabled=False))
+        with sut.force_raw():
+            out = sut.process_input(_dummy_image())
+        assert out[0].item() == pytest.approx(-1.0)
+        assert scorer.n_calls == 1  # no null-image baseline call
+
+
 class _FaultyRedis:
     """Redis double whose ops raise, simulating a mid-run connection reset."""
 
@@ -406,3 +569,17 @@ class TestCacheFaultTolerance:
         out = sut.process_input(_dummy_image())          # must NOT raise
         assert out.shape == (2,)
         assert sut._redis is None
+
+
+class TestPMICacheKey:
+    """Redis key must isolate PMI-corrected from raw results."""
+
+    def test_pmi_tag_distinguishes(self) -> None:
+        from src.sut.vlm_sut import _cache_key
+
+        img = _dummy_image()
+        legacy = _cache_key("m", img, "p", ("a", "b"))
+        empty_tag = _cache_key("m", img, "p", ("a", "b"), pmi_tag="")
+        pmi = _cache_key("m", img, "p", ("a", "b"), pmi_tag="pmi:gray:448:0")
+        assert legacy == empty_tag    # empty tag == pre-PMI key (cache reuse)
+        assert pmi != legacy          # corrected results never collide w/ raw

@@ -22,6 +22,7 @@ from src.config import (
     ImageConfig,
     OptimizerConfig,
     ParallelConfig,
+    PMIConfig,
     SeedConfig,
     SUTConfig,
     TextConfig,
@@ -165,6 +166,7 @@ class BoundaryPairExperimentConfig:
     cache_dirs: tuple[Path, ...] = ()
 
     sut: SUTConfig = field(default_factory=SUTConfig)
+    pmi: PMIConfig = field(default_factory=PMIConfig)
     image: ImageConfig = field(default_factory=ImageConfig)
     text: TextConfig = field(default_factory=TextConfig)
     seeds: SeedConfig = field(default_factory=SeedConfig)
@@ -208,6 +210,7 @@ def to_evolutionary_config(
         modality=cfg.evolutionary.modality,
         cache_dirs=cfg.cache_dirs,
         sut=cfg.sut,
+        pmi=cfg.pmi,
         image=cfg.image,
         text=cfg.text,
         seeds=cfg.seeds,
@@ -230,6 +233,7 @@ def to_pdq_config(cfg: BoundaryPairExperimentConfig) -> PDQExperimentConfig:
         reproducibility=cfg.reproducibility,
         cache_dirs=cfg.cache_dirs,
         sut=cfg.sut,
+        pmi=cfg.pmi,
         image=cfg.image,
         text=cfg.text,
         seeds=cfg.seeds,

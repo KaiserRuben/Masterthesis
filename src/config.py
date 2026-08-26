@@ -78,6 +78,60 @@ class SUTConfig:
 
 
 @dataclass(frozen=True)
+class PMIConfig:
+    """PMI (pointwise-mutual-information) calibration of the boundary distance.
+
+    When ``enabled``, the SUT subtracts a per-class *surface-form prior*
+    baseline from every returned log-prob vector::
+
+        pmi(c) = ℓ(c | m) − ℓ(c | ∅)
+
+    where ``∅`` is a content-neutral image scored under the *canonical*
+    prompt (``prompt_template`` + ``answer_format`` over the scored
+    categories — never the per-individual mutated text). The baseline is
+    constant per category-tuple, computed once and cached, so the cost is
+    two forward passes per class pair regardless of search length.
+
+    Because every score in the system flows through
+    :meth:`~src.sut.vlm_sut.VLMSUT.process_input`, enabling this makes the
+    entire pipeline — ``TargetedBalance``, PDQ flip detection, seed
+    selection, early-stop, and the logged ``argmax``/``probs`` — operate on
+    the prior-corrected quantity. The raw log-probs stay recoverable from
+    the trace because the baseline is persisted (``raw = corrected +
+    baseline``). See Exp-104 for the motivation.
+
+    :param enabled: Master switch. ``False`` (default) → the SUT returns
+        raw log-probs, byte-identical to the pre-PMI pipeline.
+    :param null_image: Content-neutral baseline image — ``"gray"``
+        (default), ``"black"``, ``"white"``, or ``"noise"``.
+    :param null_image_size: Side length in px of the square null image.
+    :param null_image_seed: RNG seed for ``null_image="noise"`` (fixed so
+        the baseline is deterministic).
+    :param apply_to_seedgen: When ``True`` (default), PMI correction also
+        governs roster/gap-filter anchor acceptance (argmax GT-check +
+        ``min_anchor_confidence``) — the whole-system behaviour. Set
+        ``False`` to force *raw* scoring during seed generation while the
+        search still runs under PMI: this makes seed selection (which
+        concrete anchor photo binds to each cell) identical to a raw run,
+        so a raw-vs-PMI A/B differs only in the search objective. See
+        Exp-104 Phase B.
+    """
+
+    enabled: bool = False
+    null_image: str = "gray"
+    null_image_size: int = 448
+    null_image_seed: int = 0
+    apply_to_seedgen: bool = True
+
+    def __post_init__(self) -> None:
+        if self.null_image not in ("gray", "black", "white", "noise"):
+            raise ValueError(
+                f"pmi.null_image must be 'gray' | 'black' | 'white' | "
+                f"'noise'; got {self.null_image!r}"
+            )
+
+
+@dataclass(frozen=True)
 class GapFilterConfig:
     """Parameters for the ``gap_filter`` seed-selection mode.
 
@@ -638,6 +692,7 @@ class ExperimentConfig:
 
     # Components
     sut: SUTConfig = field(default_factory=SUTConfig)
+    pmi: PMIConfig = field(default_factory=PMIConfig)
     image: ImageConfig = field(default_factory=ImageConfig)
     text: TextConfig = field(default_factory=TextConfig)
     seeds: SeedConfig = field(default_factory=SeedConfig)

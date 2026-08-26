@@ -17,6 +17,16 @@ optimizer only needs a monotone scalar per individual for selection,
 and the raw log-prob gap is the cheapest, most numerically well-behaved
 monotone function available. See Diary
 2026-04-15-Exp05-Numerical-Floor-Discovery for context.
+
+PMI note: this criterion is agnostic to whether the log-prob vector it
+receives is raw or PMI-corrected. When ``pmi.enabled`` (PMIConfig /
+Exp-104), the SUT subtracts the per-class surface-form prior *before*
+the vector reaches this criterion, so ``|lp_A - lp_B|`` becomes the
+PMI-gap ``|(lp_A - lp_A∅) - (lp_B - lp_B∅)|`` with no change here.
+Note the two priors do NOT cancel in the difference unless both classes
+happen to share one (lp_A∅ == lp_B∅); with PMI enabled the criterion
+measures a genuinely different quantity, shifted by the constant
+prior gap lp_A∅ - lp_B∅.
 """
 
 from __future__ import annotations

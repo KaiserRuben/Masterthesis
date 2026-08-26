@@ -25,6 +25,12 @@ boundary crossing relative to the anchor.  Two policies exist:
     every perturbed input "boa constrictor"): a candidate whose
     full-category argmax is an off-pair attractor is a flip iff it is
     on the target side of the pair boundary.
+
+PMI note: predicates compare the logprobs the SUT returns. When
+``pmi.enabled`` (PMIConfig / Exp-104) those are PMI-corrected, so a
+"flip" is a crossing of the *evidence* boundary (prior offset removed)
+rather than the behavioural boundary — no change here, the semantics
+shift is inherited from the SUT.
 """
 
 from __future__ import annotations

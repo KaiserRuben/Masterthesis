@@ -102,8 +102,11 @@ def build_trace_rows(
     Three representations of the per-individual SUT state are stored:
 
     * ``logprobs`` — length-N length-normalized log-prob vector as
-      returned by the scorer. The raw, canonical source; everything
-      else is derivable from it. Full FP32 precision.
+      returned by the scorer. The canonical source; everything else is
+      derivable from it. Full FP32 precision. When ``pmi.enabled`` (see
+      PMIConfig / Exp-104) this is the PMI-corrected vector
+      ``ℓ(c|m) − ℓ(c|∅)``; the raw view is recoverable by adding
+      ``stats["pmi_baseline"]``.
     * ``probs`` — length-N softmax of ``logprobs``, the full N-class
       probability distribution. Convenience for post-hoc analyses that
       want to work in probability space (entropy, KL, top-k, trees).
@@ -884,6 +887,13 @@ class VLMBoundaryTester(SMOO):
                 "generation": early_stop.generation,
                 "details": early_stop.details,
             }
+        # PMI provenance (see PMIConfig / Exp-104). When enabled, the trace's
+        # logprobs/probs/predicted_class are PMI-corrected; persisting the
+        # baseline keeps the raw view recoverable (raw = corrected + baseline).
+        stats["pmi_enabled"] = self._config.pmi.enabled
+        if self._config.pmi.enabled:
+            stats["pmi_null_image"] = self._config.pmi.null_image
+            stats["pmi_baseline"] = self._sut.pmi_baseline(scored_categories)
         with open(run_dir / "stats.json", "w") as f:
             json.dump(stats, f, indent=2)
 

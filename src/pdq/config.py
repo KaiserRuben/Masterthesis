@@ -20,6 +20,7 @@ from src.config import (
     DEFAULT_PROMPT_TEMPLATE,
     ImageConfig,
     ParallelConfig,
+    PMIConfig,
     SeedConfig,
     SUTConfig,
     TextConfig,
@@ -318,6 +319,7 @@ class PDQExperimentConfig:
 
     # Components (shared with SMOO runner — no duplication)
     sut: SUTConfig = field(default_factory=SUTConfig)
+    pmi: PMIConfig = field(default_factory=PMIConfig)
     image: ImageConfig = field(default_factory=ImageConfig)
     text: TextConfig = field(default_factory=TextConfig)
     seeds: SeedConfig = field(default_factory=SeedConfig)

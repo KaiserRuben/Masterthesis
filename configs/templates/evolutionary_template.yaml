@@ -69,6 +69,23 @@ cache_dirs:
 #     - model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int4-ov  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
 
 # ===========================================================================
+# PMI calibration (surface-form-prior correction of the boundary distance)
+# ===========================================================================
+# When enabled, the SUT subtracts a per-class baseline scored on a content-
+# neutral image under the canonical prompt: g_AB becomes the PMI gap and the
+# answer-string prior cancels. Applied at the single scoring boundary, so the
+# whole pipeline (TargetedBalance, PDQ flips, seed selection, early-stop, the
+# logged argmax/probs) uses the corrected distance. Raw log-probs stay
+# recoverable (stats.json: pmi_baseline). Default off = pre-PMI behaviour.
+# See Exp-104.
+#
+# pmi:
+#   enabled: false                       # master switch (default false)
+#   null_image: gray                     # gray (default) | black | noise
+#   null_image_size: 448                 # px, square
+#   null_image_seed: 0                   # RNG seed for null_image=noise
+
+# ===========================================================================
 # Image manipulator (two backends — VQGAN default, StyleGAN-XL opt-in)
 # ===========================================================================
 
