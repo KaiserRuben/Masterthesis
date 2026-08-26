@@ -1,0 +1,1162 @@
+{
+  "schema_version": "1.1.0",
+  "study_id": "HS-01",
+  "config_version": "1.0.0",
+  "config_sha256": "dcffdeca45b972f5c63a4f2c5d1e66e12823f2686ad7d190229260402d22e49b",
+  "session_id": "c33de0f3-a2a8-4a43-8f26-b42df5d6bba3",
+  "form_id": "B",
+  "rng_seed": "966428ddee1a450f78a1bd6e0839a225",
+  "status": "completed",
+  "participant": {
+    "participant_code": "P025",
+    "recruitment_channel": null,
+    "consent": {
+      "given": true,
+      "consent_version": "v1",
+      "at_utc": "2026-06-30T14:00:00Z"
+    }
+  },
+  "environment": {
+    "device": "mobile",
+    "is_touch": true,
+    "render_check": {
+      "passed": true,
+      "method": "canvas_homoglyph_v1"
+    }
+  },
+  "timing": {
+    "started_at_utc": "2026-06-30T14:00:00Z",
+    "completed_at_utc": "2026-06-30T14:00:00Z",
+    "total_duration_ms": 339796,
+    "server_received_at_utc": "2026-06-30T14:00:00Z"
+  },
+  "phase_timings": [
+    {
+      "phase_id": "text",
+      "entered_ms": 15178,
+      "exited_ms": 145776
+    },
+    {
+      "phase_id": "image",
+      "entered_ms": 147843,
+      "exited_ms": 193030
+    },
+    {
+      "phase_id": "pair",
+      "entered_ms": 195005,
+      "exited_ms": 305598
+    },
+    {
+      "phase_id": "demographics",
+      "entered_ms": 305610,
+      "exited_ms": 339795
+    }
+  ],
+  "trials": [
+    {
+      "trial_index": 0,
+      "phase_id": "text",
+      "position_in_phase": 0,
+      "item_id": "txt-clean-llava-Nile_crocodile-2",
+      "source_id": "src-clean-llava-Nile_crocodile-2",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 15404,
+        "first_interaction_ms": 26404,
+        "response_selected_ms": 26404,
+        "submitted_ms": 26658
+      }
+    },
+    {
+      "trial_index": 1,
+      "phase_id": "text",
+      "position_in_phase": 1,
+      "item_id": "txt-HS-GEN-02-llava-s2359-g22-p240",
+      "source_id": "src-HS-GEN-02-llava-s2359-g22-p240",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 2,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 26869,
+        "first_interaction_ms": 39901,
+        "response_selected_ms": 39901,
+        "submitted_ms": 40152
+      }
+    },
+    {
+      "trial_index": 2,
+      "phase_id": "text",
+      "position_in_phase": 2,
+      "item_id": "txt-HS-GEN-03-llava-s1186-g27-p140",
+      "source_id": "src-HS-GEN-03-llava-s1186-g27-p140",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 2,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 40360,
+        "first_interaction_ms": 56177,
+        "response_selected_ms": 56177,
+        "submitted_ms": 56428
+      }
+    },
+    {
+      "trial_index": 3,
+      "phase_id": "text",
+      "position_in_phase": 3,
+      "item_id": "txt-HS-GEN-03-llava-s157-g19-p300",
+      "source_id": "src-HS-GEN-03-llava-s157-g19-p300",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 3,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 56641,
+        "first_interaction_ms": 75792,
+        "response_selected_ms": 75792,
+        "submitted_ms": 76043
+      }
+    },
+    {
+      "trial_index": 4,
+      "phase_id": "text",
+      "position_in_phase": 4,
+      "item_id": "txt-Exp-101q-qwen-s242-g48-p70",
+      "source_id": "src-Exp-101q-qwen-s242-g48-p70",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 76226,
+        "first_interaction_ms": 82322,
+        "response_selected_ms": 82322,
+        "submitted_ms": 82573
+      }
+    },
+    {
+      "trial_index": 5,
+      "phase_id": "text",
+      "position_in_phase": 5,
+      "item_id": "txt-HS-GEN-02-llava-s640-g17-p320",
+      "source_id": "src-HS-GEN-02-llava-s640-g17-p320",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 82780,
+        "first_interaction_ms": 90950,
+        "response_selected_ms": 90950,
+        "submitted_ms": 91201
+      }
+    },
+    {
+      "trial_index": 6,
+      "phase_id": "text",
+      "position_in_phase": 6,
+      "item_id": "txt-Exp-101q-qwen-s324-g46-p300",
+      "source_id": "src-Exp-101q-qwen-s324-g46-p300",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 91403,
+        "first_interaction_ms": 101586,
+        "response_selected_ms": 101586,
+        "submitted_ms": 101837
+      }
+    },
+    {
+      "trial_index": 7,
+      "phase_id": "text",
+      "position_in_phase": 7,
+      "item_id": "txt-Exp-102-llava-s454-g36-p2620",
+      "source_id": "src-Exp-102-llava-s454-g36-p2620",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 2,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 102028,
+        "first_interaction_ms": 111235,
+        "response_selected_ms": 111235,
+        "submitted_ms": 111486
+      }
+    },
+    {
+      "trial_index": 8,
+      "phase_id": "text",
+      "position_in_phase": 8,
+      "item_id": "txt-clean-llava-chickadee-4",
+      "source_id": "src-clean-llava-chickadee-4",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 111698,
+        "first_interaction_ms": 117648,
+        "response_selected_ms": 117649,
+        "submitted_ms": 117900
+      }
+    },
+    {
+      "trial_index": 9,
+      "phase_id": "text",
+      "position_in_phase": 9,
+      "item_id": "txt-HS-GEN-02-llava-s1180-g26-p250",
+      "source_id": "src-HS-GEN-02-llava-s1180-g26-p250",
+      "item_kind": "text",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 118100,
+        "first_interaction_ms": 121817,
+        "response_selected_ms": 121817,
+        "submitted_ms": 122069
+      }
+    },
+    {
+      "trial_index": 10,
+      "phase_id": "text",
+      "position_in_phase": 10,
+      "item_id": "txt-attn-nonsense-01",
+      "source_id": "src-attn-nonsense-01",
+      "item_kind": "text",
+      "is_attention_check": true,
+      "presented": {
+        "scale_id": "text-comprehensibility-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": null
+      },
+      "response": {
+        "scale_value": 1,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": null,
+        "onset_ms": 122258,
+        "first_interaction_ms": 145524,
+        "response_selected_ms": 145524,
+        "submitted_ms": 145775
+      }
+    },
+    {
+      "trial_index": 11,
+      "phase_id": "image",
+      "position_in_phase": 0,
+      "item_id": "img-raw-boa_constrictor",
+      "source_id": "src-raw-boa_constrictor",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 480,
+          "natural_w": 375,
+          "natural_h": 500
+        }
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 148745,
+        "onset_ms": 148747,
+        "first_interaction_ms": 160455,
+        "response_selected_ms": 160455,
+        "submitted_ms": 160705
+      }
+    },
+    {
+      "trial_index": 12,
+      "phase_id": "image",
+      "position_in_phase": 1,
+      "item_id": "img-HS-GEN-02-llava-s747-g23-p370",
+      "source_id": "src-HS-GEN-02-llava-s747-g23-p370",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "scale_value": 5,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 160903,
+        "onset_ms": 160916,
+        "first_interaction_ms": 163278,
+        "response_selected_ms": 163278,
+        "submitted_ms": 163529
+      }
+    },
+    {
+      "trial_index": 13,
+      "phase_id": "image",
+      "position_in_phase": 2,
+      "item_id": "img-HS-GEN-01-llava-s102-g38-p00",
+      "source_id": "src-HS-GEN-01-llava-s102-g38-p00",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "scale_value": 5,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 163730,
+        "onset_ms": 163740,
+        "first_interaction_ms": 169642,
+        "response_selected_ms": 169642,
+        "submitted_ms": 169893
+      }
+    },
+    {
+      "trial_index": 14,
+      "phase_id": "image",
+      "position_in_phase": 3,
+      "item_id": "img-HS-GEN-01-llava-s58-g63-p200",
+      "source_id": "src-HS-GEN-01-llava-s58-g63-p200",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 170104,
+        "onset_ms": 170109,
+        "first_interaction_ms": 173034,
+        "response_selected_ms": 173034,
+        "submitted_ms": 173285
+      }
+    },
+    {
+      "trial_index": 15,
+      "phase_id": "image",
+      "position_in_phase": 4,
+      "item_id": "img-HS-GEN-03-llava-s2360-g27-p310",
+      "source_id": "src-HS-GEN-03-llava-s2360-g27-p310",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "scale_value": 5,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 173481,
+        "onset_ms": 173500,
+        "first_interaction_ms": 177573,
+        "response_selected_ms": 177573,
+        "submitted_ms": 177824
+      }
+    },
+    {
+      "trial_index": 16,
+      "phase_id": "image",
+      "position_in_phase": 5,
+      "item_id": "img-raw-junco",
+      "source_id": "src-raw-junco",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 360,
+          "natural_w": 500,
+          "natural_h": 500
+        }
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 177996,
+        "onset_ms": 177999,
+        "first_interaction_ms": 179611,
+        "response_selected_ms": 179611,
+        "submitted_ms": 179862
+      }
+    },
+    {
+      "trial_index": 17,
+      "phase_id": "image",
+      "position_in_phase": 6,
+      "item_id": "img-rt-llava-boa_constrictor-1",
+      "source_id": "src-rt-llava-boa_constrictor-1",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 368,
+          "natural_w": 489,
+          "natural_h": 500
+        }
+      },
+      "response": {
+        "scale_value": 3,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 180030,
+        "onset_ms": 180039,
+        "first_interaction_ms": 186251,
+        "response_selected_ms": 186251,
+        "submitted_ms": 186501
+      }
+    },
+    {
+      "trial_index": 18,
+      "phase_id": "image",
+      "position_in_phase": 7,
+      "item_id": "img-Exp-101q-qwen-s28-g47-p180",
+      "source_id": "src-Exp-101q-qwen-s28-g47-p180",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "scale_value": 4,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 186668,
+        "onset_ms": 186674,
+        "first_interaction_ms": 190760,
+        "response_selected_ms": 190760,
+        "submitted_ms": 191010
+      }
+    },
+    {
+      "trial_index": 19,
+      "phase_id": "image",
+      "position_in_phase": 8,
+      "item_id": "img-rt-llava-green_iguana-0",
+      "source_id": "src-rt-llava-green_iguana-0",
+      "item_kind": "image",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": "image-clarity-v1",
+        "option_display_order": null,
+        "option_labels": null,
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 240,
+          "natural_w": 500,
+          "natural_h": 334
+        }
+      },
+      "response": {
+        "scale_value": 5,
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 191182,
+        "onset_ms": 191188,
+        "first_interaction_ms": 192779,
+        "response_selected_ms": 192779,
+        "submitted_ms": 193030
+      }
+    },
+    {
+      "trial_index": 20,
+      "phase_id": "pair",
+      "position_in_phase": 0,
+      "item_id": "pair-base-llava-great_white_shark-1",
+      "source_id": "src-base-llava-great_white_shark-1",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "great white shark",
+          "TARGET_WORD": "tiger shark"
+        },
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 240,
+          "natural_w": 500,
+          "natural_h": 333
+        }
+      },
+      "response": {
+        "choice": "TARGET_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 195870,
+        "onset_ms": 195885,
+        "first_interaction_ms": 206531,
+        "response_selected_ms": 206531,
+        "submitted_ms": 206782
+      }
+    },
+    {
+      "trial_index": 21,
+      "phase_id": "pair",
+      "position_in_phase": 1,
+      "item_id": "pair-HS-GEN-02-llava-s646-g10-p500",
+      "source_id": "src-HS-GEN-02-llava-s646-g10-p500",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "ratite",
+          "TARGET_WORD": "constrictor"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "TARGET_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 206969,
+        "onset_ms": 206973,
+        "first_interaction_ms": 209856,
+        "response_selected_ms": 209856,
+        "submitted_ms": 210107
+      }
+    },
+    {
+      "trial_index": 22,
+      "phase_id": "pair",
+      "position_in_phase": 2,
+      "item_id": "pair-base-llava-chameleon-7",
+      "source_id": "src-base-llava-chameleon-7",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "TARGET_WORD",
+          "ANCHOR_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "chameleon",
+          "TARGET_WORD": "tiger shark"
+        },
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 240,
+          "natural_w": 500,
+          "natural_h": 333
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 210272,
+        "onset_ms": 210279,
+        "first_interaction_ms": 219863,
+        "response_selected_ms": 219863,
+        "submitted_ms": 220113
+      }
+    },
+    {
+      "trial_index": 23,
+      "phase_id": "pair",
+      "position_in_phase": 3,
+      "item_id": "pair-HS-GEN-01-llava-s442-g148-p10",
+      "source_id": "src-HS-GEN-01-llava-s442-g148-p10",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "bald eagle",
+          "TARGET_WORD": "American robin"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "CANT_TELL",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 220317,
+        "onset_ms": 220324,
+        "first_interaction_ms": 234545,
+        "response_selected_ms": 234545,
+        "submitted_ms": 234796
+      }
+    },
+    {
+      "trial_index": 24,
+      "phase_id": "pair",
+      "position_in_phase": 4,
+      "item_id": "pair-Exp-101q-qwen-s462-g40-p460",
+      "source_id": "src-Exp-101q-qwen-s462-g40-p460",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "TARGET_WORD",
+          "ANCHOR_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "percussion instrument",
+          "TARGET_WORD": "snake"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 235003,
+        "onset_ms": 235017,
+        "first_interaction_ms": 256552,
+        "response_selected_ms": 256552,
+        "submitted_ms": 256802
+      }
+    },
+    {
+      "trial_index": 25,
+      "phase_id": "pair",
+      "position_in_phase": 5,
+      "item_id": "pair-HS-GEN-01-llava-s115-g3-p100",
+      "source_id": "src-HS-GEN-01-llava-s115-g3-p100",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "TARGET_WORD",
+          "ANCHOR_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "stingray",
+          "TARGET_WORD": "loggerhead sea turtle"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 257006,
+        "onset_ms": 257014,
+        "first_interaction_ms": 262827,
+        "response_selected_ms": 262827,
+        "submitted_ms": 263078
+      }
+    },
+    {
+      "trial_index": 26,
+      "phase_id": "pair",
+      "position_in_phase": 6,
+      "item_id": "pair-HS-GEN-01-llava-s586-g148-p10",
+      "source_id": "src-HS-GEN-01-llava-s586-g148-p10",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "axolotl",
+          "TARGET_WORD": "desert grassland whiptail lizard"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 263288,
+        "onset_ms": 263299,
+        "first_interaction_ms": 268207,
+        "response_selected_ms": 268207,
+        "submitted_ms": 268458
+      }
+    },
+    {
+      "trial_index": 27,
+      "phase_id": "pair",
+      "position_in_phase": 7,
+      "item_id": "pair-attn-obvious-01",
+      "source_id": "src-attn-obvious-01",
+      "item_kind": "pair",
+      "is_attention_check": true,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "TARGET_WORD",
+          "ANCHOR_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "green iguana",
+          "TARGET_WORD": "boa constrictor"
+        },
+        "rendered_image": {
+          "css_w": 360,
+          "css_h": 270,
+          "natural_w": 500,
+          "natural_h": 375
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 268670,
+        "onset_ms": 268681,
+        "first_interaction_ms": 275178,
+        "response_selected_ms": 275178,
+        "submitted_ms": 275429
+      }
+    },
+    {
+      "trial_index": 28,
+      "phase_id": "pair",
+      "position_in_phase": 8,
+      "item_id": "pair-Exp-102-llava-s392-g87-p560",
+      "source_id": "src-Exp-102-llava-s392-g87-p560",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "cello",
+          "TARGET_WORD": "marimba"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 275641,
+        "onset_ms": 275651,
+        "first_interaction_ms": 278461,
+        "response_selected_ms": 278462,
+        "submitted_ms": 278712
+      }
+    },
+    {
+      "trial_index": 29,
+      "phase_id": "pair",
+      "position_in_phase": 9,
+      "item_id": "pair-HS-GEN-02-llava-s167-g27-p140",
+      "source_id": "src-HS-GEN-02-llava-s167-g27-p140",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "TARGET_WORD",
+          "ANCHOR_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "sparrow",
+          "TARGET_WORD": "constrictor"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 278916,
+        "onset_ms": 278927,
+        "first_interaction_ms": 283651,
+        "response_selected_ms": 283651,
+        "submitted_ms": 283901
+      }
+    },
+    {
+      "trial_index": 30,
+      "phase_id": "pair",
+      "position_in_phase": 10,
+      "item_id": "pair-HS-GEN-02-llava-s2358-g29-p10",
+      "source_id": "src-HS-GEN-02-llava-s2358-g29-p10",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "cello",
+          "TARGET_WORD": "marimba"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 284104,
+        "onset_ms": 284110,
+        "first_interaction_ms": 292281,
+        "response_selected_ms": 292281,
+        "submitted_ms": 292532
+      }
+    },
+    {
+      "trial_index": 31,
+      "phase_id": "pair",
+      "position_in_phase": 11,
+      "item_id": "pair-HS-GEN-03-llava-s636-g27-p200",
+      "source_id": "src-HS-GEN-03-llava-s636-g27-p200",
+      "item_kind": "pair",
+      "is_attention_check": false,
+      "presented": {
+        "scale_id": null,
+        "option_display_order": [
+          "ANCHOR_WORD",
+          "TARGET_WORD",
+          "OTHER_CLASS",
+          "NOTHING_RECOGNIZABLE",
+          "CANT_TELL"
+        ],
+        "option_labels": {
+          "ANCHOR_WORD": "flamingo",
+          "TARGET_WORD": "retriever"
+        },
+        "rendered_image": {
+          "css_w": 256,
+          "css_h": 256,
+          "natural_w": 256,
+          "natural_h": 256
+        }
+      },
+      "response": {
+        "choice": "ANCHOR_WORD",
+        "other_class_text": null,
+        "n_changes": 0
+      },
+      "timing": {
+        "image_loaded_ms": 292744,
+        "onset_ms": 292752,
+        "first_interaction_ms": 305347,
+        "response_selected_ms": 305347,
+        "submitted_ms": 305598
+      }
+    }
+  ],
+  "integrity_events": [
+    {
+      "at_ms": 20512,
+      "type": "resize",
+      "detail": null
+    },
+    {
+      "at_ms": 22183,
+      "type": "resize",
+      "detail": null
+    },
+    {
+      "at_ms": 166665,
+      "type": "resize",
+      "detail": null
+    }
+  ],
+  "demographics": {
+    "age_band": "18_24",
+    "ml_familiarity": "regular_practice",
+    "english_proficiency": "C1",
+    "comment": "What does a paragraph has to do with what is shown in a picture?"
+  },
+  "quality_summary": {
+    "attention_total": 2,
+    "attention_failed": 0,
+    "focus_loss_count": 0
+  }
+}

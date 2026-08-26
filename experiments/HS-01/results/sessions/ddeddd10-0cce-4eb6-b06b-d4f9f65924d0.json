@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "study_id": "HS-01",
+  "config_version": "1.0.0",
+  "config_sha256": "dcffdeca45b972f5c63a4f2c5d1e66e12823f2686ad7d190229260402d22e49b",
+  "session_id": "ddeddd10-0cce-4eb6-b06b-d4f9f65924d0",
+  "form_id": "B",
+  "rng_seed": "feeef2bb4f12dd0b06b90c5e68562f1e",
+  "status": "abandoned",
+  "participant": {
+    "participant_code": "P040",
+    "recruitment_channel": null,
+    "consent": {
+      "given": true,
+      "consent_version": "v1",
+      "at_utc": "2026-07-01T06:00:00Z"
+    }
+  },
+  "environment": {
+    "device": "unknown"
+  },
+  "timing": {
+    "started_at_utc": "2026-07-01T06:00:00Z"
+  },
+  "phase_timings": [],
+  "trials": []
+}
