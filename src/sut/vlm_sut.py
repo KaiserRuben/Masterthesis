@@ -24,6 +24,13 @@ from .text_embedder import TextEmbedder
 
 logger = logging.getLogger(__name__)
 
+try:  # narrow exception set for cache faults; redis is an optional dep
+    from redis.exceptions import RedisError
+    _CACHE_FAULTS: tuple[type[BaseException], ...] = (RedisError, OSError)
+except Exception:  # noqa: BLE001 — redis not installed → no cache path anyway
+    _CACHE_FAULTS = (OSError,)
+
+
 
 def _cache_key(
     model_id: str,
@@ -153,7 +160,7 @@ class VLMSUT(SUT):
             key = _cache_key(
                 self._config.sut.model_id, image, prompt, cats,
             )
-            cached = self._redis.get(key)
+            cached = self._cache_get(key)
             if cached is not None:
                 self._cache_hits += 1
                 self._last_call_cached = True
@@ -165,9 +172,45 @@ class VLMSUT(SUT):
 
         # --- cache store ---
         if self._redis is not None:
-            self._redis.set(key, json.dumps(result.tolist()))
+            self._cache_set(key, json.dumps(result.tolist()))
 
         return result
+
+    # ------------------------------------------------------------------
+    # Fault-tolerant inference cache
+    # ------------------------------------------------------------------
+
+    def _disable_cache(self, op: str, exc: BaseException) -> None:
+        """Drop to no-cache for the rest of this run after a cache fault.
+
+        The inference cache is optional by design (the SUT already runs
+        without it when Redis is unreachable at startup). A mid-run
+        connection reset — e.g. an external-drive-backed Redis hiccup —
+        must degrade the same way, not crash a multi-hour search. Scores
+        are unaffected: the cache only memoizes deterministic forward
+        passes, so recomputing yields identical values.
+        """
+        logger.warning(
+            "Redis %s failed (%s) — disabling inference cache for the rest "
+            "of this run (scores unchanged, just recomputed).", op, exc,
+        )
+        self._redis = None
+
+    def _cache_get(self, key: str):
+        """Redis GET that disables the cache on fault instead of raising."""
+        try:
+            return self._redis.get(key)
+        except _CACHE_FAULTS as exc:
+            self._disable_cache("get", exc)
+            return None
+
+    def _cache_set(self, key: str, value: str) -> None:
+        """Redis SET that disables the cache on fault instead of raising."""
+        try:
+            self._redis.set(key, value)
+        except _CACHE_FAULTS as exc:
+            self._disable_cache("set", exc)
+
 
     def input_valid(self, inpt: Any, cond: Any) -> tuple[bool, Any]:
         """Validate that the VLM's top prediction matches the condition.

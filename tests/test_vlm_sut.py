@@ -352,3 +352,57 @@ class TestInputValid:
         sut = _make_sut()
         is_valid, _ = sut.input_valid((_dummy_image(), None), "macaw")
         assert is_valid is True
+
+
+class _FaultyRedis:
+    """Redis double whose ops raise, simulating a mid-run connection reset."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def get(self, *_a, **_k):
+        self.calls += 1
+        raise OSError("connection reset by peer")
+
+    def set(self, *_a, **_k):
+        self.calls += 1
+        raise OSError("connection reset by peer")
+
+
+class TestCacheFaultTolerance:
+    """A mid-run Redis fault degrades to no-cache, never crashes the run."""
+
+    def _sut_with_redis(self, redis_obj):
+        from src.sut.vlm_sut import VLMSUT
+
+        class FakeSUT(VLMSUT):
+            def __init__(self) -> None:
+                self._config = ExperimentConfig(categories=("a", "b"))
+                self._device = torch.device("cpu")
+                self._scorer = FakeScorer()
+                self._prompt = "p"
+                self._redis = redis_obj
+                self._cache_hits = 0
+                self._cache_misses = 0
+                self._last_call_cached = False
+                self._text_embedder = None
+
+        return FakeSUT()
+
+    def test_get_fault_returns_score_and_disables_cache(self) -> None:
+        r = _FaultyRedis()
+        sut = self._sut_with_redis(r)
+        out = sut.process_input(_dummy_image())          # must NOT raise
+        assert out.shape == (2,)
+        assert sut._redis is None                        # cache disabled after fault
+        assert r.calls == 1                              # faulted once, then no more
+
+    def test_set_fault_disables_cache(self) -> None:
+        class GetOkSetFail(_FaultyRedis):
+            def get(self, *_a, **_k):
+                return None                              # miss → proceeds to compute + set
+        r = GetOkSetFail()
+        sut = self._sut_with_redis(r)
+        out = sut.process_input(_dummy_image())          # must NOT raise
+        assert out.shape == (2,)
+        assert sut._redis is None
