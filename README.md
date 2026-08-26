@@ -9,8 +9,10 @@ name (Technical University of Munich).
 - **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** — install, the two hardware stacks, why SMOO is a fork
 - **[docs/DATA.md](docs/DATA.md)** — where the 24 GB run archive lives and how to request access
 
-Every results figure rebuilds from aggregates tracked here; the raw archive is
-optional. Contact: **Ruben.Kaiser@tum.de**.
+Most results figures rebuild from aggregates tracked here; five of thirteen
+also need the raw run archive, and all of them need LaTeX and the thesis tree.
+[docs/REPRODUCTION.md](docs/REPRODUCTION.md) says which is which.
+Contact: **Ruben.Kaiser@tum.de**.
 
 ## Two pipelines
 

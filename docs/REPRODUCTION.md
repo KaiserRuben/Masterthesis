@@ -7,31 +7,49 @@ figure or number in the text.
 Start with [ENVIRONMENT.md](ENVIRONMENT.md) for the install and
 [DATA.md](DATA.md) for where the run archive lives.
 
-## What reproduces from a clone alone
+## What it takes to rebuild a figure
 
-Every figure in the results chapter is emitted from aggregates tracked in this
-repository, so **no raw run archive is needed to rebuild them**:
+Read this before assuming a clone is enough — it is for the HS-01 tables, but
+not for the results figures.
 
-```bash
-export THESIS_DIR="/path/to/thesis"        # optional; defaults inside the repo
-python -m analysis.viz.thesis.pgf.predictor        # fig:res:predictor
-python -m analysis.viz.thesis.pgf.dose             # fig:res:dose
-python -m analysis.viz.thesis.pgf.walls_heatmap    # fig:res:walls-atlas
-```
-
-Each writes a standalone `.tex` into `$THESIS_DIR/figures/results/`. These three
-were verified to re-emit byte-identically to the figures in the submitted
-thesis.
-
-The HS-01 tables rebuild the same way:
+**The HS-01 tables need nothing but a clone:**
 
 ```bash
 python -m analysis.hs01.run_all      # -> analysis/outputs/hs01/tab_*.csv
 ```
 
-Re-running a *campaign* — as opposed to re-deriving its figures — needs the SUT
-weights, the dataset cache, and hours to days of compute. See the runtime notes
-at the end.
+**The results figures need two things this repository does not contain.** Each
+emitter builds its `.tex` and then typesets it to check the box dimensions, so
+it needs:
+
+1. **A LaTeX toolchain** (`pdflatex` on `PATH`). Not a Python dependency, so
+   `requirements.txt` will not tell you it is missing.
+2. **The thesis tree**, pointed at by `THESIS_DIR`. The emitters `\input`
+   `figures/results/results-style.tex`, which lives thesis-side; without it the
+   build stops with `File 'figures/results/results-style.tex' not found`. The
+   in-repo default for `THESIS_DIR` is only a writable destination, not a
+   working one.
+
+```bash
+export THESIS_DIR="/path/to/Master Thesis v0.6.0"
+python -m analysis.viz.thesis.pgf.predictor        # fig:res:predictor
+python -m analysis.viz.thesis.pgf.dose             # fig:res:dose
+python -m analysis.viz.thesis.pgf.walls_heatmap    # fig:res:walls-atlas
+```
+
+Those three were verified to re-emit byte-identically to the submitted figures.
+
+**Eight of the thirteen results figures need no run data**, reading only the
+aggregates tracked here: `dose`, `predictor`, `prior_map`, `region_map`,
+`wall_collapse`, `wall_shape`, `walls_bylabel`, `walls_heatmap`.
+
+**Five do read raw run directories** and need the tier-2 archive from
+[DATA.md](DATA.md) in place at `runs/`: `boundary_map`, `budget`,
+`config_effects`, `init_coverage`, `watershed`.
+
+Re-running a *campaign* — as opposed to re-deriving its figures — additionally
+needs the SUT weights, the dataset cache, and hours to days of compute. See the
+runtime notes at the end.
 
 ## Running an experiment
 
@@ -53,7 +71,7 @@ Sizes are the run-archive footprint (tier 2 in [DATA.md](DATA.md)).
 
 | ID | M | Claim it supports | Config | Runs | Figure producer |
 |---|---|---|---|---|---|
-| Exp-01 | M | diversity objective inflates the archive ~7× | **lost** (see gaps) | **lost** | `notebooks/Exp-01-*.ipynb` |
+| Exp-01 | M | diversity objective inflates the archive ~7× | `configs/Archive/boundary_test_cadence.yaml` (cadence arm only) | **lost** | `notebooks/Exp-01-*.ipynb` |
 | Exp-02 | M | PDQ mapping baseline; 8.9 % flip rate, 52.7 % reduction | `configs/Archive/pdq_overnight.yaml` | `Exp-02/` 175 MB | prose only |
 | Exp-03 | M+A | 4.5× scale effect | `configs/Exp-03/pdq_v2_strategies.yaml` | `Exp-03-mac/` 27 MB, `Exp-03-workstation/` 127 MB | prose only |
 | Exp-04 | M | 83.8 % reduction (n=1572); 740/740 collapse | `configs/Exp-04/pdq_v2_gap.yaml` | `Exp-04/` 373 MB | prose only |
@@ -114,19 +132,26 @@ Method-chapter graphics come from `tools/render_manipulation_gallery_2axis.py`
 (`fig:method:gallery`) and `tools/render_manipulation_distance_3d.py`
 (`fig:app:distance-3d`).
 
-Figures that read raw traces rather than aggregates — `budget.py`,
-`config_effects.py`, `init_coverage.py`, `watershed.py` — need the
-corresponding tier-2 run directories in place.
+Figures that read raw traces rather than aggregates — `boundary_map.py`,
+`budget.py`, `config_effects.py`, `init_coverage.py`, `watershed.py` — need the
+corresponding tier-2 run directories in place. Every emitter additionally needs
+a LaTeX toolchain and the thesis tree; see the top of this document.
 
 ## Known gaps
 
 Recorded here rather than papered over.
 
-**Exp-01 is not reproducible.** Neither its config nor its runs survive; the
-`notebooks/Exp-01-*.ipynb` point at `runs/Archive/Exp-01-SMOO-Pipeline-Validation/`,
-which no longer exists. It is cited only in the appendix register, as the origin
-of the initialization line of enquiry. Its conclusion is superseded by Exp-09
-and Exp-10, which are fully reproducible.
+**Exp-01's runs are lost.** The `notebooks/Exp-01-*.ipynb` read
+`runs/Archive/Exp-01-SMOO-Pipeline-Validation/{02_4obj,03_cadence}`, and
+`runs/Archive/` no longer exists. One of the three arms is still configured —
+`configs/Archive/boundary_test_cadence.yaml` writes to that exact
+`03_cadence` path — so the cadence arm could be re-run, but the 4-objective and
+5-objective arms have no surviving config and the original outputs are gone.
+The notebooks' stored cell outputs are the only remaining record.
+
+Exp-01 is cited only in the appendix register, as the origin of the
+initialization line of enquiry, and its conclusion is superseded by Exp-09 and
+Exp-10, which are fully reproducible.
 
 **Exp-02's config is unfiled.** It is `configs/Archive/pdq_overnight.yaml`, not
 `configs/Exp-02/`. Confirmed by matching `name`, `model_id` and `n_categories`

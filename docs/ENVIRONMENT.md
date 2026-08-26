@@ -9,7 +9,7 @@ environment will not resolve.
 | | Apple Silicon (MPS) | Intel Arc workstation |
 |---|---|---|
 | Backend | `sut.backend: torch` | `sut.backend: openvino` |
-| Python | 3.13.5 | 3.13 |
+| Python | 3.13.5 | 3.12.12 |
 | torch | 2.8.0 | 2.10.0 |
 | transformers | 5.3.0 | 4.55.4 |
 | Extra | — | openvino 2025.4.1, optimum-intel 1.27.0, nncf 3.1.0 |
@@ -51,16 +51,29 @@ python -c "import smoo; print(smoo.__file__)"
 pytest tests/          # expect 725 passed
 ```
 
+## LaTeX (figure emitters only)
+
+The thesis figure emitters typeset each figure to check its box dimensions, so
+they need `pdflatex` on `PATH` — a system dependency pip will not report. It is
+needed only to rebuild figures; nothing else in the repository uses it. They
+also need the thesis tree, which is not part of this repository; see
+[REPRODUCTION.md](REPRODUCTION.md).
+
 ## OpenVINO install (quantized SUTs)
 
 Create a **separate** environment — see the version conflict above.
 
 ```bash
-conda create -n uni-ov python=3.13
+conda create -n uni-ov python=3.12
 conda activate uni-ov
 pip install -r experiments/requirements-openvino.txt
-pip install -r experiments/requirements.txt   # will keep the pins above
 ```
+
+`requirements-openvino.txt` is standalone — it carries the whole dependency set
+at the versions that environment ran. Do **not** install `requirements.txt` on
+top of it (or it on top of `requirements.txt`): they pin different majors of
+`transformers` and different torch builds, so either overlay downgrades the
+other.
 
 ## Why the SMOO submodule points at a fork
 
@@ -110,8 +123,9 @@ preprocessing scripts under `experiments/preprocessing/`.
 
 ## Configuring paths
 
-Nothing in the repository hardcodes a machine-specific location any more, but
-several entry points take one:
+The entry points you are most likely to run — the runners, the analysis
+package, `analysis/viz/thesis/pgf/**` and `tools/render_manipulation_*.py` —
+resolve their own location and take the rest from the environment:
 
 | Variable | Meaning | Default |
 |---|---|---|
@@ -119,10 +133,22 @@ several entry points take one:
 | `ANALYSIS_ASSET_ROOT` | Where `analysis/core/style.py` writes figures | the author's Obsidian vault if present, else `analysis/outputs/assets` |
 | `HF_TOKEN` | HuggingFace access for ImageNet and model weights | — |
 
-Many configs under `configs/` still carry absolute paths to model and dataset
-caches (`/mnt/storage/...`, `/Volumes/...`) from the machines they ran on. Edit
-`image.knn_path` and the ImageNet cache path for your setup, or start from
-`configs/templates/`.
+Beyond those, **absolute paths from the original machines survive in roughly a
+hundred tracked files** and you will have to edit them:
+
+- **Configs.** Most files under `configs/` point `image.knn_path` and the
+  ImageNet cache at `/mnt/storage/...` or `/Volumes/...`. This includes
+  `configs/templates/`, so even the documented starting point needs editing.
+- **Launch scripts.** `configs/Exp-104/launch_qwen_ab.sh` and the Exp-105
+  drivers hardcode the repository root and `ssh` to a specific host.
+- **Ad-hoc analysis scripts.** The `.py` files tracked alongside the aggregates
+  under `experiments/analysis/output/**` mostly begin with a
+  `sys.path.insert("/Users/...")` and absolute input/output constants. They are
+  kept as a record of how each aggregate was produced, not as a supported
+  entry point — the aggregates themselves are what the figures read.
+- **Older figure scripts.** `analysis/viz/thesis/exp_*.py` and
+  `render_exp104_*.py` predate the `THESIS_DIR` convention; the `pgf/`
+  emitters listed in [REPRODUCTION.md](REPRODUCTION.md) are the current path.
 
 ## Known test flake
 

@@ -5,18 +5,22 @@ may be published.
 
 ## Tier 1 — in this repository
 
-Everything needed to rebuild every figure and table in the results chapter:
+The code, configs, and the derived aggregates that eight of the thirteen
+results figures are built from:
 
 | What | Where | Size |
 |---|---|---|
 | Derived aggregates (per-seed summaries, cartography point clouds, PMI tables) | `experiments/analysis/output/**/*.{csv,parquet}` | 55 MB |
 | HS-01 session records (anonymized) and frozen item pool | `experiments/HS-01/results/sessions/`, `experiments/HS-01/pool_frozen/itempool.json` | 1.4 MB |
-| HS-01 analysis outputs | `analysis/outputs/hs01/` | small |
+| HS-01 analysis outputs | regenerated into `analysis/outputs/hs01/` by `python -m analysis.hs01.run_all` — not tracked | — |
 | All experiment configs | `configs/` | 1.5 MB |
 | Source, tests, analysis and figure code | `src/`, `tests/`, `analysis/`, `tools/` | 4.4 MB |
 
-The results figures are emitted from the tier-1 aggregates alone — the raw run
-archive is **not** required. See [REPRODUCTION.md](REPRODUCTION.md).
+Eight of the thirteen results figures are emitted from the tier-1 aggregates
+alone. The other five — `boundary_map`, `budget`, `config_effects`,
+`init_coverage`, `watershed` — read raw run directories and need tier 2 below.
+All of them additionally need a LaTeX toolchain and the thesis tree; see
+[REPRODUCTION.md](REPRODUCTION.md).
 
 ## Tier 2 — raw run archive (TUM-gated)
 
