@@ -298,7 +298,9 @@ describe("writeCheckpoint()", () => {
 
     const cr = await createSession(null);
 
-    // Build a deliberately invalid record (no trials, no demographics)
+    // Build a deliberately invalid record: completed with no trials. An
+    // abandoned session legitimately has none (that is the initial state), so
+    // the schema only enforces minItems once the session is completed.
     const invalidRecord = {
       schema_version: "1.0.0" as const,
       study_id: "HS-01",
@@ -307,7 +309,7 @@ describe("writeCheckpoint()", () => {
       session_id: cr.session_id,
       form_id: cr.form_id,
       rng_seed: cr.rng_seed,
-      status: "abandoned" as const,
+      status: "completed" as const,
       participant: {
         participant_code: cr.participant_code,
         recruitment_channel: null,
@@ -324,7 +326,7 @@ describe("writeCheckpoint()", () => {
       },
       timing: { started_at_utc: new Date().toISOString() },
       phase_timings: [],
-      trials: [], // invalid: minItems:1
+      trials: [], // invalid: minItems:1 applies once status is "completed"
     } as import("../src/lib/types").SessionRecord;
 
     const result = await writeCheckpoint(cr.session_id, invalidRecord);

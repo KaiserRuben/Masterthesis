@@ -11,6 +11,12 @@
     "session_id", "form_id", "rng_seed", "status",
     "participant", "environment", "timing", "phase_timings", "trials"
   ],
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "completed" } }, "required": ["status"] },
+      "then": { "properties": { "trials": { "minItems": 1 } } }
+    }
+  ],
   "properties": {
     "schema_version": {
       "enum": ["1.0.0", "1.1.0"],
@@ -48,9 +54,17 @@
     },
     "environment": {
       "type": "object",
+      "description": "Two shapes are valid. AS COLLECTED, the application records the browser environment for quality control (user_agent, viewport, device_pixel_ratio required). AS ARCHIVED, that block is replaced by the derived four-way `device` class, because the raw fields together form a device fingerprint that re-identifies participants and the consent text promises no personal data is retained. See experiments/HS-01/tools/anonymize_sessions.py.",
       "additionalProperties": false,
-      "required": ["user_agent", "viewport", "device_pixel_ratio"],
+      "anyOf": [
+        { "required": ["user_agent", "viewport", "device_pixel_ratio"] },
+        { "required": ["device"] }
+      ],
       "properties": {
+        "device": {
+          "enum": ["mobile", "tablet", "desktop", "unknown"],
+          "description": "Derived from the user agent at archival time; present in place of it."
+        },
         "user_agent": { "type": "string" },
         "platform": { "type": ["string", "null"] },
         "viewport": { "$ref": "#/$defs/dimensions" },
@@ -97,7 +111,11 @@
         }
       }
     },
-    "trials": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/trial" } },
+    "trials": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/trial" },
+      "description": "A completed session always has trials; an abandoned one may have none if the participant left before the first stimulus. The minimum is enforced conditionally at the root."
+    },
     "demographics": {
       "anyOf": [
         {

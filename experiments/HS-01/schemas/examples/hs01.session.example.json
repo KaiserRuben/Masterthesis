@@ -14,11 +14,7 @@
     "consent": { "given": true, "consent_version": "v1", "at_utc": "2026-07-02T09:14:03Z" }
   },
   "environment": {
-    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-    "platform": "macOS",
-    "viewport": { "w": 1512, "h": 945 },
-    "screen": { "w": 1512, "h": 982 },
-    "device_pixel_ratio": 2.0,
+    "device": "desktop",
     "is_touch": false,
     "render_check": { "passed": true, "method": "canvas-hash-homoglyph-v1" }
   },
