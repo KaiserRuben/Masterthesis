@@ -87,6 +87,11 @@ def load_pool() -> dict[str, dict]:
 
 
 def _device_class(user_agent: str, is_touch: bool | None) -> str:
+    """Fallback for unscrubbed records; published sessions store ``device``.
+
+    See experiments/HS-01/tools/anonymize_sessions.py — the archived records
+    carry the derived class instead of the user agent it was derived from.
+    """
     ua = user_agent or ""
     if any(k in ua for k in ("iPhone", "Android", "Mobile")):
         return "mobile"
@@ -131,8 +136,7 @@ def load_sessions() -> tuple[pd.DataFrame, pd.DataFrame]:
             "ml_familiarity": demo.get("ml_familiarity"),
             "english": demo.get("english_proficiency"),
             "comment": demo.get("comment"),
-            "device": _device_class(env.get("user_agent"), env.get("is_touch")),
-            "viewport_w": (env.get("viewport") or {}).get("w"),
+            "device": env.get("device") or _device_class(env.get("user_agent"), env.get("is_touch")),
             "attention_failed": qs.get("attention_failed"),
             "focus_loss": qs.get("focus_loss_count"),
             "n_integrity": len(s.get("integrity_events", [])),
