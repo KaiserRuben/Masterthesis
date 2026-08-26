@@ -6,14 +6,17 @@ Two execution backends share the same scoring code path:
   Mac development (MPS) and CUDA workstations.
 * ``openvino`` -- OpenVINO IR on Intel Arc/Xe via :mod:`optimum.intel`.
   ``OVModelForVisualCausalLM`` exposes the same ``(input_ids, past_key_values,
-  use_cache)`` forward contract, so :meth:`VLMScorer.score_categories` is
-  unchanged across backends.
+  use_cache)`` forward contract, so :meth:`VLMScorer.score_categories` and
+  :meth:`VLMScorer.score_chain_slots` are unchanged across backends.
 
 Public surface:
 
 * :class:`VLMScorer` -- abstract base with backend-agnostic KV-cache scoring.
   Backends plug in via the :meth:`_create_model` / :meth:`_create_processor`
-  hooks.
+  hooks. Two scoring entry points share the same prefix pass:
+  :meth:`~VLMScorer.score_categories` (closed label set, one continuation per
+  label) and :meth:`~VLMScorer.score_chain_slots` (one continuation over a
+  multi-slot answer chain, per-slot conditional log-probs).
 * :class:`QwenVLScorer`, :class:`LlavaScorer` -- per-family torch scorers
   (chat-template + ``encode_text`` differ; loading is shared with the base).
 * :class:`OVQwenVLScorer`, :class:`OVLlavaScorer` -- the OV variants. They
@@ -24,6 +27,7 @@ Public surface:
 from __future__ import annotations
 
 import gc
+import warnings
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -238,26 +242,27 @@ class VLMScorer(ABC):
     # Teacher-forced scoring
     # ------------------------------------------------------------------
 
-    def score_categories(
+    def _prefix_forward(
         self,
         image: Image.Image,
         prompt: str,
-        categories: list[str] | tuple[str, ...],
         thinking_ids: torch.Tensor | None = None,
-    ) -> list[tuple[str, float, float, int]]:
-        """Force-score each category via KV-cache continuation.
+    ) -> tuple[object, torch.Tensor]:
+        """Run the image+prompt prefix once and expose its KV cache.
 
-        If *thinking_ids* is provided (from :meth:`generate`), the
-        thinking trace is appended to the prompt so scoring is
-        conditioned on the same context as free generation.
+        Shared by :meth:`score_categories` and :meth:`score_chain_slots`;
+        the two differ only in what they force-decode on top of the cache.
+
+        If *thinking_ids* is provided (from :meth:`generate`) *and*
+        thinking is enabled, the trace is appended to the prompt so
+        scoring is conditioned on the same context as free generation.
 
         :param image: PIL image.
         :param prompt: Text prompt.
-        :param categories: Labels to score.
-        :param thinking_ids: Optional thinking token ids from
-            :meth:`generate`.
-        :returns: List of ``(label, log_prob, log_prob_norm, n_tokens)``
-            tuples sorted descending by *log_prob_norm*.
+        :param thinking_ids: Optional thinking token ids.
+        :returns: ``(past_key_values, last_logits)`` where *last_logits*
+            is the ``(vocab,)`` row predicting the first continuation
+            token.
         """
         if thinking_ids is not None and self._enable_thinking:
             inputs = self._prepare_inputs(image, prompt, enable_thinking=True)
@@ -282,8 +287,32 @@ class VLMScorer(ABC):
             with torch.no_grad():
                 prefix_out = self._model(**inputs, use_cache=True)
 
-        prefix_kvs = prefix_out.past_key_values
-        last_logits = prefix_out.logits[0, -1, :]
+        return prefix_out.past_key_values, prefix_out.logits[0, -1, :]
+
+    def score_categories(
+        self,
+        image: Image.Image,
+        prompt: str,
+        categories: list[str] | tuple[str, ...],
+        thinking_ids: torch.Tensor | None = None,
+    ) -> list[tuple[str, float, float, int]]:
+        """Force-score each category via KV-cache continuation.
+
+        If *thinking_ids* is provided (from :meth:`generate`), the
+        thinking trace is appended to the prompt so scoring is
+        conditioned on the same context as free generation.
+
+        :param image: PIL image.
+        :param prompt: Text prompt.
+        :param categories: Labels to score.
+        :param thinking_ids: Optional thinking token ids from
+            :meth:`generate`.
+        :returns: List of ``(label, log_prob, log_prob_norm, n_tokens)``
+            tuples sorted descending by *log_prob_norm*.
+        """
+        prefix_kvs, last_logits = self._prefix_forward(
+            image, prompt, thinking_ids
+        )
 
         scored: list[tuple[str, float, float, int]] = []
         for lbl in categories:
@@ -351,6 +380,198 @@ class VLMScorer(ABC):
         return torch.tensor(
             [lp_by_label[cat] for cat in categories], dtype=torch.float32
         )
+
+    # ------------------------------------------------------------------
+    # Per-slot chain scoring (Exp-105 steps 5/6)
+    # ------------------------------------------------------------------
+
+    def _chain_token_spans(
+        self,
+        texts: list[str],
+    ) -> tuple[list[tuple[int, int]], list[int]]:
+        """Map each chain part onto a token slice of the full chain.
+
+        Boundaries are derived by *incremental diff*, never by tokenizing
+        parts in isolation: BPE merges across a part boundary make
+        ``encode(part)`` disagree with the tokens that part actually
+        occupies inside the chain (``" was"`` alone != the ``" was"``
+        inside ``"…applicant was…"``). We therefore encode the growing
+        accumulated string and take the newly appended ids as the part's
+        slice.
+
+        Degenerate case: appending a part can in principle *rewrite*
+        tokens that were already emitted (the new encoding is not an
+        extension of the old one). That would silently corrupt every
+        subsequent slice, so it is detected explicitly: the boundary is
+        shifted left to the longest common token prefix, earlier spans
+        are clamped to that point (a merged token is attributed to the
+        later part, and the earlier part can end up with zero tokens),
+        and a :class:`RuntimeWarning` is emitted. Normal space-separated
+        English templates do not trigger this.
+
+        :param texts: Surface text of each chain part, in order.
+        :returns: ``(spans, chain_ids)`` — one ``(start, end)`` half-open
+            token slice per part, plus the token ids of the whole chain.
+        """
+        accum = ""
+        prev_ids: list[int] = list(
+            self.tokenizer.encode(accum, add_special_tokens=False)
+        )
+        spans: list[tuple[int, int]] = []
+
+        for idx, text in enumerate(texts):
+            new_accum = accum + text
+            new_ids = list(
+                self.tokenizer.encode(new_accum, add_special_tokens=False)
+            )
+
+            start = len(prev_ids)
+            if new_ids[:start] != prev_ids:
+                # Longest common token prefix = last position both
+                # encodings agree on.
+                lcp = 0
+                for a, b in zip(prev_ids, new_ids):
+                    if a != b:
+                        break
+                    lcp += 1
+                warnings.warn(
+                    "Tokenizer merged across chain part boundary "
+                    f"{idx} ({text!r}): encoding the extended chain "
+                    f"rewrote tokens from index {lcp} onwards "
+                    f"({len(prev_ids)} ids before, {len(new_ids)} after). "
+                    "Slot boundary shifted left to the last stable token; "
+                    "the merged token is attributed to the later part and "
+                    "per-slot log-probs at this boundary are approximate.",
+                    RuntimeWarning,
+                    stacklevel=3,
+                )
+                start = lcp
+                spans = [(min(s, start), min(e, start)) for s, e in spans]
+
+            spans.append((start, len(new_ids)))
+            accum, prev_ids = new_accum, new_ids
+
+        return spans, prev_ids
+
+    def _chain_token_logprobs(
+        self,
+        image: Image.Image,
+        prompt: str,
+        chain_ids: list[int],
+        thinking_ids: torch.Tensor | None = None,
+    ) -> list[float]:
+        """Teacher-force *chain_ids* on the prompt prefix, one pass.
+
+        :param image: PIL image.
+        :param prompt: Text prompt.
+        :param chain_ids: Token ids of the full answer chain.
+        :param thinking_ids: Optional thinking token ids.
+        :returns: ``log p(chain_ids[j] | prefix, chain_ids[:j])`` for
+            every ``j``, in order.
+        """
+        prefix_kvs, last_logits = self._prefix_forward(
+            image, prompt, thinking_ids
+        )
+        ids = torch.tensor(chain_ids, device=self._device)
+        n = len(chain_ids)
+
+        # FP32 upcast before log_softmax — see score_categories for why
+        # (FP16 log_softmax bottoms out at ~1e-4 and shows up as a floor
+        # in downstream boundary-distance metrics).
+        token_lps: list[float] = [
+            F.log_softmax(last_logits.float(), dim=-1)[ids[0]].item()
+        ]
+
+        if n > 1:
+            with torch.no_grad():
+                cont_out = self._model(
+                    input_ids=ids[:-1].unsqueeze(0),
+                    past_key_values=prefix_kvs,
+                )
+            for i in range(n - 1):
+                lp = F.log_softmax(
+                    cont_out.logits[0, i, :].float(), dim=-1,
+                )
+                token_lps.append(lp[ids[i + 1]].item())
+
+        return token_lps
+
+    def score_chain_slots(
+        self,
+        image: Image.Image,
+        prompt: str,
+        parts: list,
+    ) -> dict:
+        """One teacher-forced pass over the answer chain ``''.join(text of parts)``.
+
+        A ``str`` part is literal carrier text; a ``(slot_name,
+        filler_text)`` tuple is a slot. Returns ``{slot_name: (total_lp,
+        lp_norm, n_tokens)}`` — the conditional log-prob of the slot's
+        tokens under the realised prefix (prompt + all preceding chain
+        text), ``lp_norm = total_lp / n_tokens``.
+
+        This is the quantity ``lp^(tau)`` of Exp-105 steps 5/6: because
+        every slot is scored inside *one* realised chain, the carrier
+        text before a slot is shared across chains that agree up to that
+        point, so the conditionals of the earlier positions cancel when
+        chains are compared (prefix cancellation).
+
+        Slot boundaries are found by incremental diff over the growing
+        chain string — see :meth:`_chain_token_spans` for the merge-guard.
+
+        :param image: PIL image.
+        :param prompt: Text prompt.
+        :param parts: Chain parts in order — ``str`` for carrier text,
+            ``(slot_name, filler_text)`` for a slot. Chains are scored
+            without a thinking trace (steps 5/6 run
+            ``enable_thinking: false``).
+        :returns: ``{slot_name: (total_lp, lp_norm, n_tokens)}`` in slot
+            order of appearance. A slot with zero tokens (empty filler,
+            or one swallowed by a merge shift) yields
+            ``(-inf, -inf, 0)``, matching :meth:`score_categories`'
+            empty-label handling.
+        :raises ValueError: On a duplicate slot name (the dict key would
+            silently drop one of them) or a malformed part.
+        """
+        slot_names: list[str | None] = []
+        texts: list[str] = []
+        for part in parts:
+            if isinstance(part, str):
+                slot_names.append(None)
+                texts.append(part)
+                continue
+            try:
+                name, filler = part
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"Chain part must be str or (slot_name, filler_text); "
+                    f"got {part!r}"
+                ) from exc
+            if name in slot_names:
+                raise ValueError(f"Duplicate slot name in chain: {name!r}")
+            slot_names.append(name)
+            texts.append(filler)
+
+        spans, chain_ids = self._chain_token_spans(texts)
+
+        empty = (float("-inf"), float("-inf"), 0)
+        if not chain_ids:
+            # Nothing to force-decode — skip the model entirely.
+            return {nm: empty for nm in slot_names if nm is not None}
+
+        token_lps = self._chain_token_logprobs(image, prompt, chain_ids)
+
+        out: dict = {}
+        for name, (start, end) in zip(slot_names, spans):
+            if name is None:
+                continue
+            n_tokens = end - start
+            if n_tokens <= 0:
+                out[name] = empty
+                continue
+            total_lp = float(sum(token_lps[start:end]))
+            out[name] = (total_lp, total_lp / n_tokens, n_tokens)
+        return out
 
     # ------------------------------------------------------------------
     # Convenience
@@ -566,6 +787,14 @@ class _OpenVINOBackendMixin:
     Designed as a mixin so the family scorers (chat template, encode_text)
     are reused unchanged. The OpenVINO IR is loaded directly — no PyTorch
     weights are touched on the boundary-tester host.
+
+    Scoring is *not* overridden: both :meth:`VLMScorer.score_categories`
+    and :meth:`VLMScorer.score_chain_slots` are inherited as-is. They
+    issue the same two model calls — ``model(**inputs, use_cache=True)``
+    for the prefix and ``model(input_ids=…, past_key_values=…)`` for the
+    continuation — and chain scoring only makes the continuation longer
+    (a whole answer chain instead of one label), so no OV adaptation is
+    needed.
 
     The OV IR is compiled logits-only, so we cannot mean-pool the SUT's
     own language backbone for ``encode_text`` the way the torch path does.
