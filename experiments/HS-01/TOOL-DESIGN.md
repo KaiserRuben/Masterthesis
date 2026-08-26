@@ -41,7 +41,17 @@ Endpoints: `POST /api/sessions` · `PUT /api/sessions/{id}/checkpoint` · `POST 
 
 ## Privacy
 
-Anonymous `participant_code` only; no IPs, no cookies (localStorage only), no personal data. Consent text versioned (`consent_version` + sha256).
+Anonymous `participant_code` only; no IPs, no cookies (localStorage only).
+Consent text versioned (`consent_version` + sha256).
+
+This was the design intent, and it is what the archived data now satisfies —
+but the application as built did not meet it. It captured a browser environment
+block for quality control (user agent, platform, screen geometry, device pixel
+ratio) whose combination is a device fingerprint, and it collects `age_band`,
+`english_proficiency` and `ml_familiarity` as required demographics. The
+archived records were retrospectively stripped of the fingerprint; see
+`tools/anonymize_sessions.py` and `docs/DATA.md`. Redeploying the application
+unchanged would collect it again.
 
 ## Out of scope (decided)
 

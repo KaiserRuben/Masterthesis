@@ -20,8 +20,12 @@ import make_study_config  # noqa: E402 — must be after sys.path insert
 
 POOL_FILE = HS01 / "pool_frozen" / "itempool.json"
 SCHEMA_FILE = HS01 / "schemas" / "hs01.study-config.schema.json"
-CONFIG_OUT = HS01 / "app" / "config" / "study-config.json"
-CONSENT_OUT = HS01 / "app" / "config" / "consent.en.md"
+# The generator's real destinations. Tests must never write here: the shipped
+# consent.en.md carries a hand-edit made before data collection, so it is the
+# record of what participants were actually shown, and regenerating it destroys
+# that. The fixtures below redirect the generator into a temporary directory.
+SHIPPED_CONFIG = HS01 / "app" / "config" / "study-config.json"
+SHIPPED_CONSENT = HS01 / "app" / "config" / "consent.en.md"
 
 
 def sha256_file(path: Path) -> str:
@@ -29,10 +33,32 @@ def sha256_file(path: Path) -> str:
 
 
 @pytest.fixture(scope="module")
-def generated():
+def sandbox(tmp_path_factory):
+    """Redirect the generator's writes into a temporary directory.
+
+    ``make_study_config`` writes to module-level paths inside the repository.
+    Running it for real would overwrite the shipped consent text and study
+    config, so point it somewhere disposable for the duration of the module.
+    """
+    out = tmp_path_factory.mktemp("study_config_out")
+    config_json = out / "study-config.json"
+    consent_md = out / "consent.en.md"
+
+    original = (make_study_config.CONFIG_JSON, make_study_config.CONSENT_MD)
+    make_study_config.CONFIG_JSON = config_json
+    make_study_config.CONSENT_MD = consent_md
+    try:
+        yield config_json, consent_md
+    finally:
+        make_study_config.CONFIG_JSON, make_study_config.CONSENT_MD = original
+
+
+@pytest.fixture(scope="module")
+def generated(sandbox):
     """Run the generator once and return the parsed config + pool."""
+    config_json, _ = sandbox
     make_study_config.main()
-    config = json.loads(CONFIG_OUT.read_text())
+    config = json.loads(config_json.read_text())
     pool = json.loads(POOL_FILE.read_text())
     return config, pool
 
@@ -156,9 +182,11 @@ def test_pool_ref_sha256(generated):
     assert actual == expected, f"pool_file_sha256 mismatch: got {actual}, expected {expected}"
 
 
-def test_consent_sha256(generated):
+def test_consent_sha256(generated, sandbox):
+    """The generator's own config and consent output agree with each other."""
     config, _ = generated
-    expected = sha256_file(CONSENT_OUT)
+    _, consent_md = sandbox
+    expected = sha256_file(consent_md)
     actual = config["consent"]["text_sha256"]
     assert actual == expected, f"consent.text_sha256 mismatch: got {actual}, expected {expected}"
 
@@ -167,16 +195,22 @@ def test_consent_sha256(generated):
 # Determinism
 # ---------------------------------------------------------------------------
 
-def test_deterministic(tmp_path, monkeypatch):
+def test_deterministic(sandbox):
     """Running generator twice produces byte-identical study-config.json."""
-    import make_study_config as msc
+    config_json, _ = sandbox
 
-    # Run once
-    msc.main()
-    first_bytes = CONFIG_OUT.read_bytes()
+    make_study_config.main()
+    first_bytes = config_json.read_bytes()
 
-    # Run again
-    msc.main()
-    second_bytes = CONFIG_OUT.read_bytes()
+    make_study_config.main()
+    second_bytes = config_json.read_bytes()
 
     assert first_bytes == second_bytes, "Generator is not deterministic"
+
+
+def test_shipped_files_untouched(sandbox):
+    """The suite must not rewrite the artifacts that record the live study."""
+    before = sha256_file(SHIPPED_CONSENT), sha256_file(SHIPPED_CONFIG)
+    make_study_config.main()
+    after = sha256_file(SHIPPED_CONSENT), sha256_file(SHIPPED_CONFIG)
+    assert before == after, "generator wrote into the repository instead of the sandbox"

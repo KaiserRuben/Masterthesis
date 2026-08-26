@@ -145,7 +145,7 @@ cluster (`src/data/taxonomy.common_ancestor_level`):
 
 | file | pair | backend | gens×pop | role |
 |---|---|---|---|---|
-| `hs_gen01_screen.yaml` | full roster (≤150 entries) | vqgan, **cone 20° ON**, heavy mutation | 4×30 | crossability discovery |
+| `hs_gen01_screen.yaml` | full roster (planned ≤150; the screen actually ran **1024** pairs) | vqgan, **cone 20° ON**, heavy mutation | 4×30 | crossability discovery |
 | `hs_gen01_promoted_idx<N>_*.yaml` | screen-promoted | vqgan, cone 20° ON | 150×30 | emitted by `promote_pairs.py` — the ONLY full runs |
 | `promote_pairs.py` | — | — | — | screen → promote: gates + YAML emission |
 | `validate_configs.py` | — | — | — | every YAML through the production loader |
@@ -270,6 +270,11 @@ Prefer distinct anchor *classes* across promotions (the roster spans the first
 python experiments/runners/run_boundary_test.py configs/HS-GEN-01/hs_gen01_screen.yaml
 ```
 
-Rough cost (workstation OV-GPU, 1.5–3 s/call): screen ≤18k calls + one-time
-cone modal-grid precompute ≈ overnight at workers 2; each promoted full run
-4.5k calls ≈ 2–4 h per replicate.
+Rough cost (workstation OV-GPU, 1.5–3 s/call): each promoted full run 4.5k
+calls ≈ 2–4 h per replicate.
+
+The screen estimate below it was written for a ≤150-pair roster and badly
+under-called the real thing. `gap_filter` produced **1024 pairs**, and with the
+cone active the per-call cost is roughly 6× what a SUT-only preflight measures
+(~2 s rather than ~0.36 s). The screen ran about **39 hours**, not overnight.
+`runs/HS-GEN-01/` holds the 1024 screen runs and the 18 promoted ones.

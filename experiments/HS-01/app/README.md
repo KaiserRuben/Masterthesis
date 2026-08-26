@@ -72,13 +72,14 @@ Sessions are written to `app/data/sessions/` (gitignored). Images are served by
 ## Test
 
 ```bash
-npm test             # vitest run — 80 unit/integration tests (loaders, store,
-                     # session flow, widgets, instrumentation, …)
+npm test             # vitest run — 135 unit/integration tests across 17 files
+                     # (loaders, store, session flow, widgets, instrumentation, …)
+npm run e2e          # Playwright — playwright.config.ts + e2e/full-session.spec.ts
 ```
 
-End-to-end is scaffolded only (`npm run e2e` → Playwright). There is no
-committed Playwright config / spec yet; the unit + integration suite is the
-authoritative gate.
+The end-to-end spec drives a full session and validates the resulting record
+against the frozen session schema. The unit and integration suite remains the
+fast gate.
 
 ## Regenerate the study config
 

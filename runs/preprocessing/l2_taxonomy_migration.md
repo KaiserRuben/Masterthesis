@@ -1,5 +1,14 @@
 # L2 Taxonomy Migration (Exp-100 prep)
 
+> Historical record of a one-off migration, kept for provenance. Everything
+> below describes the repository as it stood in April 2026 — including the test
+> counts in the two "Regression check" sections, which were measured against a
+> suite that was red at the time for unrelated fake-object scaffolding reasons.
+> That scaffolding has since been fixed and the suite is green (725 passed);
+> those numbers are not a statement about the current state. The 11-bucket
+> canonical L2 set below was also superseded within this same document by the
+> 19-bucket table in Iteration 2.
+
 **Date:** 2026-04-24
 **Scope:** `src/data/imagenet_class_mapping.py` — stabilize the L2 super-category
 layer so that every ImageNet-1k class has a clean `[L0, L1, L2]` 3-level path

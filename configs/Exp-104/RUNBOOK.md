@@ -1,7 +1,12 @@
 # Exp-104 Phase B — Runbook
 
+> This campaign has completed; the runbook is kept as the record of how it was
+> executed. Machine names below (`this Mac`, the Arc workstation reached over a
+> personal VPN alias) are the author's; substitute your own. Results are in
+> `runs/Exp-104/` — see `docs/REPRODUCTION.md`.
+
 Suite: raw-vs-PMI live A/B over an 8-cell Δ∅ dose-response ladder, cross-SUT
-(Qwen now / LLaVA tonight), + null-image sensitivity. Full design + registry:
+(Qwen and LLaVA), + null-image sensitivity. Full design + registry:
 Obsidian `[[Exp-104-PMI-Calibration]]` §Phase-B-Design.
 
 **Cells** (`filter_indices = [2, 26, 28, 96, 196, 278, 454, 474]`) — matched
@@ -11,7 +16,7 @@ is the sole difference.
 
 ---
 
-## Qwen (this Mac, MPS) — running / queued
+## Qwen (Apple Silicon, MPS)
 
 ```bash
 # E0 + E1 (prior map Δ∅×4 nulls + post-hoc PMI floors on archived Exp-101q):
@@ -25,7 +30,7 @@ bash configs/Exp-104/launch_qwen_ab.sh          # writes runs/Exp-104/qwen_{raw,
 #   2 cells × 1 matched seed — configs generated once E0 identifies the cells.
 ```
 
-## LLaVA (Arc workstation, `ssh efedora` — VPN route is the reliable one) — tonight
+## LLaVA (Intel Arc workstation, OpenVINO backend)
 
 Prereqs on the box: repo synced (this commit), env with the deps, VQGAN knn
 cache `~/.cache/vqgan_knn/f8_16384_full.npz`, ImageNet cache, Redis up, and the

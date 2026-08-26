@@ -1,5 +1,13 @@
 # Exp-105 — Sentence-Slot-Pilot — Runbook (DRAFT)
 
+> **Status: unexecuted plan, not a record of work done.** Only Steps 0 and 1
+> ran; Steps 2–6 — the ones involving person imagery and demographic descriptor
+> slots — were never executed and are gated on supervisor sign-off that had not
+> been given. The thesis records this (appendix register, Exp-105). The
+> document below is a working draft in German, machine-drafted and not
+> reviewed; it is kept for provenance and should not be read as a protocol that
+> was followed or approved. Steps 2–6 must not be run without that sign-off.
+
 Spec: `sec:res:slots:setup` in der Thesis (06_results.tex) — die Setup-Subsection
 ist die ausführbare Spezifikation. Design-Note: Obsidian
 [[Exp-105-Sentence-Slot-Pilot]]. AI-erstellt (Claude, 2026-08-02), unreviewt.

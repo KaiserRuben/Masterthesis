@@ -104,9 +104,11 @@ runs/                         # not tracked in git — see docs/DATA.md
 analysis/
 ├── core/                     # style, resolve, load_{smoo,pdq}, generate, parquet_utils, metrics
 ├── viz/                      # boundary, pdq, smoo, topology, g_field, g_surface, comparison,
-│                             #   convergence_study, geometry_study, two_weeks
-├── outputs/                  # cached analysis artifacts (per-experiment)
-└── slides/                   # figure outputs curated for presentations
+│   │                         #   convergence_study, geometry_study, two_weeks
+│   └── thesis/pgf/           # emitters for the results-chapter figures
+├── cartography/              # Exp-100 boundary point-cloud store
+├── hs01/                     # human-study analysis (load, stats, tables, figures)
+└── outputs/                  # generated analysis artifacts (not tracked)
 
 notebooks/
 ├── Exp-01-sparsity-analysis.ipynb
@@ -116,12 +118,23 @@ notebooks/
 tools/
 ├── smoo/                     # SMOO framework (git submodule)
 ├── alpamayo/                 # gitignored — separate research thread
+├── render_manipulation_*.py  # method-chapter figures
 └── Archive/                  # parked: VLTest, vlm, scene, parquet_footer_repair
 
-archive_alpamayo_jan2026/     # side research (January '26 VLM grounding / Alpamayo-R1)
-infrastructure/               # docker, local (MPS), workstation (CUDA) environment setup
+docs/                         # REPRODUCTION, ENVIRONMENT, DATA
 tests/                        # pytest suite
+
+archive_alpamayo_jan2026/     # side research (January '26 VLM grounding / Alpamayo-R1)
+infrastructure/               # Alpamayo inference setup — unrelated to these pipelines
 ```
+
+`experiments/HS-01/` holds the human oracle study: the Next.js study
+application, the frozen item pool, the anonymized session records, and the
+staging tools. `experiments/analysis/` holds the per-campaign aggregation
+scripts and the aggregates the thesis figures read.
+
+The last two entries above are pruned from the `repro/thesis-v1` branch, along
+with `slides/`, `tools/Archive/` and the generated `samples/` imagery.
 
 ## Design decisions
 
