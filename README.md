@@ -136,7 +136,7 @@ from smoo.optimizer import Optimizer
 from smoo.sut import SUT
 ```
 
-`tools/smoo/` is installed editable by `experiments/requirements.txt`; its `pyproject.toml` maps the `smoo` import onto the checkout's `src/`. The submodule tracks a [patched fork](https://github.com/KaiserRuben/SMOO/tree/masterarbeit) — upstream ships no packaging metadata and cannot load the StyleGAN-XL pickles under `timm>=1.0`. See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+`tools/smoo/` is installed editable by `experiments/requirements.txt`; its `pyproject.toml` maps the `smoo` import onto the checkout's `src/`. The submodule tracks a [branch](https://github.com/KaiserRuben/SMOO/tree/masterarbeit) carrying three packaging and dependency-compatibility commits on top of [SMOO](https://github.com/oliverweissl/SMOO). See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
 ## Supervision
 

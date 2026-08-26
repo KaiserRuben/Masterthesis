@@ -92,10 +92,11 @@ python experiments/runners/run_boundary_test.py configs/Exp-NN/<config>.yaml
 python experiments/runners/run_pdq_test.py configs/Exp-NN/<config>.yaml
 ```
 
-`tools/smoo` tracks `KaiserRuben/SMOO` branch `masterarbeit`, not upstream.
-Upstream ships no packaging metadata (so `pip install -e` fails), cannot load
-the StyleGAN-XL pickles under `timm>=1.0`, and OOMs on CPU without
-`inference_mode`. Do not repoint it at upstream.
+`tools/smoo` tracks `KaiserRuben/SMOO` branch `masterarbeit` — three commits on
+top of upstream adding packaging metadata, timm 1.0 compatibility for the
+StyleGAN-XL pickles, and `inference_mode` on the manipulator entry points. The
+pinned dependency set needs all three, so do not repoint the submodule at
+upstream `oliverweissl/SMOO` until they land there.
 
 Configs with `sut.backend: openvino` (the INT8/INT4 SUTs) need a **separate**
 environment — `experiments/requirements-openvino.txt` pins an older

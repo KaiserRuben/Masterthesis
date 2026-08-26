@@ -65,27 +65,31 @@ pip install -r experiments/requirements.txt   # will keep the pins above
 ## Why the SMOO submodule points at a fork
 
 `tools/smoo` tracks
-[`KaiserRuben/SMOO`](https://github.com/KaiserRuben/SMOO) branch `masterarbeit`,
-not upstream `oliverweissl/SMOO`. Upstream main cannot reproduce these results:
+[`KaiserRuben/SMOO`](https://github.com/KaiserRuben/SMOO) branch `masterarbeit`
+rather than [`oliverweissl/SMOO`](https://github.com/oliverweissl/SMOO)
+directly. The branch is three commits on top of upstream `6f17ccf`, carrying
+the packaging and dependency-compatibility changes these experiments run
+against:
 
-1. **It has no packaging metadata.** There is no `pyproject.toml`, so
-   `pip install -e tools/smoo` fails outright — which is what
-   `experiments/requirements.txt` does on every install. The fork adds one
-   mapping `src/` onto the `smoo` package namespace, and rewrites the StyleGAN
-   internals' absolute import fallbacks to match.
-2. **It cannot load the StyleGAN-XL pickles under `timm>=1.0`.** timm 1.0 moved
-   `timm.models.layers.*` to `timm.layers.*` and made several `timm.models.X`
-   modules private. The checkpoints predate that move, so unpickling raises
-   `ModuleNotFoundError`. The fork resolves legacy module names to their modern
-   paths. This matters because the pinned `timm==1.0.24` is on the far side of
-   that break.
-3. **The StyleGAN manipulator exhausts memory on CPU.** `manipulate`, `get_w`
-   and `get_images` ran with autograd active, so the returned tensor retained
-   every synthesis-layer activation. The fork runs them under
-   `torch.inference_mode`.
+1. **Packaging.** A setuptools `pyproject.toml` mapping `src/` onto the `smoo`
+   package namespace, so `pip install -e tools/smoo` works — which is what
+   `experiments/requirements.txt` does on every install. The StyleGAN
+   internals' non-relative import fallbacks are rewritten to match, so they
+   resolve from an installed distribution as well as a source checkout.
+2. **timm 1.0 compatibility.** timm 1.0 moved `timm.models.layers.*` to
+   `timm.layers.*` and made several `timm.models.X` modules private. The
+   StyleGAN-XL checkpoints were pickled before that move and still name the old
+   paths, so loading them against the pinned `timm==1.0.24` needs the legacy
+   names resolved to their modern equivalents.
+3. **Inference-mode manipulation.** `manipulate`, `get_w` and `get_images` run
+   under `torch.inference_mode`, so the returned tensor does not retain the
+   synthesis graph — which otherwise exhausts memory on CPU at non-trivial
+   batch sizes.
 
-The fork is three commits on top of upstream `6f17ccf`, each independently
-described; nothing else diverges.
+None of these are thesis-specific; they are general compatibility fixes against
+a newer dependency set than upstream currently targets, and are written to be
+upstreamable unchanged. Nothing else diverges — the search behaviour is
+upstream's.
 
 ## External services and data
 
