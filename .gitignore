@@ -49,9 +49,16 @@ runs/obsidian_assets
 tools/alpamayo/
 tools/refer/
 
-# Generated experiment artifacts (large / regenerable)
-# Tracked reports, manifests, and figure-generating scripts under these
-# paths stay tracked; only untracked data outputs are ignored.
+# Generated experiment artifacts (large / regenerable).
+# These paths are ignored wholesale, but selected files under them are tracked
+# via `git add -f` and stay tracked once added:
+#   - reports, manifests and figure-generating scripts
+#   - the CSV/parquet aggregates the thesis figures read
+#     (experiments/analysis/output/**) — without them no results figure
+#     rebuilds without the full external run archive; see docs/DATA.md
+#   - experiments/HS-01/pool_frozen/{itempool.json,POOL_README.md}, which
+#     analysis/hs01 needs; the stimulus PNGs beside them stay ignored because
+#     they are ImageNet-derived and cannot be redistributed
 runs/
 experiments/analysis/output/
 experiments/HS-01/data_raw/
