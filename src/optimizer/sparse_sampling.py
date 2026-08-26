@@ -4,9 +4,14 @@ Replaces PyMoo's default ``IntegerRandomSampling`` with a three-way mixture
 designed to seed the population near the identity genotype while still
 admitting full-codebook exploration:
 
-1. **Zero anchors** — exact ``[0, ..., 0]`` in the image block. Guarantees the
-   no-op solution is in the initial Pareto set and protects against drift
-   away from identity.
+1. **Zero anchors** — exact ``[0, ..., 0]`` in the image block. Guarantees
+   individuals with an unmanipulated image are in generation 0 and protects
+   against drift away from identity on the image axis. Their text genes are
+   still drawn uniform-random like everyone else's (see below), so these
+   anchors are not the all-zero no-op genotype; the fully unmanipulated
+   input is by design not a member of the initial population (intended
+   behaviour confirmed 2026-08-19; measured: absent from gen 0 in all 121
+   Exp-100 runs).
 2. **Uniform-sparse** — Bernoulli mask ``(p_active)`` over image genes;
    active genes draw depth uniformly from ``[1, bound]``. Diversity
    insurance against over-aggressive geometric bias.

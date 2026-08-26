@@ -145,7 +145,11 @@ class ImageConfig:
 
     :param backend: ``"vqgan_codebook"`` (default) or ``"stylegan_xl"``.
     :param preset: VQGAN preset name (vqgan_codebook only).
-    :param patch_ratio: Fraction of patches eligible for swap (vqgan only).
+    :param patch_ratio: Under ``PatchStrategy.FREQUENCY``, the fraction of
+        *unique codewords* (most frequent first) whose grid positions
+        become editable — the resulting number of editable positions
+        therefore varies by image. Ignored by ``PatchStrategy.ALL``
+        (vqgan only).
     :param patch_strategy: Patch-selection strategy (vqgan only).
     :param n_candidates: Codebook-replacement count per patch (vqgan only).
     :param candidate_strategy: How candidates are picked from KNN (vqgan).
