@@ -69,9 +69,10 @@ pip install -r experiments/requirements.txt   # will keep the pins above
 not upstream `oliverweissl/SMOO`. Upstream main cannot reproduce these results:
 
 1. **It has no packaging metadata.** There is no `pyproject.toml`, so
-   `pip install -e tools/smoo` — the command in the README — fails outright.
-   The fork adds one mapping `src/` onto the `smoo` package namespace, and
-   rewrites the StyleGAN internals' absolute import fallbacks to match.
+   `pip install -e tools/smoo` fails outright — which is what
+   `experiments/requirements.txt` does on every install. The fork adds one
+   mapping `src/` onto the `smoo` package namespace, and rewrites the StyleGAN
+   internals' absolute import fallbacks to match.
 2. **It cannot load the StyleGAN-XL pickles under `timm>=1.0`.** timm 1.0 moved
    `timm.models.layers.*` to `timm.layers.*` and made several `timm.models.X`
    modules private. The checkpoints predate that move, so unpickling raises
