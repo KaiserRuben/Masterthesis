@@ -9,6 +9,7 @@ Usage:
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -117,7 +118,16 @@ def apply_style() -> None:
 # Figure helpers
 # ---------------------------------------------------------------------------
 
-ASSET_ROOT = Path.home() / "Obsidian/Notizen/01 - Active Projects/Master Thesis/Diary/assets"
+# Figure output root. Defaults to the author's Obsidian diary when it exists,
+# so existing workflows keep writing where they always did; otherwise figures
+# land in the repository. Override with ANALYSIS_ASSET_ROOT.
+_OBSIDIAN_ASSETS = Path.home() / "Obsidian/Notizen/01 - Active Projects/Master Thesis/Diary/assets"
+_REPO_ASSETS = Path(__file__).resolve().parents[2] / "analysis" / "outputs" / "assets"
+
+ASSET_ROOT = Path(
+    os.environ.get("ANALYSIS_ASSET_ROOT")
+    or (_OBSIDIAN_ASSETS if _OBSIDIAN_ASSETS.is_dir() else _REPO_ASSETS)
+)
 
 
 def asset_dir(name: str) -> Path:

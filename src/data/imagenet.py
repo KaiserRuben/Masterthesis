@@ -14,8 +14,8 @@ Usage::
     from src.data.imagenet import ImageNetCache
 
     cache = ImageNetCache()                       # ~/.cache/imagenet
-    cache = ImageNetCache(                        # with external drive
-        fallbacks=[Path("/Volumes/SanDisk/Cache/imagenet")],
+    cache = ImageNetCache(                        # with an external drive
+        fallbacks=[Path("/Volumes/<drive>/Cache/imagenet")],
     )
     samples = cache.load_samples(["macaw", "peacock"], n_per_class=5)
 """
