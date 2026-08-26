@@ -1,0 +1,76 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-105 Step 1c — Haus-Suche green/blue, RAW-DEEP-Arm (LLaVA-OV-INT8 / Arc)
+# Diary/spec: [[Exp-105-Sentence-Slot-Pilot]] · sec:res:slots:setup (Thesis)
+#
+# Zweck: Falsifikations-Panzer für den raw-Wall-Befund aus Step 1b. Dort:
+# beide raw-Arme frieren ab Gen 30 ein (pareto_min_TgtBal 0.608/0.584),
+# waehrend die raw→pmi-Verschiebung ueber alle Gen-0-Genotypen EXAKT konstant
+# ist (0.601 nats, Std 0.0) — Delta_0-Struktur wie Exp-104. Erwartung ist
+# daher NICHT, dass dieser Arm kreuzt, sondern der Beleg "raw-Wall haelt auch
+# bei 4x Budget". Population statt Generationen als Hebel (Init-Diversitaet;
+# Generationen-Slope ist ~0 ab Gen 30). Kein pmi-Spiegel: pmi kreuzt in Gen 5,
+# Deep-Budget dort sinnlos.
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp105_step1_house_llava_raw_deep
+save_dir: runs/Exp-105
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+  enable_thinking: false
+
+modality: image_only                      # grounded: Bild-Gene, Carrier fix
+
+prompt_template: "Look at the image and complete the statement truthfully."
+# Kandidaten sind volle Sätze mit Schlusspunkt — answer_format ohne eigenen
+# Punkt, sonst rendert das Suffix "…is blue..".
+answer_format: " Answer with exactly one of these options: {categories}"
+
+pmi:
+  enabled: false                          # RAW-Arm, bewusst ohne Spiegel
+
+# 4x Step-1b-Budget: Init-Diversitaet (pop) verdoppelt, Tiefe verdoppelt.
+generations: 100
+pop_size: 60
+# GA-Seed per --seed 1|2|3 (3 Seeds).
+
+seeds:
+  mode: slot_items
+  slot_items:
+    items:
+      - image: experiments/data/exp105_seeds/house_green.png
+        template: "The house is {slot}."
+        fillers: [green, blue]
+        pair: [green, blue]
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  candidate_strategy: KNN                 # ungerichtete Nachbarschaft
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: false                        # entschieden: kein Cone im Piloten
+
+text:
+  composite:
+    profile: full_stack                   # ungenutzt: modality image_only -> noop
+
+parallel:
+  workers: 2
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: false                         # uniforme Lauflänge (Vergleichbarkeit)

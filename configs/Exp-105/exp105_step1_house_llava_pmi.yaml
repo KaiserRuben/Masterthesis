@@ -1,0 +1,78 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-105 Step 1 — Haus-Suche green/blue, RAW-Arm (LLaVA-OV-INT8 / Arc, auf fedora)
+# Diary/spec: [[Exp-105-Sentence-Slot-Pilot]] · sec:res:slots:setup (Thesis)
+#
+# Grounded SMOO-Suche auf dem Wortpaar-Kontrast: Bild-Gene manipuliert, Carrier
+# fix, Kandidaten = voll instanziierte Carrier-Sätze (Präfix kürzt sich exakt).
+# Hex-Grid-Readout (17 Codes, token-validiert) läuft separat über den
+# Scan-Runner am Seed + entlang des Crossing-Pfads.
+#
+# PMI-Spiegel-Arm: Kopie mit pmi.enabled true + Namens-Suffix _pmi; raw- und
+# pmi-Arm mit identischem --seed paaren (Exp-104-Muster).
+#
+# STATUS: DRAFT — läuft erst, wenn seeds.mode slot_items existiert (Task #3)
+#         und der Haus-Seed erzeugt ist (Task #6).
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp105_step1_house_llava_pmi
+save_dir: runs/Exp-105
+device: cpu
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+  enable_thinking: false
+
+modality: image_only                      # grounded: Bild-Gene, Carrier fix
+
+prompt_template: "Look at the image and complete the statement truthfully."
+# Kandidaten sind volle Sätze mit Schlusspunkt — answer_format ohne eigenen
+# Punkt, sonst rendert das Suffix "…is blue..".
+answer_format: " Answer with exactly one of these options: {categories}"
+
+pmi:
+  enabled: true                           # PMI-Arm (Spiegel von _raw)
+
+# Budget laut Spec: unteres Ende der Label-Pair-Kampagnen.
+generations: 50
+pop_size: 30
+# GA-Seed per --seed 1|2|3 (3 Seeds pro Arm).
+
+seeds:
+  mode: slot_items                        # [NEW] expliziter Slot-Item-Adapter
+  slot_items:                             # [NEW]
+    items:
+      - image: experiments/data/exp105_seeds/house_green.png   # Task #6
+        template: "The house is {slot}."  # [NEW] Slot-Template
+        fillers: [green, blue]            # [NEW] instanziiert die Kandidaten
+        pair: [green, blue]               # [NEW] Such-Kontrast (TgtBal-Paar)
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  candidate_strategy: KNN                 # ungerichtete Nachbarschaft
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: false                        # entschieden: kein Cone im Piloten
+
+text:
+  composite:
+    profile: full_stack                   # ungenutzt: modality image_only -> noop
+
+parallel:
+  workers: 2
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: false                         # uniforme Lauflänge (Vergleichbarkeit)

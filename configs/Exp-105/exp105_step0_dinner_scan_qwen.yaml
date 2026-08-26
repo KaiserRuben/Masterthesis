@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-105 Step 0 — Dinner-Grounding-Scan (Qwen3.5-4B / MPS)
+# Diary/spec: [[Exp-105-Sentence-Slot-Pilot]] · sec:res:slots:setup (Thesis)
+#
+# Erschöpfender Scoring-Pass, KEINE Suche: 20 Dinner-Inputs (Budget × Motivation)
+# × 3 Kandidaten auf dem Neutralbild. Validiert den Slot-Scoring-Pfad end-to-end
+# und misst das Kontrastfeld, gegen das eq:ex-dinner-contrast (Kap. 2) gelesen
+# wird.
+#
+# STATUS: lauffähig — run_slot_scan.py implementiert den scan-Block (Task #5);
+#         `--dry-run` zeigt den Plan ohne Modell-Load.
+#         Der gesamte scan-Block ist [NEW] (Schema vom Runner definiert).
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp105_step0_dinner_scan_qwen
+save_dir: runs/Exp-105
+device: mps
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+  enable_thinking: false
+
+# PMI-Lesart wird aus demselben Lauf berichtet (Baseline-Subtraktion post-hoc);
+# der Scan loggt raw UND die Null-Bild-Baseline pro Kandidaten-Tupel.
+pmi:
+  enabled: false
+  null_image: gray
+  null_image_size: 448
+
+scan:                                     # [NEW] Schema von run_slot_scan.py
+  image: null                             # [NEW] null → PMI-Null-Bild (grau)
+  carrier_template: >-                    # [NEW] ein Prompt pro Gitterpunkt
+    You are deciding how to have dinner tonight. Your budget is {budget}.
+    Your motivation to make an effort is {motivation} out of 10.
+  grid:                                   # [NEW] kartesisches Produkt
+    budget: [small, medium]
+    motivation: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  candidates:                             # [NEW] voll instanziierte Sätze
+    - "I will cook at home."
+    - "I will order in."
+    - "I will go to a restaurant."
+  report: [raw, pmi_baseline]             # [NEW] beide Lesarten aus einem Lauf
