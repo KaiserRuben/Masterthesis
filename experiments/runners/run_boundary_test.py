@@ -38,6 +38,7 @@ from src.common import (
 from src.config import ExperimentConfig, apply_modality, resolve_categories
 from src.data import ImageNetCache
 from src.evolutionary import VLMBoundaryTester
+from src.evolutionary.vlm_boundary_tester import effective_candidates
 from src.manipulator.image.types import CandidateStrategy, PatchStrategy
 from src.manipulator.image_backend import ImageBackend
 from src.manipulator.text.composite import CompositeTextManipulator
@@ -273,10 +274,18 @@ def _run_preflight(
     n_seeds_run = len(indexed)
     first_seed = indexed[0][1]
     pair = (first_seed.class_a, first_seed.class_b)
-    scored_categories = (
-        exp.categories if exp.score_full_categories else pair
+    # Mirror the tester's scoring scope so the measured per-call cost
+    # matches the real loop (slot_items scores its per-seed candidate list).
+    seed_candidates = effective_candidates(first_seed)
+    if seed_candidates is not None:
+        scored_categories: tuple[str, ...] = seed_candidates
+        answer_categories: tuple[str, ...] = seed_candidates
+    else:
+        scored_categories = exp.categories if exp.score_full_categories else pair
+        answer_categories = pair
+    answer_suffix = exp.answer_format.format(
+        categories=", ".join(answer_categories),
     )
-    answer_suffix = exp.answer_format.format(categories=", ".join(pair))
     total_calls = exp.generations * exp.pop_size * n_seeds_run
     preflight_cost_check(
         sut=sut,

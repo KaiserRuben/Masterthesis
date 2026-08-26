@@ -23,6 +23,11 @@ from .seed_context import (
     seed_target_class,
 )
 from .seed_generator import generate_seeds
+from .slot_items_seed_generator import (
+    item_candidates,
+    item_pair,
+    slot_items_seeds,
+)
 from .worker_dispatch import dispatch_workers
 
 __all__ = [
@@ -41,10 +46,13 @@ __all__ = [
     "dispatch_workers",
     "generate_seeds",
     "init_shared_components",
+    "item_candidates",
+    "item_pair",
     "precompute_image_backend",
     "prepare_pipeline_seeds",
     "resolve_label",
     "roster_seeds",
     "seed_target_class",
+    "slot_items_seeds",
     "validate_class_list",
 ]

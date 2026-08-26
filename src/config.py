@@ -263,9 +263,105 @@ class RefCocoPlusConfig:
     same_category: bool = True            # keep items whose two referents share a category
 
 
+# Placeholder that a slot-item carrier template must contain. Substitution
+# is a literal string replace (never ``str.format``) so templates may hold
+# other braces without escaping.
+SLOT_PLACEHOLDER: str = "{slot}"
+
+
+@dataclass(frozen=True)
+class SlotItem:
+    """One explicit ``(image, carrier sentence, candidate fillers)`` item.
+
+    The sentence-slot mode (Exp-105) drops the ImageNet label-pair
+    machinery: the contrast set is written out by hand. *template* carries
+    a single ``{slot}`` placeholder; every filler instantiates it into a
+    FULL candidate sentence, and those sentences — not the bare filler
+    words — are what the SUT scores. That is deliberate: the shared prefix
+    cancels exactly in the contrast, so only the suffix residue is signal.
+
+    :param image: Seed image path. Absolute, ``~``-prefixed, or relative
+        to the repo root. Existence is checked at *seed-generation* time
+        (see :func:`src.common.slot_items_seed_generator.resolve_item_image`)
+        so config load stays IO-free.
+    :param template: Carrier sentence; must contain ``{slot}``.
+    :param fillers: Words/phrases substituted into the slot. Each yields
+        one candidate sentence; together they are the scored contrast set.
+    :param pair: The two fillers whose instantiated sentences form the
+        search pair scored by ``TargetedBalance`` (``|P(A) − P(B)|``).
+        Entries name fillers, not sentences; both must be in *fillers*.
+    """
+
+    image: Path
+    template: str
+    fillers: tuple[str, ...]
+    pair: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if SLOT_PLACEHOLDER not in self.template:
+            raise ValueError(
+                f"slot_items item template must contain {SLOT_PLACEHOLDER!r}; "
+                f"got {self.template!r}"
+            )
+        if not self.fillers:
+            raise ValueError(
+                f"slot_items item {self.template!r} has an empty `fillers` "
+                "list; at least the two `pair` entries are required."
+            )
+        dupes = sorted({f for f in self.fillers if self.fillers.count(f) > 1})
+        if dupes:
+            raise ValueError(
+                f"slot_items item {self.template!r} has duplicate fillers "
+                f"{dupes}; candidate sentences must be distinct."
+            )
+        if len(self.pair) != 2:
+            raise ValueError(
+                f"slot_items item {self.template!r} needs exactly 2 `pair` "
+                f"entries (the search contrast); got {len(self.pair)}: "
+                f"{list(self.pair)}"
+            )
+        if self.pair[0] == self.pair[1]:
+            raise ValueError(
+                f"slot_items item {self.template!r} has identical `pair` "
+                f"entries {self.pair[0]!r}; the two sides must differ."
+            )
+        missing = [p for p in self.pair if p not in self.fillers]
+        if missing:
+            raise ValueError(
+                f"slot_items item {self.template!r}: `pair` entries "
+                f"{missing} are not in `fillers` {list(self.fillers)}. "
+                "`pair` names fillers, which are then instantiated into "
+                "candidate sentences."
+            )
+
+
+@dataclass(frozen=True)
+class SlotItemsConfig:
+    """Parameters for the ``slot_items`` seed-selection mode (Exp-105).
+
+    Each :class:`SlotItem` yields exactly one seed for the normal seed
+    loop, in listed order — so ``seeds.filter_indices`` addresses items
+    by their 0-based position here.
+    """
+
+    items: tuple[SlotItem, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.items:
+            raise ValueError(
+                "seeds.slot_items.items must list at least one item."
+            )
+
+
+# Seed-selection modes, each backed by a same-named sub-block on SeedConfig.
+_SEED_MODES: tuple[str, ...] = (
+    "gap_filter", "roster", "refcocoplus", "slot_items",
+)
+
+
 @dataclass(frozen=True)
 class SeedConfig:
-    """Seed-selection parameters — dispatches between two generation modes.
+    """Seed-selection parameters — dispatches between the generation modes.
 
     The :attr:`mode` flag selects between:
 
@@ -275,6 +371,11 @@ class SeedConfig:
     * ``"roster"`` — the Exp-100 path (see :class:`RosterConfig`):
       explicit class roster with fixed seeds-per-class and combinatorial
       abstraction-level expansion.
+    * ``"refcocoplus"`` — the Exp-103 grounding path
+      (see :class:`RefCocoPlusConfig`): two-referent box-string candidates.
+    * ``"slot_items"`` — the Exp-105 sentence-slot path
+      (see :class:`SlotItemsConfig`): explicit ``(image, carrier, fillers)``
+      items, candidates are instantiated carrier sentences.
 
     Exactly the matching sub-block must be populated; mismatches (e.g.
     ``mode="roster"`` with a ``gap_filter`` block set) are rejected in
@@ -286,11 +387,13 @@ class SeedConfig:
     even if it is the only seed that runs). An empty tuple disables
     filtering.
 
-    :param mode: ``"gap_filter"`` | ``"roster"`` | ``"refcocoplus"``.
+    :param mode: ``"gap_filter"`` | ``"roster"`` | ``"refcocoplus"``
+        | ``"slot_items"``.
     :param filter_indices: Post-generation index filter. Empty = keep all.
     :param gap_filter: Parameters when ``mode == "gap_filter"``.
     :param roster: Parameters when ``mode == "roster"``.
     :param refcocoplus: Parameters when ``mode == "refcocoplus"``.
+    :param slot_items: Parameters when ``mode == "slot_items"``.
     """
 
     mode: str = "gap_filter"
@@ -298,41 +401,34 @@ class SeedConfig:
     gap_filter: GapFilterConfig | None = None
     roster: RosterConfig | None = None
     refcocoplus: "RefCocoPlusConfig | None" = None
+    slot_items: "SlotItemsConfig | None" = None
 
     def __post_init__(self) -> None:
-        if self.mode == "gap_filter":
-            if self.roster is not None or self.refcocoplus is not None:
-                raise ValueError(
-                    "seeds.mode='gap_filter' but seeds.roster is set; "
-                    "drop one or the other."
-                )
-            if self.gap_filter is None:
-                # Fill in the default; frozen dataclass requires setattr.
-                object.__setattr__(self, "gap_filter", GapFilterConfig())
-        elif self.mode == "roster":
-            if self.gap_filter is not None or self.refcocoplus is not None:
-                raise ValueError(
-                    "seeds.mode='roster' but seeds.gap_filter is set; "
-                    "drop one or the other."
-                )
-            if self.roster is None:
-                raise ValueError(
-                    "seeds.mode='roster' requires a seeds.roster config block."
-                )
-        elif self.mode == "refcocoplus":
-            if self.gap_filter is not None or self.roster is not None:
-                raise ValueError(
-                    "seeds.mode='refcocoplus' but gap_filter/roster is set; drop one."
-                )
-            if self.refcocoplus is None:
-                raise ValueError(
-                    "seeds.mode='refcocoplus' requires a seeds.refcocoplus config block."
-                )
-        else:
+        if self.mode not in _SEED_MODES:
             raise ValueError(
-                f"seeds.mode must be 'gap_filter' | 'roster' | 'refcocoplus'; "
-                f"got {self.mode!r}"
+                "seeds.mode must be "
+                + " | ".join(repr(m) for m in _SEED_MODES)
+                + f"; got {self.mode!r}"
             )
+        foreign = [
+            m for m in _SEED_MODES
+            if m != self.mode and getattr(self, m) is not None
+        ]
+        if foreign:
+            raise ValueError(
+                f"seeds.mode={self.mode!r} but seeds."
+                f"{' / seeds.'.join(foreign)} is set; drop one or the other."
+            )
+        if getattr(self, self.mode) is None:
+            if self.mode == "gap_filter":
+                # Historical convenience: gap_filter defaults are usable
+                # as-is. Frozen dataclass requires setattr.
+                object.__setattr__(self, "gap_filter", GapFilterConfig())
+            else:
+                raise ValueError(
+                    f"seeds.mode={self.mode!r} requires a seeds.{self.mode} "
+                    "config block."
+                )
 
 
 @dataclass(frozen=True)
@@ -551,6 +647,16 @@ class SeedTriple:
         ``stats.json`` when present, enabling post-hoc aggregation along
         these axes without a trace-schema bump. ``None`` for the
         ``gap_filter`` path.
+
+        Two keys are read by the evolutionary tester rather than just
+        logged:
+
+        * ``prompt_template`` — per-seed override of
+          ``config.prompt_template`` (refcocoplus grounding).
+        * ``candidates`` — per-seed scored candidate list (slot_items).
+          When present, the SUT scores against exactly these strings and
+          the answer suffix lists them; ``class_a`` / ``class_b`` must be
+          two of them (the search pair).
     """
 
     image: Image.Image
@@ -793,10 +899,13 @@ __all__ = [
     "ParallelConfig",
     "RefCocoPlusConfig",
     "RosterConfig",
+    "SLOT_PLACEHOLDER",
     "SamplingConfig",
     "SamplingTier",
     "SeedConfig",
     "SeedTriple",
+    "SlotItem",
+    "SlotItemsConfig",
     "SUTConfig",
     "TextConfig",
     "apply_modality",

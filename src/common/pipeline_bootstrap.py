@@ -31,6 +31,7 @@ from .seed_context import apply_seed_filter, collect_target_classes
 from .seed_generator import generate_seeds
 from .combinatorial_pair_generator import combinatorial_pairs
 from .refcocoplus_seed_generator import refcocoplus_seeds
+from .slot_items_seed_generator import slot_items_seeds
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,8 @@ def prepare_pipeline_seeds(
       per explicit class, then :func:`src.common.combinatorial_pairs`
       expands across abstraction-level cells.
     * ``refcocoplus`` — two-referent grounding items (box-string candidates).
+    * ``slot_items`` — :func:`src.common.slot_items_seeds`: explicit
+      ``(image, carrier, fillers)`` items, one seed each.
 
     :param components: Shared components (uses ``sut`` + ``data_source``).
     :param exp_cfg: Canonical experiment config.
@@ -236,6 +239,9 @@ def _generate_seeds_for_mode(
     if exp_cfg.seeds.mode == "refcocoplus":
         logger.info("Generating seeds (refcocoplus)")
         return refcocoplus_seeds(components.sut, exp_cfg, components.data_source)
+    if exp_cfg.seeds.mode == "slot_items":
+        logger.info("Generating seeds (slot_items)")
+        return slot_items_seeds(components.sut, exp_cfg, components.data_source)
     raise ValueError(  # pragma: no cover — guarded by SeedConfig.__post_init__
         f"Unknown seeds.mode={exp_cfg.seeds.mode!r}"
     )

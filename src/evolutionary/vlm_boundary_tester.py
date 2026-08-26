@@ -57,6 +57,20 @@ def effective_prompt_template(seed: SeedTriple, config: ExperimentConfig) -> str
     return config.prompt_template
 
 
+def effective_candidates(seed: SeedTriple) -> tuple[str, ...] | None:
+    """Per-seed candidate list override (slot_items) → else ``None``.
+
+    A ``slot_items`` seed carries the fully instantiated carrier
+    sentences in ``metadata["candidates"]``; those are both the scored
+    contrast set and the options listed in the answer suffix, with
+    ``class_a`` / ``class_b`` being two of them (the search pair). Every
+    other seed mode leaves the key unset and keeps the global
+    pair-vs-``score_full_categories`` behaviour.
+    """
+    cands = (seed.metadata or {}).get("candidates")
+    return tuple(cands) if cands else None
+
+
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
@@ -239,6 +253,8 @@ def build_stats(
         out["refcoco_n_items"] = config.seeds.refcocoplus.n_items
         out["coordinate_space"] = config.grounding.coordinate_space
         out["grounding_answer_format"] = config.grounding.answer_format
+    elif config.seeds.mode == "slot_items" and config.seeds.slot_items is not None:
+        out["slot_items_n_items"] = len(config.seeds.slot_items.items)
     # Per-seed metadata (Exp-100 roster pipeline emits taxonomy / abstraction
     # bookkeeping; gap_filter leaves it None). Stored under a namespaced key
     # so it can never shadow an existing stats field.
@@ -413,31 +429,45 @@ class VLMBoundaryTester(SMOO):
     ) -> None:
         start_time = time()
 
-        # Prompt suffix always pair-constrained — the VLM sees "Answer with
-        # A or B" regardless of how many categories the SUT scores against.
         pair = (seed.class_a, seed.class_b)
-        answer_suffix = self._config.answer_format.format(
-            categories=", ".join(pair),
-        )
         full_categories = tuple(self._config.categories)
 
-        # ---- Scoring-scope: pair (default) vs. full N-class ----------------
-        # Controlled by ExperimentConfig.score_full_categories (default False).
-        # Pair-only is ~25× cheaper per call on N=50 and is the right choice
-        # unless a downstream post-hoc analysis explicitly needs the full
-        # N-dim log-prob vector at every individual (tree distances,
-        # cross-class entropy, etc.). When True, ``target_classes`` becomes
-        # the pair's position in the full list so TargetedBalance still
-        # reads the right two entries.
-        if self._config.score_full_categories:
+        # ---- Scoring-scope: per-seed candidates / pair / full N-class -------
+        # Default (pair-only) is ~25× cheaper per call on N=50 and is the
+        # right choice unless a downstream post-hoc analysis explicitly
+        # needs the full N-dim log-prob vector at every individual (tree
+        # distances, cross-class entropy, etc.). ``target_classes`` always
+        # points at the pair's position inside the scored list so
+        # TargetedBalance reads the right two entries.
+        #
+        # The answer suffix is pair-constrained in the label-pair modes —
+        # the VLM sees "Answer with A or B" regardless of how many
+        # categories the SUT scores against. slot_items is the exception:
+        # its per-seed candidate list IS the option set, so the suffix and
+        # the scoring scope are the same list.
+        seed_candidates = effective_candidates(seed)
+        if seed_candidates is not None:
+            scored_categories = seed_candidates
+            target_classes = (
+                seed_candidates.index(seed.class_a),
+                seed_candidates.index(seed.class_b),
+            )
+            answer_categories: tuple[str, ...] = seed_candidates
+        elif self._config.score_full_categories:
             scored_categories = full_categories
             target_classes = (
                 full_categories.index(seed.class_a),
                 full_categories.index(seed.class_b),
             )
+            answer_categories = pair
         else:
             scored_categories = pair
             target_classes = (0, 1)
+            answer_categories = pair
+
+        answer_suffix = self._config.answer_format.format(
+            categories=", ".join(answer_categories),
+        )
 
         # 1. Prepare manipulator with just the question prompt. The
         #    seed's L0 target class is forwarded so cone-filter mode can
