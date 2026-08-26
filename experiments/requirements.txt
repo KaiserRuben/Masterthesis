@@ -38,3 +38,7 @@ redis
 
 # SMOO framework (local submodule or from git)
 -e tools/smoo
+
+# HS-01 human-study analysis (analysis/hs01)
+krippendorff
+tabulate
