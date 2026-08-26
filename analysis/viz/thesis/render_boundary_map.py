@@ -39,6 +39,7 @@ Usage (from the Masterarbeit repo root, conda env `uni`):
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -52,12 +53,15 @@ import numpy as np
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-REPO = Path("/Users/kaiser/Projects/Masterarbeit")
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
+
+# Set THESIS_DIR to the thesis checkout to emit into it; otherwise figures
+# land inside the repository. See docs/REPRODUCTION.md.
+THESIS = Path(os.environ.get("THESIS_DIR", REPO / "analysis" / "outputs" / "thesis"))
 from analysis.viz.exp100.data import points  # noqa: E402
 
-OUT = Path("/Users/kaiser/Desktop/Uni/Masterarbeit/Master Thesis v0.5.0/"
-           "figures/results")
+OUT = THESIS / "figures/results"
 RUNS = REPO / "runs/Exp-100/poc_boundary_pair"
 
 SLUG = "boundary-map"

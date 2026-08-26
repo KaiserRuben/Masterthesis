@@ -97,6 +97,7 @@ This script never touches manipulation_gallery.png / .pdf.
 
 from __future__ import annotations
 
+import os
 import argparse
 import math
 import sys
@@ -104,10 +105,12 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
+# Set THESIS_DIR to the thesis checkout to emit into it; otherwise figures
+# land inside the repository. See docs/REPRODUCTION.md.
+THESIS = Path(os.environ.get("THESIS_DIR", REPO / "analysis" / "outputs" / "thesis"))
+
 # Same destination constant as the single-axis script.
-THESIS_FIGURES = Path(
-    "/Users/kaiser/Desktop/Uni/Masterarbeit/Master Thesis v0.3.0/figures"
-)
+THESIS_FIGURES = THESIS / "figures"
 
 # Two motifs that could hardly be less alike: a saturated subject on busy
 # foliage, and a pale subject on a smooth dark field.  Picked for how

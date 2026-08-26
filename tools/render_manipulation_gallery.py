@@ -51,6 +51,7 @@ procedural placeholder images without importing torch or repo modules
 
 from __future__ import annotations
 
+import os
 import argparse
 import math
 import sys
@@ -58,9 +59,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-THESIS_FIGURES = Path(
-    "/Users/kaiser/Desktop/Uni/Masterarbeit/Master Thesis v0.3.0/figures"
-)
+# Set THESIS_DIR to the thesis checkout to emit into it; otherwise figures
+# land inside the repository. See docs/REPRODUCTION.md.
+THESIS = Path(os.environ.get("THESIS_DIR", REPO / "analysis" / "outputs" / "thesis"))
+
+THESIS_FIGURES = THESIS / "figures"
 
 # Seed images: the saved originals of the manipulator demo runs -- four
 # broadly different motifs (fish, bird, architecture, landscape), all

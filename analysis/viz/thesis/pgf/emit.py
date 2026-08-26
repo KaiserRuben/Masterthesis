@@ -45,8 +45,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path("/Users/kaiser/Projects/Masterarbeit")
-THESIS = Path("/Users/kaiser/Desktop/Uni/Masterarbeit/Master Thesis v0.6.0")
+# Repository root, resolved from this file so a clone works from any location.
+REPO = Path(__file__).resolve().parents[4]
+
+# The thesis source tree the figures are emitted into. It lives outside the
+# repository, so point THESIS_DIR at your checkout to rebuild the figures;
+# without it the emitters write into the repository instead of failing.
+THESIS = Path(os.environ.get("THESIS_DIR", REPO / "analysis" / "outputs" / "thesis"))
 OUT = THESIS / "figures/results"
 
 # --- size grid (cm) --------------------------------------------------------

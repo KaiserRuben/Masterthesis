@@ -46,16 +46,20 @@ Usage (from the Masterarbeit repo root, conda env `uni`):
 """
 from __future__ import annotations
 
+import os
 import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-REPO = Path("/Users/kaiser/Projects/Masterarbeit")
+REPO = Path(__file__).resolve().parents[3]
+
+# Set THESIS_DIR to the thesis checkout to emit into it; otherwise figures
+# land inside the repository. See docs/REPRODUCTION.md.
+THESIS = Path(os.environ.get("THESIS_DIR", REPO / "analysis" / "outputs" / "thesis"))
 OUTDIR = REPO / "experiments/analysis/output"
-FIGDIR = Path("/Users/kaiser/Desktop/Uni/Masterarbeit/Master Thesis v0.5.0/"
-              "figures/results")
+FIGDIR = THESIS / "figures/results"
 
 # One fixed colour per SUT, used identically in all three Exp-104 figures.
 # Blue / orange is the safest deutan-protan axis, and the two also separate in

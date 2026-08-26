@@ -15,14 +15,13 @@ derived from inch budgets via :func:`rect`).  No ``tight_layout`` and no
 ``bbox_inches="tight"``: both silently rescale the canvas, which would break
 the "canvas inches == rendered inches" contract above.
 
-Outputs go to
-``~/Desktop/Uni/Masterarbeit/Master Thesis v0.5.0/figures/results/`` as
-``<slug>.pdf`` (600 dpi, the file LaTeX includes) plus ``<slug>.png``
-(150 dpi preview).
+Outputs go to ``$THESIS_DIR/figures/results/`` as ``<slug>.pdf`` (600 dpi, the
+file LaTeX includes) plus ``<slug>.png`` (150 dpi preview).
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -34,12 +33,14 @@ import matplotlib.colors as mcolors  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-REPO = Path("/Users/kaiser/Projects/Masterarbeit")
+REPO = Path(__file__).resolve().parents[3]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-OUT = Path("/Users/kaiser/Desktop/Uni/Masterarbeit/Master Thesis v0.5.0/"
-           "figures/results")
+# Set THESIS_DIR to the thesis checkout to emit into it; otherwise figures land
+# inside the repository. See docs/REPRODUCTION.md.
+THESIS = Path(os.environ.get("THESIS_DIR", REPO / "analysis" / "outputs" / "thesis"))
+OUT = THESIS / "figures/results"
 
 # --- data sources ----------------------------------------------------------
 AGG_PARQUET = REPO / "experiments/analysis/output/exp100_poc_aggregate.parquet"
