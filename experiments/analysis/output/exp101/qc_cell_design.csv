@@ -1,0 +1,41 @@
+anchor_class_concrete,target_class_concrete,level_anchor,level_target,stratum,n_runs
+boa constrictor,green iguana,0,0,within_bucket,1
+boa constrictor,green iguana,0,1,within_bucket,1
+boa constrictor,green iguana,1,1,within_bucket,1
+boa constrictor,junco,0,0,wall_repl,1
+boa constrictor,junco,0,1,wall_repl,2
+boa constrictor,junco,0,2,wall_repl,1
+boa constrictor,marimba,0,0,cross_breadth,1
+boa constrictor,marimba,1,1,cross_breadth,1
+cello,junco,0,0,wall_repl,1
+cello,junco,0,1,wall_repl,1
+cello,junco,0,2,wall_repl,1
+cello,marimba,0,0,within_bucket,2
+cello,marimba,0,1,within_bucket,1
+cello,marimba,1,1,within_bucket,1
+cello,ostrich,0,0,cross_breadth,1
+cello,ostrich,2,2,cross_breadth,1
+green iguana,boa constrictor,0,0,within_bucket,1
+green iguana,boa constrictor,0,1,within_bucket,1
+green iguana,boa constrictor,1,1,within_bucket,2
+green iguana,cello,0,0,cross_breadth,2
+green iguana,cello,1,1,cross_breadth,1
+junco,boa constrictor,0,0,wall_repl,1
+junco,boa constrictor,0,1,wall_repl,2
+junco,boa constrictor,0,2,wall_repl,1
+junco,cello,0,0,wall_repl,1
+junco,cello,1,0,wall_repl,1
+junco,cello,2,0,wall_repl,1
+junco,ostrich,0,0,within_bucket,2
+junco,ostrich,0,1,within_bucket,1
+junco,ostrich,1,1,within_bucket,1
+marimba,boa constrictor,0,0,cross_breadth,1
+marimba,boa constrictor,1,1,cross_breadth,1
+marimba,cello,0,0,within_bucket,1
+marimba,cello,0,1,within_bucket,1
+marimba,cello,1,1,within_bucket,1
+ostrich,green iguana,0,0,cross_breadth,1
+ostrich,green iguana,1,1,cross_breadth,1
+ostrich,junco,0,0,within_bucket,1
+ostrich,junco,0,1,within_bucket,1
+ostrich,junco,1,1,within_bucket,1

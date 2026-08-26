@@ -1,0 +1,8 @@
+regime,cell,projection,n,n_minority,knn_auc,knn_auc_sd,logit_auc,sep_1mBC,axes,straddle_amb,straddle_n
+cat6,pooled (pdq_s1 only),ranksum,3779,1094,0.5578701613662573,0.016639247882666616,0.5490611470234134,0.1398439870892001,rank_sum_img_norm | rank_sum_txt_norm,,
+cat6,pooled (pdq_s1 only),nactive,3779,1094,0.610302224238023,0.01376521044416387,0.5532004152986486,0.06783186969967447,n_active_img | n_active_txt,,
+cat6,pooled (pdq_s1 only),semantic,3779,1094,0.6447516200321608,0.014473362495762716,0.6100847065391127,0.13126784285307413,d_img_sem | d_txt_sem,,
+cat6,pooled (pdq_s1 only),hamming,3779,1094,0.5910329278406506,0.024770236567286302,0.5078601759753523,0.13408630307355673,hamming_to_anchor | rank_sum_txt_norm,,
+cat6,pooled (pdq_s1 only),pca2,3779,1094,0.5738331934208444,0.0032501928197557956,0.556846990344673,0.09332912972641716,"PC[+0.49n_active_txt, +0.45txt_active_charnoise] | PC[+0.69n_active_img, +0.67rank_sum_img_norm]",,
+cat6,pooled (pdq_s1 only),lda_pc,3779,1094,0.5677996769882064,0.005037967248868148,0.5791623497403448,0.11771388197637878,"LDA[-0.84rank_sum_img_norm, +0.39txt_active_mlm] | rPC1[+0.49n_active_txt, +0.47txt_active_frag]",,
+cat6,"wall boa s->snake (0,1)",genotype_pca2,887,303,0.7801022113995545,0.039939539006691484,0.643459791051651,0.3953320165298737,genoPC1 (38.8% var) | genoPC2 (5.1% var),0.3394594594594595,148.0

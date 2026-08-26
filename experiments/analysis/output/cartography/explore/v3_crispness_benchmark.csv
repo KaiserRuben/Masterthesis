@@ -1,0 +1,61 @@
+regime,cell,projection,n,n_minority,axes,note,knn_auc,knn_auc_sd,logit_auc,sep_1mBC,straddle_amb,straddle_n
+pair2,"wall boa s->snake (0,1)",ranksum,12000,0.0,rank_sum_img_norm | rank_sum_txt_norm,,,,,,,
+pair2,"wall boa s->snake (0,1)",nactive,12000,0.0,n_active_img | n_active_txt,,,,,,,
+pair2,"wall boa s->snake (0,1)",semantic,12000,0.0,d_img_sem | d_txt_sem,semantic rows only (12000/12000),,,,,,
+pair2,"wall boa s->snake (0,1)",hamming,12000,,,axis unavailable/degenerate,,,,,,
+pair2,"wall boa s->snake (0,1)",pca2,12000,0.0,"PC[+0.53n_active_txt, +0.41txt_active_frag] | PC[+0.67n_active_img, +0.55rank_sum_img_norm]",,,,,,,
+pair2,"wall boa s->snake (0,1)",lda_pc,12000,,,axis unavailable/degenerate,,,,,,
+pair2,"ctrl boa s->constr (0,0)",ranksum,12266,798.0,rank_sum_img_norm | rank_sum_txt_norm,,0.7063513830115136,0.0920338610136867,0.6366047671634048,0.21931744481199922,,
+pair2,"ctrl boa s->constr (0,0)",nactive,12266,798.0,n_active_img | n_active_txt,,0.4973923506340213,0.048826162673367264,0.33462111625138974,0.09944055178410949,,
+pair2,"ctrl boa s->constr (0,0)",semantic,12266,798.0,d_img_sem | d_txt_sem,semantic rows only (12266/12266),0.7904890243808529,0.06743730705077924,0.733680352824502,0.4389167498082731,,
+pair2,"ctrl boa s->constr (0,0)",hamming,12266,,,axis unavailable/degenerate,,,,,,
+pair2,"ctrl boa s->constr (0,0)",pca2,12266,798.0,"PC[+0.46rank_sum_txt_norm, +0.46txt_active_mlm] | PC[+0.63txt_active_charnoise, +0.49n_active_txt]",,0.6854127417122433,0.10277121419294093,0.6399892907451438,0.3053018071347071,,
+pair2,"ctrl boa s->constr (0,0)",lda_pc,12266,798.0,"LDA[-0.80rank_sum_txt_norm, +0.44txt_active_saliency] | rPC1[+0.56n_active_txt, +0.52txt_active_frag]",,0.707297610623577,0.08693736777668665,0.6743789330131292,0.3387930969501549,,
+pair2,"easy marimba s->perc (0,1)",ranksum,12350,1050.0,rank_sum_img_norm | rank_sum_txt_norm,,0.6223573535608934,0.15598393228157548,0.4121662452591656,0.1989956242091191,,
+pair2,"easy marimba s->perc (0,1)",nactive,12350,1050.0,n_active_img | n_active_txt,,0.5618910661609777,0.08741069649985986,0.6443891698272228,0.13741114286819778,,
+pair2,"easy marimba s->perc (0,1)",semantic,12350,1050.0,d_img_sem | d_txt_sem,semantic rows only (12350/12350),0.7781982722292458,0.12625732907876153,0.5930564686051412,0.3638027937291425,,
+pair2,"easy marimba s->perc (0,1)",hamming,12350,,,axis unavailable/degenerate,,,,,,
+pair2,"easy marimba s->perc (0,1)",pca2,12350,1050.0,"PC[+0.59n_active_txt, +0.44txt_active_saliency] | PC[+0.66rank_sum_txt_norm, +0.62txt_active_mlm]",,0.6667937210282342,0.15111373354879865,0.6085983986514959,0.3331361966101216,,
+pair2,"easy marimba s->perc (0,1)",lda_pc,12350,1050.0,"LDA[-0.78txt_active_frag, -0.35n_active_txt] | rPC1[+0.47txt_active_charnoise, +0.46rank_sum_img_norm]",,0.6757842393594606,0.13199265172818228,0.6510893383902233,0.3321702799051205,,
+pair2,"mid iguana b->iguana (2,0)",ranksum,12000,5644.0,rank_sum_img_norm | rank_sum_txt_norm,,0.7379190032639551,0.006362346757539301,0.6379949629397104,0.10141658243174034,,
+pair2,"mid iguana b->iguana (2,0)",nactive,12000,5644.0,n_active_img | n_active_txt,,0.6059147330631752,0.007021041369053807,0.6783361695511544,0.1184157463248029,,
+pair2,"mid iguana b->iguana (2,0)",semantic,12000,5644.0,d_img_sem | d_txt_sem,semantic rows only (12000/12000),0.8158354871654897,0.00659484190368972,0.6679482679762634,0.20967533036688857,,
+pair2,"mid iguana b->iguana (2,0)",hamming,12000,,,axis unavailable/degenerate,,,,,,
+pair2,"mid iguana b->iguana (2,0)",pca2,12000,5644.0,"PC[+0.48txt_active_mlm, +0.46txt_active_frag] | PC[+0.68n_active_img, +0.67rank_sum_img_norm]",,0.7819134122973159,0.005843542163596798,0.7194860689789211,0.19459384843630434,,
+pair2,"mid iguana b->iguana (2,0)",lda_pc,12000,5644.0,"LDA[-0.87txt_active_mlm, +0.27txt_active_charnoise] | rPC1[+0.62rank_sum_txt_norm, +0.58txt_active_frag]",,0.8371583015194458,0.007132696937117136,0.7446033868747948,0.25895994710659476,,
+pair2,pooled,ranksum,26779,6000.0,rank_sum_img_norm | rank_sum_txt_norm,,0.6105451578375177,0.008668223477510829,0.5497250381095944,0.04602496401207745,,
+pair2,pooled,nactive,26779,6000.0,n_active_img | n_active_txt,,0.5629841698961133,0.00867904536287387,0.6123494188202423,0.04799806988944555,,
+pair2,pooled,semantic,26779,6000.0,d_img_sem | d_txt_sem,semantic rows only (26779/26779),0.625865861867512,0.007560238310210215,0.5693461066684502,0.06281430164327972,,
+pair2,pooled,hamming,26779,,,axis unavailable/degenerate,,,,,,
+pair2,pooled,pca2,26779,6000.0,"PC[+0.55n_active_txt, +0.40rank_sum_txt_norm] | PC[+0.68n_active_img, +0.67rank_sum_img_norm]",,0.6237420300711096,0.008645374250846268,0.600039396431278,0.06385209254093238,,
+pair2,pooled,lda_pc,26779,6000.0,"LDA[+0.68rank_sum_txt_norm, -0.37n_active_txt] | rPC1[+0.52rank_sum_txt_norm, +0.48n_active_txt]",,0.6741466440296545,0.005468637588844916,0.6388300469418318,0.09761294291687428,,
+cat6,"wall boa s->snake (0,1)",ranksum,1294,446.0,rank_sum_img_norm | rank_sum_txt_norm,,0.7572768767547353,0.024584618631518198,0.4942362596701912,0.3890310061281087,0.31684210526315787,304.0
+cat6,"wall boa s->snake (0,1)",nactive,1294,446.0,n_active_img | n_active_txt,,0.8199538342473927,0.027738373220681057,0.6598006364303582,0.3682975697640243,0.38315789473684214,304.0
+cat6,"wall boa s->snake (0,1)",semantic,1294,,,axis unavailable/degenerate,,,,,,
+cat6,"wall boa s->snake (0,1)",hamming,1294,446.0,hamming_to_anchor | rank_sum_txt_norm,,0.8524314672791972,0.02304741674432835,0.6236071035466021,0.5429523495438484,0.28421052631578947,304.0
+cat6,"wall boa s->snake (0,1)",pca2,1294,446.0,"PC[+0.44n_active_txt, +0.41txt_active_frag] | PC[+0.72rank_sum_img_norm, +0.60n_active_img]",,0.7975954265313155,0.019112096816883247,0.6182765147811667,0.46939895274771193,0.2605263157894737,304.0
+cat6,"wall boa s->snake (0,1)",lda_pc,1294,446.0,"LDA[-0.67txt_active_mlm, +0.41rank_sum_txt_norm] | rPC1[+0.48txt_active_charnoise, +0.44n_active_txt]",,0.8447592615043934,0.008101901874357043,0.7240233340416371,0.5168560477825018,0.28526315789473683,304.0
+cat6,"ctrl boa s->constr (0,0)",ranksum,856,271.0,rank_sum_img_norm | rank_sum_txt_norm,,0.7236596736596737,0.031248442701135647,0.5800952545396989,0.32494511779750423,0.3665217391304348,368.0
+cat6,"ctrl boa s->constr (0,0)",nactive,856,271.0,n_active_img | n_active_txt,,0.7484859995971107,0.03866855012942024,0.516774007885119,0.25222226522756996,0.3613043478260869,368.0
+cat6,"ctrl boa s->constr (0,0)",semantic,856,,,axis unavailable/degenerate,,,,,,
+cat6,"ctrl boa s->constr (0,0)",hamming,856,271.0,hamming_to_anchor | rank_sum_txt_norm,,0.7009024720135831,0.0506904836810927,0.4850657572879795,0.373901459146764,0.34956521739130436,368.0
+cat6,"ctrl boa s->constr (0,0)",pca2,856,271.0,"PC[+0.47n_active_txt, +0.44txt_active_charnoise] | PC[+0.70n_active_img, +0.69rank_sum_img_norm]",,0.7420619298397076,0.029146666220303777,0.5489970934415378,0.36470329076782926,0.332608695652174,368.0
+cat6,"ctrl boa s->constr (0,0)",lda_pc,856,271.0,"LDA[-0.77rank_sum_img_norm, +0.48n_active_img] | rPC1[+0.47n_active_txt, +0.44txt_active_charnoise]",,0.751067081067081,0.030259405588818438,0.7406831851276295,0.43538549990941977,0.3539130434782609,368.0
+cat6,"easy marimba s->perc (0,1)",ranksum,2355,555.0,rank_sum_img_norm | rank_sum_txt_norm,,0.8488238238238239,0.0060043165792078,0.5259934934934934,0.5350240349219034,0.47311827956989255,186.0
+cat6,"easy marimba s->perc (0,1)",nactive,2355,555.0,n_active_img | n_active_txt,,0.8121996996996999,0.023822669805749094,0.5119794794794794,0.2746437583170048,0.44817204301075275,186.0
+cat6,"easy marimba s->perc (0,1)",semantic,2355,,,axis unavailable/degenerate,,,,,,
+cat6,"easy marimba s->perc (0,1)",hamming,2355,555.0,hamming_to_anchor | rank_sum_txt_norm,,0.9070245245245246,0.010090801341774907,0.5218218218218219,0.5544943688249577,0.421505376344086,186.0
+cat6,"easy marimba s->perc (0,1)",pca2,2355,555.0,"PC[+0.52n_active_txt, +0.49txt_active_charnoise] | PC[+0.61rank_sum_img_norm, +0.54n_active_img]",,0.8238888888888889,0.014617323408240578,0.5074074074074075,0.45181301952593356,0.4464516129032258,186.0
+cat6,"easy marimba s->perc (0,1)",lda_pc,2355,555.0,"LDA[-0.52txt_active_saliency, -0.50n_active_img] | rPC1[+0.53n_active_txt, +0.50txt_active_charnoise]",,0.8353478478478479,0.017313000685770765,0.6509759759759761,0.3685591936791287,0.4653763440860215,186.0
+cat6,"mid iguana b->iguana (2,0)",ranksum,2159,464.0,rank_sum_img_norm | rank_sum_txt_norm,,0.7629055702427594,0.023055346231299238,0.5757095712301808,0.46655353718494874,0.46080000000000004,150.0
+cat6,"mid iguana b->iguana (2,0)",nactive,2159,464.0,n_active_img | n_active_txt,,0.8218908292547038,0.009331294011621733,0.5171095927438317,0.3825363142190571,0.27893333333333337,150.0
+cat6,"mid iguana b->iguana (2,0)",semantic,2159,,,axis unavailable/degenerate,,,,,,
+cat6,"mid iguana b->iguana (2,0)",hamming,2159,464.0,hamming_to_anchor | rank_sum_txt_norm,,0.8947862494673302,0.008004816979705117,0.5928596399773279,0.5108100349825959,0.36,150.0
+cat6,"mid iguana b->iguana (2,0)",pca2,2159,464.0,"PC[+0.51n_active_txt, +0.47txt_active_charnoise] | PC[+0.56rank_sum_txt_norm, +0.51txt_active_mlm]",,0.8594631447717003,0.018673556822001676,0.6376960534862457,0.3863177199256469,0.38186666666666674,150.0
+cat6,"mid iguana b->iguana (2,0)",lda_pc,2159,464.0,"LDA[-0.61txt_active_frag, +0.57rank_sum_txt_norm] | rPC1[+0.58txt_active_charnoise, +0.50n_active_txt]",,0.895028312516118,0.009379579025770059,0.6610556720878309,0.49434536585161404,0.44853333333333334,150.0
+cat6,pooled,ranksum,25508,6000.0,rank_sum_img_norm | rank_sum_txt_norm,,0.6549926034935735,0.004965347753439621,0.5378708961827441,0.048427001817543336,0.4707835531419705,6445.0
+cat6,pooled,nactive,25508,6000.0,n_active_img | n_active_txt,,0.6221193421843804,0.009012509753042934,0.5459525117329193,0.07391293228795415,0.687733126454616,6445.0
+cat6,pooled,semantic,1204,418.0,d_img_sem | d_txt_sem,semantic rows only (1204/25508),0.6137313146112514,0.047232426515546634,0.6197419410078318,0.19430770974991662,,
+cat6,pooled,hamming,25508,6000.0,hamming_to_anchor | rank_sum_txt_norm,,0.6822902677429459,0.004860484568668466,0.572771603081355,0.10242770697920767,0.46390690457719164,6445.0
+cat6,pooled,pca2,25508,6000.0,"PC[+0.49n_active_txt, +0.46txt_active_charnoise] | PC[+0.76rank_sum_img_norm, +0.59n_active_img]",,0.6447281096150308,0.0048052214009411,0.542707410402157,0.0695438682809163,0.47469356089992243,6445.0
+cat6,pooled,lda_pc,25508,6000.0,"LDA[-0.60rank_sum_img_norm, +0.50txt_active_frag] | rPC1[+0.49txt_active_charnoise, +0.49n_active_txt]",,0.679898841776476,0.004977584472878665,0.5898289966413304,0.1052982806321141,0.4658432893716059,6445.0

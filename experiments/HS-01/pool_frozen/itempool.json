@@ -1,0 +1,5631 @@
+{
+  "schema_version": "1.0.0",
+  "pool_id": "hs01-pool-v1",
+  "created": "2026-06-24T09:21:56Z",
+  "frozen": true,
+  "generator": {
+    "pipeline_commit": null,
+    "selection_script": "experiments/HS-01/freeze_pool.py",
+    "notes": "Closeness-first selection (tgtbal<=1e-3) with clarity (d_img<=0.05) and readability (text_genes<=7) floors; SUT+pair round-robin diversity. Sources: LLaVA (Exp-100/101/102 + HS-GEN-01 image_only) + Qwen (Exp-101q)."
+  },
+  "composition_targets": {
+    "text": {
+      "clean": 6,
+      "low_drift": 8,
+      "medium_drift": 8,
+      "high_drift": 8
+    },
+    "image": {
+      "raw": 6,
+      "roundtrip": 6,
+      "boundary_joint": 12,
+      "image_heavy": 6
+    },
+    "pair": {
+      "baseline": 8,
+      "image_heavy": 14,
+      "text_heavy": 14,
+      "balanced": 14
+    }
+  },
+  "sources": [
+    {
+      "source_id": "src-Exp-101q-qwen-s242-g48-p70",
+      "x_seed_key": "9928134603cbadb2",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_242_1781326228",
+        "seed_index": 242,
+        "generation": 48,
+        "individual_id": "pareto-7"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "junco",
+        "anchor_word": "constrictor",
+        "target_word": "songbird",
+        "level_anchor": 0,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 3.814697265625e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.11360275745391846,
+        "d_img": 0.011396237649023533,
+        "active_text_genes": 5,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the related resolution in this cl ass?",
+          "sha256": "28b0c44343e501114eb6882e083cb24b84f66a86ccda5de2c9cc443bd1bdb68e",
+          "char_count": 46,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s242-g48-p70.png",
+          "sha256": "2c8fac4ec21737189cb746eb848a2c8556fb9153c298d4ecea2038becfee285f",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s324-g46-p300",
+      "x_seed_key": "96b539d7215e72e2",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_324_1781349031",
+        "seed_index": 324,
+        "generation": 46,
+        "individual_id": "pareto-30"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "junco",
+        "anchor_word": "cello",
+        "target_word": "bird",
+        "level_anchor": 0,
+        "level_target": 2,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 4.303455352783203e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.1151571273803711,
+        "d_img": 0.003937579225748777,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the current quote in this vieod?",
+          "sha256": "2ddd8d20bfab66280d95b3ea9da7952dc30b9c3493ea02ee3a0b8359e368c101",
+          "char_count": 40,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s324-g46-p300.png",
+          "sha256": "a540bacf697947cb6c6c800d2e9d546711c45d7e9b981d5f40d442309391b48b",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s96-g45-p350",
+      "x_seed_key": "1515ac52db21d8bd",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_96_1781306034",
+        "seed_index": 96,
+        "generation": 45,
+        "individual_id": "pareto-35"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "green iguana",
+        "anchor_word": "flightless bird",
+        "target_word": "lizard",
+        "level_anchor": 1,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0001239776611328125,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.05723416805267334,
+        "d_img": 0.00516509311273694,
+        "active_text_genes": 5,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the primary animal in this image?",
+          "sha256": "324783108ad7ff3b2d25417088cbbed98dd81ffbb582edf72fb656124256ffd8",
+          "char_count": 41,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s96-g45-p350.png",
+          "sha256": "ba3d26f74b7e98ae1f0afdb15dde69e100d9a1962e3b4d23ba522bddc29816d0",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s29-g14-p1350",
+      "x_seed_key": "cf464785b8f30a4d",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_29_1781254128",
+        "seed_index": 29,
+        "generation": 14,
+        "individual_id": "pareto-135"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa constrictor",
+        "anchor_word": "sparrow",
+        "target_word": "snake",
+        "level_anchor": 0,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0002932548522949219,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.19780820608139038,
+        "d_img": 0.00301494006998837,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the ye llow noun in this text?",
+          "sha256": "23520d67e72edec4ec89483fc02e7dfc3d2cf67dc809defa80d72ef9d7a95540",
+          "char_count": 38,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s29-g14-p1350.png",
+          "sha256": "c10d7279da7dd075211a800842b6a300e345fdb6cea0503d8ce218e967851287",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s243-g48-p200",
+      "x_seed_key": "c28eff7e441e3db6",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_243_1781328725",
+        "seed_index": 243,
+        "generation": 48,
+        "individual_id": "pareto-20"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "junco",
+        "anchor_word": "constrictor",
+        "target_word": "songbird",
+        "level_anchor": 0,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0005121231079101562,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.17376983165740967,
+        "d_img": 0.009121371433138847,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the probable concpet in th is video?",
+          "sha256": "97af3b4487193113343a206a767995b9b47500e2fcda677d35499dada1fb7d40",
+          "char_count": 44,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s243-g48-p200.png",
+          "sha256": "ed3af660d73fbbfcf0977168ea8532c94b4366f4d9c29f44349a11f60dfbe5ce",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s204-g45-p230",
+      "x_seed_key": "7cd56985640f2f64",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_204_1781316922",
+        "seed_index": 204,
+        "generation": 45,
+        "individual_id": "pareto-23"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "cello",
+        "anchor_word": "iguana",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.002006709575653076,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.1251470446586609,
+        "d_img": 0.049076247960329056,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the prominent joke in this рost?",
+          "sha256": "2ccdb827cf14a6cd500d42b667b053bc4359aa49ddef8572f77584626caa521a",
+          "char_count": 40,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s204-g45-p230.png",
+          "sha256": "14a1242c293e116f13dc52112e7ff03821445e67e5c1cd560273a1a019465dfe",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s203-g46-p250",
+      "x_seed_key": "ab1a6dac670ebf8a",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_203_1781314858",
+        "seed_index": 203,
+        "generation": 46,
+        "individual_id": "pareto-25"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "boa constrictor",
+        "anchor_word": "lizard",
+        "target_word": "snake",
+        "level_anchor": 1,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0050334632396698,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.08927297592163086,
+        "d_img": 0.0118900490924716,
+        "active_text_genes": 5,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "low_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the human element in this discussion?",
+          "sha256": "6fd2e4e113455ff9e14c8b635309ed3894c161a03cdd9bd5a9d6781f68d2b919",
+          "char_count": 45,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s203-g46-p250.png",
+          "sha256": "fb4b441277dc9062fe73dc830c6a0f072231eb2a77407d2b8926ad03ddfdb666",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-100-llava-s54-g155-p2270",
+      "x_seed_key": "9d09371d995944fd",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-100",
+        "run_id": "seed_0054_1780198153",
+        "seed_index": 54,
+        "generation": 155,
+        "individual_id": "pareto-227"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa constrictor",
+        "anchor_word": "songbird",
+        "target_word": "reptile",
+        "level_anchor": 1,
+        "level_target": 2,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 1.430511474609375e-06,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5337280035018921,
+        "d_img": 0.011856121011078358,
+        "active_text_genes": 4,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the predominant conflict in this course?",
+          "sha256": "3473d761d5090aba4285d40feecb04a18d137055f0674571c96c525754bb2a43",
+          "char_count": 48,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-100-llava-s54-g155-p2270.png",
+          "sha256": "1911d0b45f41a652907b54df666ab1bf2578c74cb93980d0ce475867e9ddb21b",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2355-g15-p410",
+      "x_seed_key": "b84cfe430367722b",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2355_1781862564",
+        "seed_index": 2355,
+        "generation": 15,
+        "individual_id": "pareto-41"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00020194053649902344,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.4805213212966919,
+        "d_img": 0.03077724017202854,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is thе photographic clai m in this passage?",
+          "sha256": "355ae1de5d60aef79fb84c4e0d831b86a74b3e0a15c4cd93d9a9182d5c15595d",
+          "char_count": 48,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2355-g15-p410.png",
+          "sha256": "5b3f78f8f98594cb90cd2a3587eb51ff81d05ba1cdfb701bf0a60373bb1a3992",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2361-g12-p360",
+      "x_seed_key": "4a89757b079d26b7",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2361_1781869358",
+        "seed_index": 2361,
+        "generation": 12,
+        "individual_id": "pareto-36"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00031447410583496094,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5698987245559692,
+        "d_img": 0.03258316218852997,
+        "active_text_genes": 5,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the predpminant an imal in this paragraph?",
+          "sha256": "0f9aaf431649dc5c4207feeec05f2bc034c06d1787d93c19396bb6b5955f96ee",
+          "char_count": 50,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2361-g12-p360.png",
+          "sha256": "92640b2474c159ad8dea124285f337908d4182c69c9a222467de77456ec1e9b4",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s636-g27-p200",
+      "x_seed_key": "b574ec4b5636f85b",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_636_1782198941",
+        "seed_index": 636,
+        "generation": 27,
+        "individual_id": "pareto-20"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "flamingo",
+        "target_class": "Golden Retriever",
+        "anchor_word": "flamingo",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0009055137634277344,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5631232261657715,
+        "d_img": 0.010326935909688473,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat is the impobtant object in this sentence?",
+          "sha256": "20c160d3578e2b106af32634d863fd8be312b0a48700512f21e28c65fabc1248",
+          "char_count": 47,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s636-g27-p200.png",
+          "sha256": "40145c325b17b246a11f4e7b96acf75f5bdcf583f66dcfdf156ba9a36eddc96f",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s462-g40-p460",
+      "x_seed_key": "64e13a0563200a82",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_462_1781364868",
+        "seed_index": 462,
+        "generation": 40,
+        "individual_id": "pareto-46"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "marimba",
+        "target_class": "boa constrictor",
+        "anchor_word": "percussion instrument",
+        "target_word": "snake",
+        "level_anchor": 1,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00021791458129882812,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.31643348932266235,
+        "d_img": 0.011415992863476276,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the porbalbe eelmnet in this parafgraph?",
+          "sha256": "ec6c61526c57ee087badbf1df3915710507d10aca8fc57c42905c1ce6be5fc38",
+          "char_count": 48,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s462-g40-p460.png",
+          "sha256": "87e111977aff6751590c04c709a48048cee643e5aa6dc071bfcaf5357d0a6e25",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2357-g7-p310",
+      "x_seed_key": "4a10940ff9e1b49d",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2357_1781864973",
+        "seed_index": 2357,
+        "generation": 7,
+        "individual_id": "pareto-31"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0007660388946533203,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.590369462966919,
+        "d_img": 0.020784905180335045,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the wyiet quoie in this passаge?",
+          "sha256": "1da4876a551d5aa5ade9c7bec5537305418a27a2ddc4a9440ec7000d381d5d3f",
+          "char_count": 40,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2357-g7-p310.png",
+          "sha256": "446b3b5754c0b7f77773c05522067fcc470542901f7c90cb0791f87e6e93a14a",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2358-g29-p10",
+      "x_seed_key": "242a7e3e56c3701d",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2358_1781867351",
+        "seed_index": 2358,
+        "generation": 29,
+        "individual_id": "pareto-1"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0011641979217529297,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5930823087692261,
+        "d_img": 0.013676497153937817,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the interesting fejture in this t xet?",
+          "sha256": "e4d1d81376bf14c25fd1bb8d2815752426d7d570c0486489a6e6285409210216",
+          "char_count": 46,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2358-g29-p10.png",
+          "sha256": "6d583a8ae9dde7fcc95c539f4c18bbda6a753081bf0901d26261bab8ac2c519d",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1177-g16-p480",
+      "x_seed_key": "b834ba7a8c56ca99",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1177_1782218291",
+        "seed_index": 1177,
+        "generation": 16,
+        "individual_id": "pareto-48"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0023114681243896484,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5802538394927979,
+        "d_img": 0.018268734216690063,
+        "active_text_genes": 12,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "balanced"
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat iѕ thе hu man object in th is mоdule?",
+          "sha256": "acf619b5acaae2a309b411d8276a8e2c9a49df8dadce836a8353cf9d5e75569b",
+          "char_count": 43,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1177-g16-p480.png",
+          "sha256": "466d5c1e6c63b91cdeb60b082e5d7e7b221aa8ddfd124c3a957c914896223eda",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-102-llava-s392-g87-p560",
+      "x_seed_key": "0b74ad5bb62b8278",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-102",
+        "run_id": "exp102_basin_generality_seed_392_1781350630",
+        "seed_index": 392,
+        "generation": 87,
+        "individual_id": "pareto-56"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 1.9073486328125e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.44404447078704834,
+        "d_img": 0.0037082138005644083,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the important figure in this ipage?",
+          "sha256": "1fc712bb924670d903fc069046800e1b01a5ad6099e551e85a4514bd76762bf0",
+          "char_count": 43,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-102-llava-s392-g87-p560.png",
+          "sha256": "2884ccccf2da2676f6bdca762e6711e3e93ea931da94e81932ca8317ec25a8ac",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-102-llava-s106-g43-p3970",
+      "x_seed_key": "d8b3e988904b04e8",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-102",
+        "run_id": "exp102_basin_generality_seed_106_1781214492",
+        "seed_index": 106,
+        "generation": 43,
+        "individual_id": "pareto-397"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "boa constrictor",
+        "anchor_word": "ratite",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00010943412780761719,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.45823752880096436,
+        "d_img": 0.00437818793579936,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the primary top cі in this story?",
+          "sha256": "e6d02273ccc19e525f2c7aa4ad8a8f1aca10e4dfc7167033d6b4353f33f102df",
+          "char_count": 41,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-102-llava-s106-g43-p3970.png",
+          "sha256": "afe52cf8bd634cbe09e5162e8796b5e54f3faa7c664c85db4fe48973af16ff85",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2356-g21-p180",
+      "x_seed_key": "534a0874947a4ecd",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2356_1781864967",
+        "seed_index": 2356,
+        "generation": 21,
+        "individual_id": "pareto-18"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00012540817260742188,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.645159125328064,
+        "d_img": 0.004165292717516422,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the top in qerest in thi s blog?",
+          "sha256": "5988ce511dfccc2af05035ffbbff553775088335b1cf00111b4258fda3c54589",
+          "char_count": 40,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2356-g21-p180.png",
+          "sha256": "f57743707e3789e4b1a6fd676fc36779cad11896f4fa80501db22fc2e2727574",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s646-g10-p500",
+      "x_seed_key": "5568e5ff82f50929",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_646_1781794465",
+        "seed_index": 646,
+        "generation": 10,
+        "individual_id": "pareto-50"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "boa constrictor",
+        "anchor_word": "ratite",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0008921623229980469,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.4314267635345459,
+        "d_img": 0.005723738577216864,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the main text in this аrea ?",
+          "sha256": "f512ec6f3f15770857001036cc55d8b17b7c5cd2cd9c1cc4d4f2f3e995fb58a3",
+          "char_count": 36,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s646-g10-p500.png",
+          "sha256": "8824923575b99179f08d13603b008bcebe23467c03b6a574b67aad9cc7b916d1",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1185-g21-p310",
+      "x_seed_key": "e402d563757146f8",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1185_1782224948",
+        "seed_index": 1185,
+        "generation": 21,
+        "individual_id": "pareto-31"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00021648406982421875,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6609218120574951,
+        "d_img": 0.006540777161717415,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat iѕ the red text in this section?",
+          "sha256": "36f3c7636922e87794c63e5ffab031d291fa1dd840dd1d67ddcf7e406044484f",
+          "char_count": 38,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1185-g21-p310.png",
+          "sha256": "f1b66351a15a148856c59f1dfeb5e7709bafae7d13f94bd0f14e13005ed254f0",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2360-g12-p250",
+      "x_seed_key": "599de20b593fd72b",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2360_1781869348",
+        "seed_index": 2360,
+        "generation": 12,
+        "individual_id": "pareto-25"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0011584758758544922,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5367569923400879,
+        "d_img": 0.007339101284742355,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the photographic o beect in this b omg?",
+          "sha256": "98ab0ea0ed39dc53d1498a8974d2c2bdea8d83be2eb2eb70b71da408b22631f8",
+          "char_count": 47,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2360-g12-p250.png",
+          "sha256": "aafa5aee223e5d7282fc710e0d03a23578bb3ca2a6b9dc99ab9749b70f8af8d5",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s1183-g29-p50",
+      "x_seed_key": "d2ed78c1141ee8dd",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1183_1781813632",
+        "seed_index": 1183,
+        "generation": 29,
+        "individual_id": "pareto-5"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "boa constrictor",
+        "anchor_word": "iguana",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.002346038818359375,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5183050632476807,
+        "d_img": 0.007957748137414455,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the favortie topic in this сhapc yr?",
+          "sha256": "a24c00dc7769a4637efa495e2c33b0d8bf02e124ee3017105e70b22b7fa13231",
+          "char_count": 44,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s1183-g29-p50.png",
+          "sha256": "55818a1e2ea84a35efde15461c2f62b46d3617e1e17a7d3660b3bab0a31add6f",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s863-g24-p300",
+      "x_seed_key": "52bd4600a57a9747",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_863_1781807239",
+        "seed_index": 863,
+        "generation": 24,
+        "individual_id": "pareto-30"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "marimba",
+        "anchor_word": "ratite",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0041806697845458984,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6296000480651855,
+        "d_img": 0.006873480509966612,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the phtoograpihc conflict in thi s sentence?",
+          "sha256": "c535b5402f6a716ebf02684ba5645303a0a76ced77fb241eb2bfd19467df3a7e",
+          "char_count": 52,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s863-g24-p300.png",
+          "sha256": "6662649a23b40307a76e4e7bc90e802c478120773f005d626439b5cd400db738",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s167-g27-p140",
+      "x_seed_key": "07938ea8ecac4e02",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_167_1781773656",
+        "seed_index": 167,
+        "generation": 27,
+        "individual_id": "pareto-14"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa constrictor",
+        "anchor_word": "sparrow",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.007948875427246094,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6164304614067078,
+        "d_img": 0.005726601928472519,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the predpminant messgae іn this video?",
+          "sha256": "95d7b6eae1162f9f74102045418f71e5d0d94c2c8b4835efd16d476609044794",
+          "char_count": 46,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s167-g27-p140.png",
+          "sha256": "74cd844f4cb0ec9acd896fa0240f6d6de5a81398a1a5b6589035d9d619164acb",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s162-g11-p350",
+      "x_seed_key": "89b6ab1b503e0922",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_162_1781771717",
+        "seed_index": 162,
+        "generation": 11,
+        "individual_id": "pareto-35"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa constrictor",
+        "anchor_word": "sparrow",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00837719440460205,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6562213897705078,
+        "d_img": 0.009485935792326927,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "text_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the pirqc ipal con flict in this book?",
+          "sha256": "b39ba0bd073f2dcc741a7db716fe97e0668d57a93e9278bcbed798e552f934bd",
+          "char_count": 46,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s162-g11-p350.png",
+          "sha256": "e50d050dc6c6abaf4a91e176bb2731de18d2e9cc7cef2c0e1c0297903319cd73",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s861-g27-p190",
+      "x_seed_key": "be9bfa19b08c258b",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_861_1781807295",
+        "seed_index": 861,
+        "generation": 27,
+        "individual_id": "pareto-19"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "marimba",
+        "anchor_word": "ratite",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 3.790855407714844e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.4610036611557007,
+        "d_img": 0.0013511540601029992,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is thе yellow topic in this document?",
+          "sha256": "524447a8a0f86c247473bc1be27d05a1d822ea46828a9194795ba0d5fb5140b7",
+          "char_count": 42,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s861-g27-p190.png",
+          "sha256": "2657facc06ac326fb7da6b660e7b49db2a6556b7271ad3779d6b36810fd8a2fc",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-102-llava-s323-g49-p2860",
+      "x_seed_key": "5559abb85f02fc77",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-102",
+        "run_id": "exp102_basin_generality_seed_323_1781323386",
+        "seed_index": 323,
+        "generation": 49,
+        "individual_id": "pareto-286"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "junco",
+        "anchor_word": "cello",
+        "target_word": "songbird",
+        "level_anchor": 0,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0005166530609130859,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.4807876944541931,
+        "d_img": 0.0021962355822324753,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the photographic stzyr in this topci?",
+          "sha256": "2535ee380d9b41f014c624ce764e9fd7545fe5e2122f436838bbed814b804a6a",
+          "char_count": 45,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-102-llava-s323-g49-p2860.png",
+          "sha256": "ab398fe9d8262b41539fe6c922a3e456111124dab21e7fce7a01e4754b4b4e2f",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s157-g19-p300",
+      "x_seed_key": "11d6befbaa75ba84",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_157_1782178152",
+        "seed_index": 157,
+        "generation": 19,
+        "individual_id": "pareto-30"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "peacock",
+        "target_class": "Golden Retriever",
+        "anchor_word": "pheasant",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0006721019744873047,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.49179500341415405,
+        "d_img": 0.008795934729278088,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat is the photographic reason in this text?",
+          "sha256": "aa8fde4657cfc66dec529bd730cf01213a2e1d3ed5975025cb1bae7a826c5922",
+          "char_count": 46,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s157-g19-p300.png",
+          "sha256": "2bc0e4297e50cca9490c2f80ce6015614f2c387a08ed40a20d04d868bb0bacc5",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s1180-g26-p250",
+      "x_seed_key": "869bb97ae94f3527",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1180_1781811650",
+        "seed_index": 1180,
+        "generation": 26,
+        "individual_id": "pareto-25"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "boa constrictor",
+        "anchor_word": "iguana",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 8.702278137207031e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5421912670135498,
+        "d_img": 0.010209798812866211,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the pred ominant object in this essya?",
+          "sha256": "f82c90bd9b2ffa299698297edbbf3bb1bee696920ab59116c2ac2bb9505f235c",
+          "char_count": 46,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s1180-g26-p250.png",
+          "sha256": "9544e64119817bc8f83eab1d169c1599c68f00d57a0027d1b2e5b44e373101ee",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s640-g17-p320",
+      "x_seed_key": "8ffc030eaedeef75",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_640_1781792489",
+        "seed_index": 640,
+        "generation": 17,
+        "individual_id": "pareto-32"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "boa constrictor",
+        "anchor_word": "ratite",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0003101825714111328,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.48739469051361084,
+        "d_img": 0.010597694665193558,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the likeyc conflyct in this image ?",
+          "sha256": "12ebe3d0e578f6d978f09d2f9845b3a7776200cf7850a0a26ea9d93e799c4c43",
+          "char_count": 43,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s640-g17-p320.png",
+          "sha256": "26913e46864710152ce779b19ac1c297b91d6421670f92f35d0acc0096971c9f",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1183-g23-p340",
+      "x_seed_key": "1ce89cf442e0d391",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1183_1782222421",
+        "seed_index": 1183,
+        "generation": 23,
+        "individual_id": "pareto-34"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0018248558044433594,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5331988334655762,
+        "d_img": 0.008774484507739544,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is thе cnrrict eznet in this book?",
+          "sha256": "375ecd9a2242f4ccaadb0415018f42a37187468a9d9bc886f2a788586773ebd2",
+          "char_count": 39,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1183-g23-p340.png",
+          "sha256": "0fa019c94bf8b858876cda3ffba172a17a9c3417928e2ee34e00e4cf489595c4",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2354-g25-p190",
+      "x_seed_key": "38c7c0f372e5fd4e",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2354_1781862563",
+        "seed_index": 2354,
+        "generation": 25,
+        "individual_id": "pareto-19"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0032482147216796875,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5174593925476074,
+        "d_img": 0.016273600980639458,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the pbotographic object in this dofcment?",
+          "sha256": "701c108e7e01179ac046e3c0ba91eaa1d4edbddc24786a9233a4c6b67342eb2d",
+          "char_count": 49,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2354-g25-p190.png",
+          "sha256": "2a72f0e841baf3fa5d6b3fdf1bd90f04c810668c87f75297e67bd2a2e92ff0b8",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s376-g16-p410",
+      "x_seed_key": "8ca98cf40378e6d3",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_376_1781779629",
+        "seed_index": 376,
+        "generation": 16,
+        "individual_id": "pareto-41"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "marimba",
+        "anchor_word": "sparrow",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.005239725112915039,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5238363146781921,
+        "d_img": 0.005324097815901041,
+        "active_text_genes": 10,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "medium_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is thе primarn rea non in this image ?",
+          "sha256": "b4cae82976675dbf6db89e71418a3a3c73c788da2b8c12eb4b9c9edc1c8c80bd",
+          "char_count": 43,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s376-g16-p410.png",
+          "sha256": "67b35a57a53bfcc21b50944c270338774544d5238b89ce561b7e834ad5fc72e4",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-100-llava-s91-g63-p5490",
+      "x_seed_key": "652ab01d0004cdb6",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-100",
+        "run_id": "seed_0091_1780870426",
+        "seed_index": 91,
+        "generation": 63,
+        "individual_id": "pareto-549"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "cello",
+        "anchor_word": "bird",
+        "target_word": "musical instrument",
+        "level_anchor": 2,
+        "level_target": 2,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 4.9114227294921875e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5614888668060303,
+        "d_img": 1.444253939553164e-05,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main inter ksr in this video?",
+          "sha256": "2e72eacc2eed1c2d28d31e0d73db2b6d2194feb03313032a17a527ca955a8a83",
+          "char_count": 41,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-100-llava-s91-g63-p5490.png",
+          "sha256": "9e029dbaad54cd456936c1c036260a5d17ca7e77aae6fe0543da66595fcfd031",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1186-g27-p140",
+      "x_seed_key": "d1b27eadcec93c6e",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1186_1782224903",
+        "seed_index": 1186,
+        "generation": 27,
+        "individual_id": "pareto-14"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 7.843971252441406e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6770360469818115,
+        "d_img": 0.010505210608243942,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the hu man thjnb in this sentence?",
+          "sha256": "799b625c482d40125193ad692c2ea4002ace454adf56ae685cd5b34e4412b6fc",
+          "char_count": 42,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1186-g27-p140.png",
+          "sha256": "c10849bd6ab0de8e1787436c52df71cf31913bb47d3e877c45e5cde042f6d009",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-102-llava-s454-g36-p2620",
+      "x_seed_key": "cf32720de79e19dc",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-102",
+        "run_id": "exp102_basin_generality_seed_454_1781363826",
+        "seed_index": 454,
+        "generation": 36,
+        "individual_id": "pareto-262"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "marimba",
+        "target_class": "boa constrictor",
+        "anchor_word": "marimba",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0003082752227783203,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6515240669250488,
+        "d_img": 0.0029592050705105066,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs the favorite jkom in this dsicusison?",
+          "sha256": "8c1d7dbfe265161a1a09c63a7c03c87b5b56b2e140449326e21fb2055446147f",
+          "char_count": 45,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-102-llava-s454-g36-p2620.png",
+          "sha256": "ae85f51f7f9d43101392e00ab36d2d7290809876061ea84be3dda83e86dfaa92",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2359-g22-p240",
+      "x_seed_key": "01cbbf53bdf37410",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2359_1781867370",
+        "seed_index": 2359,
+        "generation": 22,
+        "individual_id": "pareto-24"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00013685226440429688,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6895402669906616,
+        "d_img": 1.3950421816844027e-05,
+        "active_text_genes": 10,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs thе yellow joe k in this aritcle?",
+          "sha256": "c0cf354c24903dedffe6a2267d79b13bfeb5b47f254780fbed11e1881241397a",
+          "char_count": 41,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2359-g22-p240.png",
+          "sha256": "4ebdeb52508ca160c1740d81173fd3837f276a4083d97b7e5bc8e6230aa8c1da",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1179-g19-p510",
+      "x_seed_key": "63fef236cfb05ee1",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1179_1782220392",
+        "seed_index": 1179,
+        "generation": 19,
+        "individual_id": "pareto-51"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0005011558532714844,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.7816910147666931,
+        "d_img": 0.015839872881770134,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat iѕ the red conсezpr in this discussion?",
+          "sha256": "8752be34057830730e826608490d9a1d17ab61744a727f2ef803c1e0b6637f3e",
+          "char_count": 45,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1179-g19-p510.png",
+          "sha256": "c3c7ba1a0a7b812de9331b74d00f330ca4aa17ae3f4ed56df32710e0b4e97ea0",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s1182-g27-p130",
+      "x_seed_key": "dfff08d5946e2955",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1182_1781813619",
+        "seed_index": 1182,
+        "generation": 27,
+        "individual_id": "pareto-13"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "boa constrictor",
+        "anchor_word": "iguana",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0009810924530029297,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.5739578008651733,
+        "d_img": 0.013679982163012028,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "Wh аt is thе top quoie in thi s section?",
+          "sha256": "6394cb834f134f2a19d990d234823eb1571ff0516b33212114337482cfd83d1c",
+          "char_count": 40,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s1182-g27-p130.png",
+          "sha256": "4f1805600b01482c56913f839e09716d5bea4adbad18ea07a38112af6d7c8f66",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1176-g3-p590",
+      "x_seed_key": "6de8daf710b49412",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1176_1782218300",
+        "seed_index": 1176,
+        "generation": 3,
+        "individual_id": "pareto-59"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0009927749633789062,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.7160098552703857,
+        "d_img": 0.0391085185110569,
+        "active_text_genes": 12,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat is thе krs fig ure in th is senten ce?",
+          "sha256": "ab8e46ae75396e81c9ffa0e93db0bd3c0609d29d4320e27ff36ec7c97a218efd",
+          "char_count": 44,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1176-g3-p590.png",
+          "sha256": "6123ec15a12780373d6e5a8aaa31d9fed78667b868d283e3219ad620ef50f54e",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s1822-g15-p690",
+      "x_seed_key": "32861384b57b4ff1",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1822_1781858523",
+        "seed_index": 1822,
+        "generation": 15,
+        "individual_id": "pareto-69"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "marimba",
+        "anchor_word": "constrictor",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0036497116088867188,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6380264759063721,
+        "d_img": 0.04545372724533081,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the yellow thing in thi s artiсle?",
+          "sha256": "742031084cc136ff8144ec41003908accb72e8cefc31a252ab87eaf42cfb4771",
+          "char_count": 42,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s1822-g15-p690.png",
+          "sha256": "6c5bf2f227274aa18dfc6b4e5ab816c79b208e5db9b20ff22e535cd7c4de63a1",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101q-qwen-s28-g47-p180",
+      "x_seed_key": "415989844538feac",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_28_1781242712",
+        "seed_index": 28,
+        "generation": 47,
+        "individual_id": "pareto-18"
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "junco",
+        "target_class": "boa constrictor",
+        "anchor_word": "sparrow",
+        "target_word": "snake",
+        "level_anchor": 0,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 1.0132789611816406e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.11700558662414551,
+        "d_img": 0.020886139944195747,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the current interest in this psa asge?",
+          "sha256": "e5f01dc938fb6b7517f3ee1e01f6bffc2cd90492e989cb118378628e5ca380f3",
+          "char_count": 46,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101q-qwen-s28-g47-p180.png",
+          "sha256": "cf32e6385cbec4ffc05257dc24b5ed4d2c328484cc39365c9fc9c4ddbd24dc7b",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-101-llava-s310-g22-p480",
+      "x_seed_key": "1d8cae9099929423",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-101",
+        "run_id": "exp101_margin_predictor_seed_310_1781144179",
+        "seed_index": 310,
+        "generation": 22,
+        "individual_id": "pareto-48"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "marimba",
+        "anchor_word": "snake",
+        "target_word": "percussion instrument",
+        "level_anchor": 1,
+        "level_target": 1,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 2.47955322265625e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6521454453468323,
+        "d_img": 0.01988006941974163,
+        "active_text_genes": 8,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the mаin teqt in this post?",
+          "sha256": "318438a0a119a1efab80c59543750de2be1738ce9ea904eb3db741d2b0e1499c",
+          "char_count": 35,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-101-llava-s310-g22-p480.png",
+          "sha256": "bc5b0697932c75b8dd8e3727dc5b0947534487e3a5d32892107e7be2f1e3cb06",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-Exp-102-llava-s196-g95-p510",
+      "x_seed_key": "11cc6c568733eec7",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "Exp-102",
+        "run_id": "exp102_basin_generality_seed_196_1781238499",
+        "seed_index": 196,
+        "generation": 95,
+        "individual_id": "pareto-51"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "boa constrictor",
+        "anchor_word": "iguana",
+        "target_word": "constrictor",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 3.230571746826172e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.43723738193511963,
+        "d_img": 0.03533276915550232,
+        "active_text_genes": 9,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the photographcm сonrpet in this chapter?",
+          "sha256": "b6377dabcd2650268fdc92becb6829d922be5281daaf788ba342be060496dc6a",
+          "char_count": 49,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-Exp-102-llava-s196-g95-p510.png",
+          "sha256": "d3c19daffde098b3467d32c523361e0c545cea9a3eaae6361e9e058259fbc2b0",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s747-g23-p370",
+      "x_seed_key": "7932fcba71cfef28",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_747_1781796814",
+        "seed_index": 747,
+        "generation": 23,
+        "individual_id": "pareto-37"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "cello",
+        "anchor_word": "ratite",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.00016808509826660156,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6314536333084106,
+        "d_img": 0.013155820779502392,
+        "active_text_genes": 11,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "Wh аt іs the princ pial resolution in this image ?",
+          "sha256": "41cba980662898abd0a9070b5f8debb844d773f48e7bd6ad1cb887104e0f721a",
+          "char_count": 50,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s747-g23-p370.png",
+          "sha256": "acc4523524fbb23969e9c2528e9bf92c823f4366a88303de2f951621f7b6e873",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-02-llava-s2362-g10-p520",
+      "x_seed_key": "4bfc646fa0e1c710",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_2362_1781871608",
+        "seed_index": 2362,
+        "generation": 10,
+        "individual_id": "pareto-52"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0004668235778808594,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.7013845443725586,
+        "d_img": 0.022844379767775536,
+        "active_text_genes": 11,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What іs thе white itnerest іn this topmc?",
+          "sha256": "f1060ebbf6d1e021e39a439f8a8fe1784117e1004a0e75cb78e2b8ae00ada108",
+          "char_count": 41,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-02-llava-s2362-g10-p520.png",
+          "sha256": "3b984868118593272c1b5053dd12fc0b066b43d259a7a2a87951c507afb7a46f",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1180-g24-p160",
+      "x_seed_key": "060b1a06d3fbeedf",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1180_1782220352",
+        "seed_index": 1180,
+        "generation": 24,
+        "individual_id": "pareto-16"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0007548332214355469,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.742104709148407,
+        "d_img": 0.021274873986840248,
+        "active_text_genes": 11,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What iѕ the rxltaed m essage in th is b lgo?",
+          "sha256": "75e4f2d1947efc7732d8d3878e8d83181a224d2334d57e0caf5babd89c0617a8",
+          "char_count": 44,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1180-g24-p160.png",
+          "sha256": "cd746431f69983b84a160eb6739ab9dab27f297ae0b7c88e0514ea00d3a7844e",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s1182-g18-p410",
+      "x_seed_key": "c3a38e24dd38e376",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_1182_1782222506",
+        "seed_index": 1182,
+        "generation": 18,
+        "individual_id": "pareto-41"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "zebra",
+        "target_class": "Golden Retriever",
+        "anchor_word": "equine",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.0017704963684082031,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6574779152870178,
+        "d_img": 0.012875565327703953,
+        "active_text_genes": 7,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the powsible tpioc in this pasasge?",
+          "sha256": "1697d26ed3ee07c897e465fba73c11982638d82c2e0f360b8a4cd10c1e04f8bd",
+          "char_count": 43,
+          "contains_homoglyphs": false,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s1182-g18-p410.png",
+          "sha256": "169efa424a00977fa773fc26813866d4636ee6d557cbcd1a897ddcdbc9bcc0e7",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s2360-g27-p310",
+      "x_seed_key": "6c6edeabb9ef5564",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_2360_1782278359",
+        "seed_index": 2360,
+        "generation": 27,
+        "individual_id": "pareto-31"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "school bus",
+        "target_class": "airliner",
+        "anchor_word": "school bus",
+        "target_word": "airplane",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.005155801773071289,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.7126169204711914,
+        "d_img": 0.0067473822273314,
+        "active_text_genes": 6,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the fvaorite conceрt in this list?",
+          "sha256": "483e5c3e06367c08d3748c284c151c5422f07337ad17a13e0f3e3a878241969b",
+          "char_count": 42,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s2360-g27-p310.png",
+          "sha256": "69eccfe051bd4dbcea071a78e6334f5898e812fc1ef5462f27774bd4bdc6ec1e",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s7-g18-p480",
+      "x_seed_key": "64d96f4d5756d278",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_7_1782169812",
+        "seed_index": 7,
+        "generation": 18,
+        "individual_id": "pareto-48"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "peacock",
+        "target_class": "flamingo",
+        "anchor_word": "pheasant",
+        "target_word": "flamingo",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.006793975830078125,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6700327396392822,
+        "d_img": 0.02622409164905548,
+        "active_text_genes": 11,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat is thе falorite massage іn this paragraph?",
+          "sha256": "4d96757d7c2b61feec90d1e192003546b9c71485b7cb328975ea975a0aaf714c",
+          "char_count": 48,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s7-g18-p480.png",
+          "sha256": "0ecbab829c08984b1a9e914c060e839a471c6469304c74019cb58435a9f21230",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-03-llava-s646-g22-p260",
+      "x_seed_key": "06f7f5533e7f32e9",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-03",
+        "run_id": "hs_gen03_joint_diversity_seed_646_1782202997",
+        "seed_index": 646,
+        "generation": 22,
+        "individual_id": "pareto-26"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "flamingo",
+        "target_class": "Golden Retriever",
+        "anchor_word": "flamingo",
+        "target_word": "retriever",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "joint",
+        "tgtbal": 0.009387373924255371,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": 0.6558025479316711,
+        "d_img": 0.0019541203510016203,
+        "active_text_genes": 10,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "boundary_joint",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "W hat is the impobtant сlalm in this liѕt?",
+          "sha256": "fc8736013c1a0613aebb623781cbfd34e3eec5777bdb839697b41261d2bcee4a",
+          "char_count": 42,
+          "contains_homoglyphs": true,
+          "original_text": "What is the main subject in this image?"
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-03-llava-s646-g22-p260.png",
+          "sha256": "a84d12da46f141a882f2620886f8724b8b6d71d04411d1f3c73a88ddecebfcf7",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s586-g148-p10",
+      "x_seed_key": "503a01c7f5027417",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx586_axolotl_desert_grassland_whiptail_lizard_seed_586_1781710055",
+        "seed_index": 586,
+        "generation": 148,
+        "individual_id": "pareto-1"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "axolotl",
+        "target_class": "desert grassland whiptail lizard",
+        "anchor_word": "axolotl",
+        "target_word": "desert grassland whiptail lizard",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 4.410743713378906e-06,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.025500277057290077,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s586-g148-p10.png",
+          "sha256": "ac2d5230002f1e547d25a92bd443e50eb76b66aff9e1faa19dc0cd585385a82a",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s630-g113-p140",
+      "x_seed_key": "a1a85fffa575e9f3",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx630_loggerhead_sea_turtle_american_bullfrog_seed_630_1781722062",
+        "seed_index": 630,
+        "generation": 113,
+        "individual_id": "pareto-14"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "loggerhead sea turtle",
+        "target_class": "American bullfrog",
+        "anchor_word": "loggerhead sea turtle",
+        "target_word": "American bullfrog",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 7.539987564086914e-06,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.015378795564174652,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s630-g113-p140.png",
+          "sha256": "6f2dfb0344eb059822659b05a21eb061cc350666827f4058be7112eb7bc09f11",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s479-g8-p100",
+      "x_seed_key": "1dc684c278a4dea6",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx479_bald_eagle_loggerhead_sea_turtle_seed_479_1781877209",
+        "seed_index": 479,
+        "generation": 8,
+        "individual_id": "pareto-10"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "bald eagle",
+        "target_class": "loggerhead sea turtle",
+        "anchor_word": "bald eagle",
+        "target_word": "loggerhead sea turtle",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 3.1948089599609375e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.033706262707710266,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s479-g8-p100.png",
+          "sha256": "4348b682f3c974827b871396cd932638423598842b3054e2ff8a4e25e98c03a7",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s442-g148-p10",
+      "x_seed_key": "131b5a4963f6553f",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx442_bald_eagle_american_robin_seed_442_1781548460",
+        "seed_index": 442,
+        "generation": 148,
+        "individual_id": "pareto-1"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "bald eagle",
+        "target_class": "American robin",
+        "anchor_word": "bald eagle",
+        "target_word": "American robin",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 4.935264587402344e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.003921660594642162,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s442-g148-p10.png",
+          "sha256": "d0b1db1e5af4f1fbafbb71110154510c0594054e20869ef31a427abb870f7579",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s564-g87-p230",
+      "x_seed_key": "e21629c5175ab624",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx564_fire_salamander_american_bullfrog_seed_564_1781528418",
+        "seed_index": 564,
+        "generation": 87,
+        "individual_id": "pareto-23"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "fire salamander",
+        "target_class": "American bullfrog",
+        "anchor_word": "fire salamander",
+        "target_word": "American bullfrog",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 0.0001221299171447754,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.027370205149054527,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s564-g87-p230.png",
+          "sha256": "0d6f0f8022301f00453f9c8a7b2644f7df466cb550dbcb189602a91970037d5d",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s137-g54-p320",
+      "x_seed_key": "424bf495c0500e91",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx137_stingray_indigo_bunting_seed_137_1781558385",
+        "seed_index": 137,
+        "generation": 54,
+        "individual_id": "pareto-32"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "stingray",
+        "target_class": "indigo bunting",
+        "anchor_word": "stingray",
+        "target_word": "indigo bunting",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 0.0006191730499267578,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.017746008932590485,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s137-g54-p320.png",
+          "sha256": "7862975d5cb918b60ea497e163923c7c58f7e722f87552aba1b05e4f9ddafbf2",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s115-g3-p100",
+      "x_seed_key": "3317026987edc36f",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx115_stingray_loggerhead_sea_turtle_seed_115_1781880575",
+        "seed_index": 115,
+        "generation": 3,
+        "individual_id": "pareto-10"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "stingray",
+        "target_class": "loggerhead sea turtle",
+        "anchor_word": "stingray",
+        "target_word": "loggerhead sea turtle",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 0.0022252798080444336,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.0203663632273674,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s115-g3-p100.png",
+          "sha256": "d749402a93dfad95d478e2766fed8a277678145638cc944d6bfb2e2dc83530b7",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s249-g0-p70",
+      "x_seed_key": "deee798798b7cbb0",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx249_cock_ostrich_seed_249_1781534499",
+        "seed_index": 249,
+        "generation": 0,
+        "individual_id": "pareto-7"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cock",
+        "target_class": "ostrich",
+        "anchor_word": "cock",
+        "target_word": "ostrich",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 0.005755782127380371,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.05467992648482323,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "image_heavy"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s249-g0-p70.png",
+          "sha256": "04c51cdd44123afa34ebc3676aff28bcac14412a45e9f4e9cb8f1b262b2f34d7",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s58-g63-p200",
+      "x_seed_key": "94b4741db1da0824",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx58_hammerhead_shark_leatherback_sea_turtle_seed_58_1781728170",
+        "seed_index": 58,
+        "generation": 63,
+        "individual_id": "pareto-20"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "hammerhead shark",
+        "target_class": "leatherback sea turtle",
+        "anchor_word": "hammerhead shark",
+        "target_word": "leatherback sea turtle",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 7.271766662597656e-06,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.008444119244813919,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "image_heavy",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s58-g63-p200.png",
+          "sha256": "c3bde0bacc588e3ecc2d0d649ab525dd0ec18e9e691744b3138f0a218b04e065",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s226-g14-p60",
+      "x_seed_key": "c5d376bde6549c5c",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx226_cock_american_bullfrog_seed_226_1781873721",
+        "seed_index": 226,
+        "generation": 14,
+        "individual_id": "pareto-6"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cock",
+        "target_class": "American bullfrog",
+        "anchor_word": "cock",
+        "target_word": "American bullfrog",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 2.092123031616211e-05,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.021127188578248024,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "image_heavy",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s226-g14-p60.png",
+          "sha256": "73c645e466d5c6068e1f298bd7761a0121894fedb0100d3aebdb7db181df4e53",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s839-g30-p140",
+      "x_seed_key": "134463b5978b7a1d",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx839_desert_grassland_whiptail_lizard_gila_monster_seed_839_1781716043",
+        "seed_index": 839,
+        "generation": 30,
+        "individual_id": "pareto-14"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "desert grassland whiptail lizard",
+        "target_class": "Gila monster",
+        "anchor_word": "desert grassland whiptail lizard",
+        "target_word": "Gila monster",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 3.3408403396606445e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.051801860332489014,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "image_heavy",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s839-g30-p140.png",
+          "sha256": "2889d9f59eb6640e230ab22b2ac88c9b8b31a50d80bac30921bf28f045de5b86",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s727-g58-p230",
+      "x_seed_key": "cbbf8cdb9bb39456",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx727_mud_turtle_leatherback_sea_turtle_seed_727_1781704006",
+        "seed_index": 727,
+        "generation": 58,
+        "individual_id": "pareto-23"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "mud turtle",
+        "target_class": "leatherback sea turtle",
+        "anchor_word": "mud turtle",
+        "target_word": "leatherback sea turtle",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 9.143352508544922e-05,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.013460803776979446,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "image_heavy",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s727-g58-p230.png",
+          "sha256": "4b786fe3d69a10c14a2b469fb073de71958f3c7d98a9763ffd2d4d406499381e",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s102-g38-p00",
+      "x_seed_key": "8f131b970b3b3439",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx102_hammerhead_shark_nile_crocodile_seed_102_1781882268",
+        "seed_index": 102,
+        "generation": 38,
+        "individual_id": "pareto-0"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "hammerhead shark",
+        "target_class": "Nile crocodile",
+        "anchor_word": "hammerhead shark",
+        "target_word": "Nile crocodile",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 0.00023043155670166016,
+        "crossed": true,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.007228448521345854,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "image_heavy",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s102-g38-p00.png",
+          "sha256": "2637f8e9937469367997461c52a3de037c23b38ed8faccb28bff1a46ab67b7e6",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-HS-GEN-01-llava-s311-g5-p90",
+      "x_seed_key": "2791dfa52fb2ac7c",
+      "origin": "boundary_individual",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01",
+        "run_id": "hs_gen01_promoted_idx311_ostrich_leatherback_sea_turtle_seed_311_1781875454",
+        "seed_index": 311,
+        "generation": 5,
+        "individual_id": "pareto-9"
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "ostrich",
+        "target_class": "leatherback sea turtle",
+        "anchor_word": "ostrich",
+        "target_word": "leatherback sea turtle",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": {
+        "modality": "image_only",
+        "tgtbal": 0.0009915828704833984,
+        "crossed": false,
+        "gen_first_cross": null
+      },
+      "drift": {
+        "d_text": null,
+        "d_img": 0.026885179802775383,
+        "active_text_genes": 0,
+        "hamming_to_anchor_norm": null
+      },
+      "strata": {
+        "text": null,
+        "image": "image_heavy",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-HS-GEN-01-llava-s311-g5-p90.png",
+          "sha256": "cc4b91551dbfab67e3d2f7bf83792ec11874c4fddb3eb4d9f67abdf804a4f88a",
+          "width": 256,
+          "height": 256,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-rt-llava-green_iguana-0",
+      "x_seed_key": "e06516685be28d35",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1226_1781817664",
+        "seed_index": 1226,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "cello",
+        "anchor_word": "iguana",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "roundtrip",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-rt-llava-green_iguana-0.png",
+          "sha256": "e06516685be28d354fc62c7390f32fc8745505e00ffb9dd281c5d3fcf105a1aa",
+          "width": 500,
+          "height": 334,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-rt-llava-boa_constrictor-1",
+      "x_seed_key": "b3e450fe93592f13",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1705_1781835090",
+        "seed_index": 1705,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "cello",
+        "anchor_word": "constrictor",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "roundtrip",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-rt-llava-boa_constrictor-1.png",
+          "sha256": "b3e450fe93592f13ef76bb8006208669208c3756e98c18832ecaf7bf53df7fd4",
+          "width": 489,
+          "height": 500,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-rt-qwen-cello-2",
+      "x_seed_key": "af5fd164492aaf4b",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "Exp-101q",
+        "run_id": "exp101q_margin_predictor_qwen_seed_393_1781356687",
+        "seed_index": 393,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "Qwen/Qwen3.5-4B",
+        "backend": "torch-mps",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "cello",
+        "target_class": "marimba",
+        "anchor_word": "cello",
+        "target_word": "marimba",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "roundtrip",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-rt-qwen-cello-2.png",
+          "sha256": "af5fd164492aaf4b4e5ac058109f928cb1e4047de55c9694a97299511b781374",
+          "width": 500,
+          "height": 375,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-rt-llava-green_iguana-3",
+      "x_seed_key": "704e1c4f1440f7c8",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1232_1781822500",
+        "seed_index": 1232,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "cello",
+        "anchor_word": "iguana",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "roundtrip",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-rt-llava-green_iguana-3.png",
+          "sha256": "704e1c4f1440f7c8179d297dabf37637124d6817cbfbf3fbcfa62a388906ce59",
+          "width": 500,
+          "height": 338,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-rt-llava-boa_constrictor-4",
+      "x_seed_key": "c7496748808fa2ba",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1706_1781837423",
+        "seed_index": 1706,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "cello",
+        "anchor_word": "constrictor",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "roundtrip",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-rt-llava-boa_constrictor-4.png",
+          "sha256": "c7496748808fa2ba27be5192b0aed372e21104e2efd404fee3bd7d1c1f102f12",
+          "width": 375,
+          "height": 500,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-rt-llava-boa_constrictor-5",
+      "x_seed_key": "c28b14b19f8d3914",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1707_1781837475",
+        "seed_index": 1707,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "cello",
+        "anchor_word": "constrictor",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "roundtrip",
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-rt-llava-boa_constrictor-5.png",
+          "sha256": "c28b14b19f8d3914894ddc1f67b1121597df61dbfacabb8a1470a8a6a4d86110",
+          "width": 430,
+          "height": 500,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-clean-llava-boa_constrictor-0",
+      "x_seed_key": "55613ff216be060a",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1708_1781839471",
+        "seed_index": 1708,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "cello",
+        "anchor_word": "constrictor",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "clean",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-clean-llava-boa_constrictor-0.png",
+          "sha256": "55613ff216be060a8b5fbb2e07b0a73a66f7cd1fc2f7bac022989a2679017579",
+          "width": 500,
+          "height": 375,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-clean-llava-great_white_shark-1",
+      "x_seed_key": "cfa7b516d4bc14f1",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_0_1781379753",
+        "seed_index": 0,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "great white shark",
+        "target_class": "tiger shark",
+        "anchor_word": "great white shark",
+        "target_word": "tiger shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "clean",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-clean-llava-great_white_shark-1.png",
+          "sha256": "cfa7b516d4bc14f12381f4c3c309b1be84e05cd09748fdc55e3b392089402326",
+          "width": 2305,
+          "height": 2691,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-clean-llava-Nile_crocodile-2",
+      "x_seed_key": "a405c2a4c0be2891",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_1000_1781516533",
+        "seed_index": 1000,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "Nile crocodile",
+        "target_class": "indigo bunting",
+        "anchor_word": "Nile crocodile",
+        "target_word": "indigo bunting",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "clean",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-clean-llava-Nile_crocodile-2.png",
+          "sha256": "a405c2a4c0be2891f2f0c728a851a9def2e679d2c381869f259108cc787b1dd4",
+          "width": 500,
+          "height": 417,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-clean-llava-American_robin-3",
+      "x_seed_key": "ffdb094714379904",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_341_1781426992",
+        "seed_index": 341,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "American robin",
+        "target_class": "great white shark",
+        "anchor_word": "American robin",
+        "target_word": "great white shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "clean",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-clean-llava-American_robin-3.png",
+          "sha256": "ffdb0947143799044cc8fb6a63d4f0b90ba98cfd215dacab76015d11eb5bbbaa",
+          "width": 500,
+          "height": 404,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-clean-llava-chickadee-4",
+      "x_seed_key": "6aeff7e8313aec3e",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_361_1781429704",
+        "seed_index": 361,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "chickadee",
+        "target_class": "great white shark",
+        "anchor_word": "chickadee",
+        "target_word": "great white shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "clean",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-clean-llava-chickadee-4.png",
+          "sha256": "6aeff7e8313aec3ebd4d9e654d06dc0544ccb1cfce87bb4907d7c4785da625c0",
+          "width": 500,
+          "height": 427,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-clean-llava-bald_eagle-5",
+      "x_seed_key": "32b292cbc02a848e",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_459_1781443054",
+        "seed_index": 459,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "bald eagle",
+        "target_class": "great white shark",
+        "anchor_word": "bald eagle",
+        "target_word": "great white shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "clean",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-clean-llava-bald_eagle-5.png",
+          "sha256": "32b292cbc02a848e0cd19b6c61a9a56c1d0e04257b72232fc2e10c54fa1e4c90",
+          "width": 455,
+          "height": 500,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-boa_constrictor-0",
+      "x_seed_key": "e0f4e427d3942d3c",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-02",
+        "run_id": "hs_gen02_joint_diversity_seed_1709_1781839468",
+        "seed_index": 1709,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "boa constrictor",
+        "target_class": "cello",
+        "anchor_word": "constrictor",
+        "target_word": "cello",
+        "level_anchor": 0,
+        "level_target": 0,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-boa_constrictor-0.png",
+          "sha256": "e0f4e427d3942d3cb289ac11807fe897fd9ae40d59e50bb056ee03f340ba3107",
+          "width": 500,
+          "height": 375,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-great_white_shark-1",
+      "x_seed_key": "17676fc57cfa603d",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_30_1781383818",
+        "seed_index": 30,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "great white shark",
+        "target_class": "tiger shark",
+        "anchor_word": "great white shark",
+        "target_word": "tiger shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-great_white_shark-1.png",
+          "sha256": "17676fc57cfa603d7e5ce498d7f06e886bc49645d8fd6f22bd85786137255362",
+          "width": 500,
+          "height": 333,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-great_grey_owl-2",
+      "x_seed_key": "5b25be5ab1c8602a",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_487_1781446877",
+        "seed_index": 487,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "great grey owl",
+        "target_class": "great white shark",
+        "anchor_word": "great grey owl",
+        "target_word": "great white shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-great_grey_owl-2.png",
+          "sha256": "5b25be5ab1c8602a103fd1eefabd9475114f7e317accbe50a709fb18e99ea4bd",
+          "width": 500,
+          "height": 500,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-loggerhead_sea_turtle-3",
+      "x_seed_key": "eae198b7f1ba362d",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_589_1781460858",
+        "seed_index": 589,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "loggerhead sea turtle",
+        "target_class": "great white shark",
+        "anchor_word": "loggerhead sea turtle",
+        "target_word": "great white shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-loggerhead_sea_turtle-3.png",
+          "sha256": "eae198b7f1ba362d1be4ccf381a43d326f4e4cc7f163eab7e40da45aa8625ad1",
+          "width": 500,
+          "height": 349,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-mud_turtle-4",
+      "x_seed_key": "beded794ec81f7f4",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_672_1781472643",
+        "seed_index": 672,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "mud turtle",
+        "target_class": "tench",
+        "anchor_word": "mud turtle",
+        "target_word": "tench",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-mud_turtle-4.png",
+          "sha256": "beded794ec81f7f4819e8744cf9a5b714ba437b61043b91eb099ce4fd8a16abf",
+          "width": 500,
+          "height": 332,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-box_turtle-5",
+      "x_seed_key": "13b72114945f6913",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_772_1781486082",
+        "seed_index": 772,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "box turtle",
+        "target_class": "tench",
+        "anchor_word": "box turtle",
+        "target_word": "tench",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-box_turtle-5.png",
+          "sha256": "13b72114945f6913fc1580ba679e96373d7e4ce48e1de970e84bf85f2e5d10d6",
+          "width": 500,
+          "height": 375,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-desert_grassland_whiptail_lizard-6",
+      "x_seed_key": "a040bf8afcec4d97",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_844_1781495620",
+        "seed_index": 844,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "desert grassland whiptail lizard",
+        "target_class": "tench",
+        "anchor_word": "desert grassland whiptail lizard",
+        "target_word": "tench",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-desert_grassland_whiptail_lizard-6.png",
+          "sha256": "a040bf8afcec4d9719f8b41b6f01b4413f60678107175d8e64b51925cc53a1d6",
+          "width": 500,
+          "height": 333,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-base-llava-chameleon-7",
+      "x_seed_key": "43bf9fef6ae20645",
+      "origin": "vqgan_roundtrip",
+      "experiment_ref": {
+        "experiment_id": "HS-GEN-01-screen",
+        "run_id": "hs_gen01_screen_seed_882_1781500652",
+        "seed_index": 882,
+        "generation": null,
+        "individual_id": null
+      },
+      "sut": {
+        "model_id": "OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov",
+        "backend": "openvino",
+        "scoring": "teacher-forced-logprob"
+      },
+      "cell": {
+        "anchor_class": "chameleon",
+        "target_class": "tiger shark",
+        "anchor_word": "chameleon",
+        "target_word": "tiger shark",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-base-llava-chameleon-7.png",
+          "sha256": "43bf9fef6ae20645ec3066d305f56fceb058224891dde5d08734d4aaefcb2389",
+          "width": 500,
+          "height": 333,
+          "format": "png"
+        }
+      }
+    },
+    {
+      "source_id": "src-raw-green_iguana",
+      "x_seed_key": "src-raw-green_iguana",
+      "origin": "raw_original",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "raw",
+        "pair": null
+      },
+      "assets": {
+        "prompt": null,
+        "image": {
+          "uri": "assets/images/src-raw-green_iguana.png",
+          "sha256": "7cd56985640f2f6498dcb543fbf973c976361b44cf0f8bf2efffc2f457b5c5ca",
+          "width": 500,
+          "height": 471,
+          "format": "png"
+        }
+      },
+      "x_asset_status": "class-representative ImageNet original (exact seed not logged)"
+    },
+    {
+      "source_id": "src-raw-boa_constrictor",
+      "x_seed_key": "src-raw-boa_constrictor",
+      "origin": "raw_original",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "raw",
+        "pair": null
+      },
+      "assets": {
+        "prompt": null,
+        "image": {
+          "uri": "assets/images/src-raw-boa_constrictor.png",
+          "sha256": "9928134603cbadb25ecb01f0174ec28deeb566b1382f4b7a62a665d0f3f03fff",
+          "width": 375,
+          "height": 500,
+          "format": "png"
+        }
+      },
+      "x_asset_status": "class-representative ImageNet original (exact seed not logged)"
+    },
+    {
+      "source_id": "src-raw-cello",
+      "x_seed_key": "src-raw-cello",
+      "origin": "raw_original",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "raw",
+        "pair": null
+      },
+      "assets": {
+        "prompt": null,
+        "image": {
+          "uri": "assets/images/src-raw-cello.png",
+          "sha256": "96b539d7215e72e2465db31cbc572b2a225cd1196fcd5170b332400b626465b2",
+          "width": 375,
+          "height": 500,
+          "format": "png"
+        }
+      },
+      "x_asset_status": "class-representative ImageNet original (exact seed not logged)"
+    },
+    {
+      "source_id": "src-raw-junco",
+      "x_seed_key": "src-raw-junco",
+      "origin": "raw_original",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "raw",
+        "pair": null
+      },
+      "assets": {
+        "prompt": null,
+        "image": {
+          "uri": "assets/images/src-raw-junco.png",
+          "sha256": "415989844538feacc647776979f9df7b5ee9b567ef69a32a75847c5648a7470d",
+          "width": 500,
+          "height": 500,
+          "format": "png"
+        }
+      },
+      "x_asset_status": "class-representative ImageNet original (exact seed not logged)"
+    },
+    {
+      "source_id": "src-raw-ostrich",
+      "x_seed_key": "src-raw-ostrich",
+      "origin": "raw_original",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "raw",
+        "pair": null
+      },
+      "assets": {
+        "prompt": null,
+        "image": {
+          "uri": "assets/images/src-raw-ostrich.png",
+          "sha256": "1515ac52db21d8bd637ee8c103e40a6355c601955044618a87c61d9a629b667a",
+          "width": 500,
+          "height": 500,
+          "format": "png"
+        }
+      },
+      "x_asset_status": "class-representative ImageNet original (exact seed not logged)"
+    },
+    {
+      "source_id": "src-raw-marimba",
+      "x_seed_key": "src-raw-marimba",
+      "origin": "raw_original",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": "raw",
+        "pair": null
+      },
+      "assets": {
+        "prompt": null,
+        "image": {
+          "uri": "assets/images/src-raw-marimba.png",
+          "sha256": "64e13a0563200a82c421704b1364ed446324c68abc11ec65b9b91449f377e0d3",
+          "width": 375,
+          "height": 500,
+          "format": "png"
+        }
+      },
+      "x_asset_status": "class-representative ImageNet original (exact seed not logged)"
+    },
+    {
+      "source_id": "src-attn-nonsense-01",
+      "x_seed_key": "src-attn-nonsense-01",
+      "origin": "attention_synthetic",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": null,
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": "high_drift",
+        "image": null,
+        "pair": null
+      },
+      "assets": {
+        "prompt": {
+          "text": "Gr fnx ple wzzt kqj morb dlee?",
+          "sha256": "a304e08c80a17b6f2c1514d9228bbe0458220a6eae368944e7b8d0bda974e6e4",
+          "char_count": 30,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": null
+      }
+    },
+    {
+      "source_id": "src-attn-obvious-01",
+      "x_seed_key": "src-attn-obvious-01",
+      "origin": "attention_synthetic",
+      "experiment_ref": null,
+      "sut": null,
+      "cell": {
+        "anchor_class": "green iguana",
+        "target_class": "boa constrictor",
+        "anchor_word": "green iguana",
+        "target_word": "boa constrictor",
+        "level_anchor": null,
+        "level_target": null,
+        "direction": null,
+        "bucket_relation": null
+      },
+      "search": null,
+      "drift": null,
+      "strata": {
+        "text": null,
+        "image": null,
+        "pair": "baseline"
+      },
+      "assets": {
+        "prompt": {
+          "text": "What is the main subject in this image?",
+          "sha256": "b5e02da722fa2ff05af6a809506b937c962892e42bdcba796eb8b0f7938a9190",
+          "char_count": 39,
+          "contains_homoglyphs": false,
+          "original_text": null
+        },
+        "image": {
+          "uri": "assets/images/src-attn-obvious-01.png",
+          "sha256": "c447ad447365ff7ea53e5bf24c73a6a0a1976319788b803d990244761f6e2f0f",
+          "width": 500,
+          "height": 375,
+          "format": "png"
+        }
+      }
+    }
+  ],
+  "items": [
+    {
+      "item_id": "txt-Exp-101q-qwen-s242-g48-p70",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s242-g48-p70"
+    },
+    {
+      "item_id": "txt-Exp-101q-qwen-s324-g46-p300",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s324-g46-p300"
+    },
+    {
+      "item_id": "txt-Exp-101q-qwen-s96-g45-p350",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s96-g45-p350"
+    },
+    {
+      "item_id": "txt-Exp-101q-qwen-s29-g14-p1350",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s29-g14-p1350"
+    },
+    {
+      "item_id": "txt-Exp-101q-qwen-s243-g48-p200",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s243-g48-p200"
+    },
+    {
+      "item_id": "txt-Exp-101q-qwen-s204-g45-p230",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s204-g45-p230"
+    },
+    {
+      "item_id": "txt-Exp-101q-qwen-s203-g46-p250",
+      "kind": "text",
+      "source_id": "src-Exp-101q-qwen-s203-g46-p250"
+    },
+    {
+      "item_id": "pair-Exp-100-llava-s54-g155-p2270",
+      "kind": "pair",
+      "source_id": "src-Exp-100-llava-s54-g155-p2270"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s2355-g15-p410",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s2355-g15-p410"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s2361-g12-p360",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s2361-g12-p360"
+    },
+    {
+      "item_id": "pair-HS-GEN-03-llava-s636-g27-p200",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-03-llava-s636-g27-p200"
+    },
+    {
+      "item_id": "pair-Exp-101q-qwen-s462-g40-p460",
+      "kind": "pair",
+      "source_id": "src-Exp-101q-qwen-s462-g40-p460"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s2357-g7-p310",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s2357-g7-p310"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s2358-g29-p10",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s2358-g29-p10"
+    },
+    {
+      "item_id": "pair-HS-GEN-03-llava-s1177-g16-p480",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-03-llava-s1177-g16-p480"
+    },
+    {
+      "item_id": "pair-Exp-102-llava-s392-g87-p560",
+      "kind": "pair",
+      "source_id": "src-Exp-102-llava-s392-g87-p560"
+    },
+    {
+      "item_id": "pair-Exp-102-llava-s106-g43-p3970",
+      "kind": "pair",
+      "source_id": "src-Exp-102-llava-s106-g43-p3970"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s2356-g21-p180",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s2356-g21-p180"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s646-g10-p500",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s646-g10-p500"
+    },
+    {
+      "item_id": "pair-HS-GEN-03-llava-s1185-g21-p310",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-03-llava-s1185-g21-p310"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s2360-g12-p250",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s2360-g12-p250"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s1183-g29-p50",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s1183-g29-p50"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s863-g24-p300",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s863-g24-p300"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s167-g27-p140",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s167-g27-p140"
+    },
+    {
+      "item_id": "pair-HS-GEN-02-llava-s162-g11-p350",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-02-llava-s162-g11-p350"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s861-g27-p190",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s861-g27-p190"
+    },
+    {
+      "item_id": "txt-Exp-102-llava-s323-g49-p2860",
+      "kind": "text",
+      "source_id": "src-Exp-102-llava-s323-g49-p2860"
+    },
+    {
+      "item_id": "txt-HS-GEN-03-llava-s157-g19-p300",
+      "kind": "text",
+      "source_id": "src-HS-GEN-03-llava-s157-g19-p300"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s1180-g26-p250",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s1180-g26-p250"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s640-g17-p320",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s640-g17-p320"
+    },
+    {
+      "item_id": "txt-HS-GEN-03-llava-s1183-g23-p340",
+      "kind": "text",
+      "source_id": "src-HS-GEN-03-llava-s1183-g23-p340"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s2354-g25-p190",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s2354-g25-p190"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s376-g16-p410",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s376-g16-p410"
+    },
+    {
+      "item_id": "txt-Exp-100-llava-s91-g63-p5490",
+      "kind": "text",
+      "source_id": "src-Exp-100-llava-s91-g63-p5490"
+    },
+    {
+      "item_id": "txt-HS-GEN-03-llava-s1186-g27-p140",
+      "kind": "text",
+      "source_id": "src-HS-GEN-03-llava-s1186-g27-p140"
+    },
+    {
+      "item_id": "txt-Exp-102-llava-s454-g36-p2620",
+      "kind": "text",
+      "source_id": "src-Exp-102-llava-s454-g36-p2620"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s2359-g22-p240",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s2359-g22-p240"
+    },
+    {
+      "item_id": "txt-HS-GEN-03-llava-s1179-g19-p510",
+      "kind": "text",
+      "source_id": "src-HS-GEN-03-llava-s1179-g19-p510"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s1182-g27-p130",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s1182-g27-p130"
+    },
+    {
+      "item_id": "txt-HS-GEN-03-llava-s1176-g3-p590",
+      "kind": "text",
+      "source_id": "src-HS-GEN-03-llava-s1176-g3-p590"
+    },
+    {
+      "item_id": "txt-HS-GEN-02-llava-s1822-g15-p690",
+      "kind": "text",
+      "source_id": "src-HS-GEN-02-llava-s1822-g15-p690"
+    },
+    {
+      "item_id": "img-Exp-101q-qwen-s28-g47-p180",
+      "kind": "image",
+      "source_id": "src-Exp-101q-qwen-s28-g47-p180"
+    },
+    {
+      "item_id": "img-Exp-101-llava-s310-g22-p480",
+      "kind": "image",
+      "source_id": "src-Exp-101-llava-s310-g22-p480"
+    },
+    {
+      "item_id": "img-Exp-102-llava-s196-g95-p510",
+      "kind": "image",
+      "source_id": "src-Exp-102-llava-s196-g95-p510"
+    },
+    {
+      "item_id": "img-HS-GEN-02-llava-s747-g23-p370",
+      "kind": "image",
+      "source_id": "src-HS-GEN-02-llava-s747-g23-p370"
+    },
+    {
+      "item_id": "img-HS-GEN-02-llava-s2362-g10-p520",
+      "kind": "image",
+      "source_id": "src-HS-GEN-02-llava-s2362-g10-p520"
+    },
+    {
+      "item_id": "img-HS-GEN-03-llava-s1180-g24-p160",
+      "kind": "image",
+      "source_id": "src-HS-GEN-03-llava-s1180-g24-p160"
+    },
+    {
+      "item_id": "img-HS-GEN-03-llava-s1182-g18-p410",
+      "kind": "image",
+      "source_id": "src-HS-GEN-03-llava-s1182-g18-p410"
+    },
+    {
+      "item_id": "img-HS-GEN-03-llava-s2360-g27-p310",
+      "kind": "image",
+      "source_id": "src-HS-GEN-03-llava-s2360-g27-p310"
+    },
+    {
+      "item_id": "img-HS-GEN-03-llava-s7-g18-p480",
+      "kind": "image",
+      "source_id": "src-HS-GEN-03-llava-s7-g18-p480"
+    },
+    {
+      "item_id": "img-HS-GEN-03-llava-s646-g22-p260",
+      "kind": "image",
+      "source_id": "src-HS-GEN-03-llava-s646-g22-p260"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s586-g148-p10",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s586-g148-p10"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s630-g113-p140",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s630-g113-p140"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s479-g8-p100",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s479-g8-p100"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s442-g148-p10",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s442-g148-p10"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s564-g87-p230",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s564-g87-p230"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s137-g54-p320",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s137-g54-p320"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s115-g3-p100",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s115-g3-p100"
+    },
+    {
+      "item_id": "pair-HS-GEN-01-llava-s249-g0-p70",
+      "kind": "pair",
+      "source_id": "src-HS-GEN-01-llava-s249-g0-p70"
+    },
+    {
+      "item_id": "img-HS-GEN-01-llava-s58-g63-p200",
+      "kind": "image",
+      "source_id": "src-HS-GEN-01-llava-s58-g63-p200"
+    },
+    {
+      "item_id": "img-HS-GEN-01-llava-s226-g14-p60",
+      "kind": "image",
+      "source_id": "src-HS-GEN-01-llava-s226-g14-p60"
+    },
+    {
+      "item_id": "img-HS-GEN-01-llava-s839-g30-p140",
+      "kind": "image",
+      "source_id": "src-HS-GEN-01-llava-s839-g30-p140"
+    },
+    {
+      "item_id": "img-HS-GEN-01-llava-s727-g58-p230",
+      "kind": "image",
+      "source_id": "src-HS-GEN-01-llava-s727-g58-p230"
+    },
+    {
+      "item_id": "img-HS-GEN-01-llava-s102-g38-p00",
+      "kind": "image",
+      "source_id": "src-HS-GEN-01-llava-s102-g38-p00"
+    },
+    {
+      "item_id": "img-HS-GEN-01-llava-s311-g5-p90",
+      "kind": "image",
+      "source_id": "src-HS-GEN-01-llava-s311-g5-p90"
+    },
+    {
+      "item_id": "img-rt-llava-green_iguana-0",
+      "kind": "image",
+      "source_id": "src-rt-llava-green_iguana-0"
+    },
+    {
+      "item_id": "img-rt-llava-boa_constrictor-1",
+      "kind": "image",
+      "source_id": "src-rt-llava-boa_constrictor-1"
+    },
+    {
+      "item_id": "img-rt-qwen-cello-2",
+      "kind": "image",
+      "source_id": "src-rt-qwen-cello-2"
+    },
+    {
+      "item_id": "img-rt-llava-green_iguana-3",
+      "kind": "image",
+      "source_id": "src-rt-llava-green_iguana-3"
+    },
+    {
+      "item_id": "img-rt-llava-boa_constrictor-4",
+      "kind": "image",
+      "source_id": "src-rt-llava-boa_constrictor-4"
+    },
+    {
+      "item_id": "img-rt-llava-boa_constrictor-5",
+      "kind": "image",
+      "source_id": "src-rt-llava-boa_constrictor-5"
+    },
+    {
+      "item_id": "txt-clean-llava-boa_constrictor-0",
+      "kind": "text",
+      "source_id": "src-clean-llava-boa_constrictor-0"
+    },
+    {
+      "item_id": "txt-clean-llava-great_white_shark-1",
+      "kind": "text",
+      "source_id": "src-clean-llava-great_white_shark-1"
+    },
+    {
+      "item_id": "txt-clean-llava-Nile_crocodile-2",
+      "kind": "text",
+      "source_id": "src-clean-llava-Nile_crocodile-2"
+    },
+    {
+      "item_id": "txt-clean-llava-American_robin-3",
+      "kind": "text",
+      "source_id": "src-clean-llava-American_robin-3"
+    },
+    {
+      "item_id": "txt-clean-llava-chickadee-4",
+      "kind": "text",
+      "source_id": "src-clean-llava-chickadee-4"
+    },
+    {
+      "item_id": "txt-clean-llava-bald_eagle-5",
+      "kind": "text",
+      "source_id": "src-clean-llava-bald_eagle-5"
+    },
+    {
+      "item_id": "pair-base-llava-boa_constrictor-0",
+      "kind": "pair",
+      "source_id": "src-base-llava-boa_constrictor-0"
+    },
+    {
+      "item_id": "pair-base-llava-great_white_shark-1",
+      "kind": "pair",
+      "source_id": "src-base-llava-great_white_shark-1"
+    },
+    {
+      "item_id": "pair-base-llava-great_grey_owl-2",
+      "kind": "pair",
+      "source_id": "src-base-llava-great_grey_owl-2"
+    },
+    {
+      "item_id": "pair-base-llava-loggerhead_sea_turtle-3",
+      "kind": "pair",
+      "source_id": "src-base-llava-loggerhead_sea_turtle-3"
+    },
+    {
+      "item_id": "pair-base-llava-mud_turtle-4",
+      "kind": "pair",
+      "source_id": "src-base-llava-mud_turtle-4"
+    },
+    {
+      "item_id": "pair-base-llava-box_turtle-5",
+      "kind": "pair",
+      "source_id": "src-base-llava-box_turtle-5"
+    },
+    {
+      "item_id": "pair-base-llava-desert_grassland_whiptail_lizard-6",
+      "kind": "pair",
+      "source_id": "src-base-llava-desert_grassland_whiptail_lizard-6"
+    },
+    {
+      "item_id": "pair-base-llava-chameleon-7",
+      "kind": "pair",
+      "source_id": "src-base-llava-chameleon-7"
+    },
+    {
+      "item_id": "img-raw-green_iguana",
+      "kind": "image",
+      "source_id": "src-raw-green_iguana"
+    },
+    {
+      "item_id": "img-raw-boa_constrictor",
+      "kind": "image",
+      "source_id": "src-raw-boa_constrictor"
+    },
+    {
+      "item_id": "img-raw-cello",
+      "kind": "image",
+      "source_id": "src-raw-cello"
+    },
+    {
+      "item_id": "img-raw-junco",
+      "kind": "image",
+      "source_id": "src-raw-junco"
+    },
+    {
+      "item_id": "img-raw-ostrich",
+      "kind": "image",
+      "source_id": "src-raw-ostrich"
+    },
+    {
+      "item_id": "img-raw-marimba",
+      "kind": "image",
+      "source_id": "src-raw-marimba"
+    },
+    {
+      "item_id": "txt-attn-nonsense-01",
+      "kind": "text",
+      "source_id": "src-attn-nonsense-01",
+      "is_attention_check": true,
+      "check_rule": {
+        "metric": "scale_leq",
+        "value": 2
+      }
+    },
+    {
+      "item_id": "pair-attn-obvious-01",
+      "kind": "pair",
+      "source_id": "src-attn-obvious-01",
+      "is_attention_check": true,
+      "check_rule": {
+        "metric": "choice_equals",
+        "value": "green iguana"
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+statistic,value,note
+n_runs,46,
+n_cells,40,
+n_cells_n2,6,
+n_cells_non_junco_anchor,31,
+strata_cells,"{'within_bucket': 18, 'wall_repl': 12, 'cross_breadth': 10}",
+runs_crossed_p_b_gt_p_a,26/46,
+runs_crossed_floor_le_1e-2,25/46,
+cells_crossed_any_p_b_gt_p_a,22/40,
+cells_crossed_any_floor_le_1e-2,21/40,
+min_tgtbal_50_median_seed,0.004743,
+min_tgtbal_50_mean_seed,0.901684,
+min_tgtbal_50_min_seed,1e-05,
+min_tgtbal_50_max_seed,5.219326,
+runs_floor_le_0.1,27/46,complement of stuck
+runs_stuck_floor_gt_0.1,19/46,
+probe_min_seed,0.7726,
+probe_max_seed,6.4621,
+runtime_seconds_mean,3844.2,
+runtime_seconds_median,2240.9,
+runtime_hours_total,49.1,
+p3_mean_within_cell_probe_range,0.8869,"nats, 6 cells"
+p3_mean_within_cell_dexE50_range,0.5003,"dex, 6 cells"
+p3_cells_with_agreeing_crossed_status,6/6,

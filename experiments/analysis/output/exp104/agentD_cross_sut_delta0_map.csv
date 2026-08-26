@@ -1,0 +1,9 @@
+cell,anchor,target,a_word,t_word,d0_qwen,d0_llava,sign_flip,remap_mag
+2,junco,ostrich,sparrow,flightless bird,1.9891505241394043,-1.1898174285888672,YES,3.1789679527282715
+26,junco,boa constrictor,sparrow,constrictor,3.537253975868225,-1.025684833526611,YES,4.562938809394836
+28,junco,boa constrictor,sparrow,snake,-1.8511478900909424,4.609247207641602,YES,6.460395097732544
+96,ostrich,green iguana,flightless bird,lizard,-4.25820928812027,1.716181755065918,YES,5.974391043186188
+196,green iguana,boa constrictor,iguana,constrictor,2.7845526933670044,-0.0645198822021484,YES,2.849072575569153
+278,boa constrictor,green iguana,constrictor,lizard,-0.0797491073608398,2.143124580383301,YES,2.2228736877441406
+454,marimba,boa constrictor,marimba,constrictor,4.411278992891312,0.1195020675659179,no,4.291776925325394
+474,marimba,cello,marimba,string instrument,-0.0058236718177795,1.024472713470459,YES,1.0302963852882385

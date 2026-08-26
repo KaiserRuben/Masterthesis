@@ -1,0 +1,29 @@
+sweep,cell_id,anchor,target,la,lt,anchor_word,target_word,n,probe,min_tgtbal_50,dex_eroded_50,dex_vs_sweep_easiest,crossed,gen_first_cross_mean,stuck
+S1,"junco->boa constrictor(0,0)",junco,boa constrictor,0,0,sparrow,constrictor,1,1.9882236123085024,0.0005769729614257,3.537309765836518,0.0,True,2.0,False
+S1,"junco->boa constrictor(0,1)",junco,boa constrictor,0,1,sparrow,snake,2,9.340611696243286,0.7390867173671722,1.1042724150866152,3.1075399359727567,False,,True
+S1,"junco->boa constrictor(0,2)",junco,boa constrictor,0,2,sparrow,reptile,1,1.6489410996437073,0.0066523551940917,2.394229713104079,1.0618199683983491,True,9.0,False
+S2,"junco->cello(0,0)",junco,cello,0,0,sparrow,cello,1,2.742067933082581,0.4990710020065307,0.7399158735941458,3.3079850162794453,False,,True
+S2,"junco->cello(1,0)",junco,cello,1,0,songbird,cello,1,3.3700013160705566,0.3261798024177551,1.0141730051559985,3.1232797452207586,False,,True
+S2,"junco->cello(2,0)",junco,cello,2,0,bird,cello,1,2.205866813659668,0.0002455711364746,3.953401966864774,0.0,True,0.0,False
+S3,"boa constrictor->junco(0,0)",boa constrictor,junco,0,0,constrictor,sparrow,1,5.46095609664917,2.101504325866699,0.4147383967185016,0.11516881889086757,False,,True
+S3,"boa constrictor->junco(0,1)",boa constrictor,junco,0,1,constrictor,songbird,2,3.5278425812721252,1.611986756324768,0.336163686341961,0.0,False,,True
+S3,"boa constrictor->junco(0,2)",boa constrictor,junco,0,2,constrictor,bird,1,9.406179904937744,3.985894203186035,0.3728875137902844,0.3931642976933789,False,,True
+S4,"cello->junco(0,0)",cello,junco,0,0,cello,sparrow,1,1.5225039720535278,0.1392785310745239,1.0386742565648022,2.1363196716256247,False,,True
+S4,"cello->junco(0,1)",cello,junco,0,1,cello,songbird,1,0.3112848997116089,0.0010175704956054,2.485593547621566,0.0,True,0.0,False
+S4,"cello->junco(0,2)",cello,junco,0,2,cello,bird,1,5.351153373718262,1.7384778261184692,0.4882782430875041,3.23260464958438,False,,True
+S5,"ostrich->junco(0,0)",ostrich,junco,0,0,ratite,sparrow,1,1.488596737384796,0.0139588117599487,2.027928612135837,0.0,True,34.0,False
+S5,"ostrich->junco(0,1)",ostrich,junco,0,1,ratite,songbird,1,1.5937923192977903,0.1414945125579834,1.0516921321973471,1.005891146711686,False,,True
+S5,"ostrich->junco(1,1)",ostrich,junco,1,1,flightless bird,songbird,1,3.0868395566940308,1.4324462413787842,0.3334357247321978,2.011229881541681,False,,True
+S6,"green iguana->boa constrictor(0,0)",green iguana,boa constrictor,0,0,iguana,constrictor,1,0.649921178817749,0.0017108917236328,2.5796381640141046,0.0,True,2.0,False
+S6,"green iguana->boa constrictor(0,1)",green iguana,boa constrictor,0,1,iguana,snake,1,6.946902275085449,2.2525534629821777,0.4891160820312937,3.119452582059548,False,,True
+S6,"green iguana->boa constrictor(1,1)",green iguana,boa constrictor,1,1,lizard,snake,2,6.666776180267334,2.56497859954834,0.4180008935919392,3.175861220574228,False,,True
+S7,"boa constrictor->green iguana(0,0)",boa constrictor,green iguana,0,0,constrictor,iguana,1,6.0165855884552,1.402856469154358,0.6323368598938419,3.170008365027887,False,,True
+S7,"boa constrictor->green iguana(0,1)",boa constrictor,green iguana,0,1,constrictor,lizard,1,4.243100881576538,1.3358550071716309,0.5019240347717204,3.148754448477797,False,,True
+S7,"boa constrictor->green iguana(1,1)",boa constrictor,green iguana,1,1,snake,lizard,1,1.498214840888977,0.000948429107666,3.198569220572761,0.0,True,0.0,False
+S8,"boa constrictor->marimba(0,0)",boa constrictor,marimba,0,0,constrictor,marimba,1,2.4594762325286865,0.5585293769836426,0.6437966094037861,4.352672585958933,False,,True
+S8,"boa constrictor->marimba(1,1)",boa constrictor,marimba,1,1,snake,percussion instrument,1,1.297510266304016,2.47955322265625e-05,4.718737368115656,0.0,True,0.0,False
+S9,"marimba->boa constrictor(0,0)",marimba,boa constrictor,0,0,marimba,constrictor,1,1.572641909122467,0.0012662410736083,3.0941134481280725,0.0,True,0.0,False
+S9,"marimba->boa constrictor(1,1)",marimba,boa constrictor,1,1,percussion instrument,snake,1,11.800506591796877,2.7805285453796387,0.6277732938460974,3.3416109611654106,False,,True
+S10,"junco->ostrich(0,0)",junco,ostrich,0,0,sparrow,ratite,2,1.9949156045913696,0.2847820520401001,1.6674697690130655,3.734749838857062,True,21.0,True
+S10,"junco->ostrich(0,1)",junco,ostrich,0,1,sparrow,flightless bird,1,0.3545381426811218,5.245208740234375e-05,3.829900189016257,0.0,True,0.0,False
+S10,"junco->ostrich(1,1)",junco,ostrich,1,1,songbird,flightless bird,1,0.3288828730583191,0.0007059574127197,2.6682627549212667,1.1290157265670766,True,0.0,False
