@@ -1,0 +1,118 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-104 Phase B — E2·Q·raw : RAW control arm (Qwen3.5-4B / MPS)
+# ═══════════════════════════════════════════════════════════════════════════
+# Diary/spec: [[Exp-104-PMI-Calibration]] §Phase B
+# Base      : configs/Exp-101q/exp101q_margin_predictor_qwen.yaml — IDENTICAL
+#             design (roster, class order, abstraction, budget, init, cone,
+#             text). ONLY differences vs Exp-101q:
+#               * filter_indices narrowed to the 8 dose-response cells
+#               * save_dir/name → Exp-104
+#               * pmi block present (enabled: false here)
+#
+# This is the CONTROL arm of the raw-vs-PMI A/B. It must reproduce the
+# archived Exp-101q floors for these 8 cells (reproducibility anchor) and
+# supplies the raw fronts + reach baseline.
+#
+# Launch (paired with the PMI arm, matched --seed; rep-1 both arms first):
+#   python experiments/runners/run_boundary_test.py \
+#       configs/Exp-104/exp104_phaseb_qwen_raw.yaml \
+#       --seed 1 --save-dir runs/Exp-104/qwen_raw_rep1
+#   (repeat --seed 2/3 → qwen_raw_rep2/3 ; see launch_qwen_ab.sh)
+#
+# ─── The 8 dose-response cells (Δ∅ gray, from E0/Phase A) ────────────────────
+#   seed_idx  cell (anchor→target word)         Δ∅      stratum
+#     454     marimba → constrictor           +4.41    W  prior-wall (falls)
+#      26     sparrow → constrictor           +3.54    W  prior-wall (falls)
+#     196     iguana  → constrictor           +2.78    G  residual geom (sink)
+#       2     sparrow → flightless-bird       +1.99    G  residual geom
+#      28     sparrow → snake                 −1.85    N  prior-assisted cross
+#      96     flightless-bird → lizard        −4.26    N  prior-assisted cross
+#     474     marimba → string-instrument     −0.006   C  null control
+#     278     constrictor → lizard            −0.08    C  null control
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp104_phaseb_qwen_raw
+save_dir: runs/Exp-104
+
+device: mps
+
+categories:
+  - junco
+  - ostrich
+  - green iguana
+  - boa constrictor
+  - cello
+  - marimba
+
+modality: joint
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+
+# Byte-identical search budget to Exp-101q (comparability anchor).
+generations: 50
+pop_size: 30
+# seed: left unset — supplied per-rep via `--seed 1|2|3` so raw and PMI arms
+# share an identical initial population + GA RNG stream (only scoring differs).
+
+# ─── PMI: OFF (control arm) ──────────────────────────────────────────────────
+pmi:
+  enabled: false
+
+# ─── Seeds — roster + the 8-cell filter. class_list ORDER is load-bearing
+#     (enumeration index space); identical to Exp-101q so filter_indices map
+#     to the same cells. ────────────────────────────────────────────────────
+seeds:
+  mode: roster
+  filter_indices: [2, 26, 28, 96, 196, 278, 454, 474]
+  roster:
+    class_list:
+      - junco
+      - ostrich
+      - green iguana
+      - boa constrictor
+      - cello
+      - marimba
+    seeds_per_class: 2
+    min_anchor_confidence: 3.5
+    abstraction:
+      levels_anchor: [0, 1, 2]
+      levels_target: [0, 1, 2]
+      apply_disjointness: true
+      directions: both
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 20.0
+    target_m: 10
+
+text:
+  composite:
+    profile: full_stack
+
+parallel:
+  workers: 1
+
+# EXACT sparse_multitier block from Exp-100/101/101q — the gen-0 probe IS this
+# init distribution; the 2D-Pareto (n_active, TgtBal) success criterion is
+# defined on it. early_stop DISABLED → uniform 50-gen length.
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: false

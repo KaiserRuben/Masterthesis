@@ -1,0 +1,101 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-104 Phase B — E2·Q·pmi : PMI treatment arm (Qwen3.5-4B / MPS)
+# ═══════════════════════════════════════════════════════════════════════════
+# Diary/spec: [[Exp-104-PMI-Calibration]] §Phase B
+# Base      : configs/Exp-104/exp104_phaseb_qwen_raw.yaml — IDENTICAL except
+#             the pmi block. This is the TREATMENT arm.
+#
+# Airtight pinning (only the search objective differs from the raw arm):
+#   * pmi.apply_to_seedgen = false  → seed generation uses RAW scoring, so the
+#     concrete anchor photographs are identical to the raw arm (the roster
+#     argmax/confidence gates would otherwise run on PMI-corrected scores and
+#     could bind a different photo — see Exp-104 §Phase B / finding).
+#   * matched --seed → identical initial population + GA RNG stream.
+#   ⇒ the ONLY difference between this arm and the raw arm is that the search
+#     objective is the PMI-corrected distance g_PMI = |g_raw − Δ∅|.
+#
+# Launch (paired with raw arm, matched --seed; rep-1 both arms first):
+#   python experiments/runners/run_boundary_test.py \
+#       configs/Exp-104/exp104_phaseb_qwen_pmi.yaml \
+#       --seed 1 --save-dir runs/Exp-104/qwen_pmi_rep1
+#   (repeat --seed 2/3 → qwen_pmi_rep2/3 ; see launch_qwen_ab.sh)
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp104_phaseb_qwen_pmi
+save_dir: runs/Exp-104
+
+device: mps
+
+categories:
+  - junco
+  - ostrich
+  - green iguana
+  - boa constrictor
+  - cello
+  - marimba
+
+modality: joint
+
+sut:
+  model_id: Qwen/Qwen3.5-4B
+  backend: torch
+
+cache_dirs:
+  - ~/.cache/imagenet
+
+generations: 50
+pop_size: 30
+
+# ─── PMI: ON (treatment arm), gray null, seed-gen frozen to raw ──────────────
+pmi:
+  enabled: true
+  null_image: gray            # primary null (E0 confirms gray is representative)
+  apply_to_seedgen: false     # → identical anchor photos to the raw arm
+
+seeds:
+  mode: roster
+  filter_indices: [2, 26, 28, 96, 196, 278, 454, 474]
+  roster:
+    class_list:
+      - junco
+      - ostrich
+      - green iguana
+      - boa constrictor
+      - cello
+      - marimba
+    seeds_per_class: 2
+    min_anchor_confidence: 3.5
+    abstraction:
+      levels_anchor: [0, 1, 2]
+      levels_target: [0, 1, 2]
+      apply_disjointness: true
+      directions: both
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: ~/.cache/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 20.0
+    target_m: 10
+
+text:
+  composite:
+    profile: full_stack
+
+parallel:
+  workers: 1
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: false

@@ -1,0 +1,93 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# EXP-104 Phase B — E2·L·raw : RAW control arm (LLaVA-OV-INT8 / Arc workstation)
+# ═══════════════════════════════════════════════════════════════════════════
+# Diary/spec: [[Exp-104-PMI-Calibration]] §Phase-B-Design
+# Run ON THE WORKSTATION (ssh efedora). Identical design to the Qwen arm
+# (configs/Exp-104/exp104_phaseb_qwen_raw.yaml) — SAME 8 cells / filter_indices
+# (enumeration is SUT-independent → matched cells for cross-SUT P4). ONLY the
+# SUT/host block + workers differ.
+#
+# NB: the W/G/N/C strata were assigned from QWEN Δ∅; LLaVA's Δ∅ differs (the
+# walled lexeme flips snake↔constrictor). E0·L re-measures Δ∅ on LLaVA and the
+# dose-response is re-plotted per SUT — the cells are matched, the prior is not.
+#
+# Launch (paired, matched --seed): see configs/Exp-104/launch_llava_ab.sh
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: exp104_phaseb_llava_raw
+save_dir: runs/Exp-104
+
+device: cpu
+
+categories:
+  - junco
+  - ostrich
+  - green iguana
+  - boa constrictor
+  - cello
+  - marimba
+
+modality: joint
+
+sut:
+  model_id: OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov
+  processor_id: llava-hf/llava-v1.6-mistral-7b-hf
+  backend: openvino
+  ov_device: GPU
+
+cache_dirs:
+  - /mnt/storage/huggingface/imagenet        # workstation ImageNet cache
+
+generations: 50
+pop_size: 30
+
+pmi:
+  enabled: false
+
+seeds:
+  mode: roster
+  filter_indices: [2, 26, 28, 96, 196, 278, 454, 474]
+  roster:
+    class_list:
+      - junco
+      - ostrich
+      - green iguana
+      - boa constrictor
+      - cello
+      - marimba
+    seeds_per_class: 2
+    min_anchor_confidence: 3.5
+    abstraction:
+      levels_anchor: [0, 1, 2]
+      levels_target: [0, 1, 2]
+      apply_disjointness: true
+      directions: both
+
+image:
+  backend: vqgan_codebook
+  n_candidates: 16383
+  knn_cache_path: /mnt/storage/huggingface/vqgan_knn/f8_16384_full.npz
+  cone_filter:
+    enabled: true
+    alpha_deg: 20.0
+    target_m: 10
+
+text:
+  composite:
+    profile: full_stack
+
+parallel:
+  workers: 2                                # OV-GPU SUT + CPU/VQGAN → concurrency
+
+optimizer:
+  sampling:
+    mode: sparse_multitier
+    zero_anchor_fraction: 0.05
+    tiers:
+      - {p_active: 0.005, fraction: 0.20}
+      - {p_active: 0.030, fraction: 0.20}
+      - {p_active: 0.100, fraction: 0.25}
+      - {p_active: 0.300, fraction: 0.20}
+      - {p_active: 0.500, fraction: 0.10}
+  early_stop:
+    enable: false
