@@ -1,44 +1,71 @@
-# Local development dependencies for experiments/
-# CI uses infrastructure/docker/requirements.txt instead.
+# Python dependencies for the boundary-testing experiments.
+#
+# Versions are pinned to the environment the thesis results were produced in
+# (Python 3.13.5). Pins are exact because several results are sensitive to
+# tokenizer and model-loading behaviour that changed across transformers 4.x/5.x.
+#
+# PyTorch is intentionally left without a platform tag: install the build that
+# matches your accelerator first, then install this file. See docs/ENVIRONMENT.md.
+#   Apple Silicon (MPS):  pip install torch==2.8.0 torchvision==0.23.0
+#   CUDA:                 pip install torch==2.8.0 torchvision==0.23.0 \
+#                             --index-url https://download.pytorch.org/whl/cu124
+#
+# The OpenVINO / Intel Arc backend used for the INT8 and INT4 SUT variants is a
+# separate install: see requirements-openvino.txt.
 
---extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.8.0
+torchvision==0.23.0
 
-torch
-torchvision
-torchaudio
+transformers==5.3.0
+accelerate==1.12.0
+huggingface-hub==1.5.0
+datasets==4.0.0
+safetensors==0.6.2
+tokenizers==0.22.2
+sentencepiece==0.2.1
 
-transformers
-accelerate
-huggingface-hub
-datasets
-
-dacite
-pyyaml
-numpy
-pandas
-pillow
-tqdm
-matplotlib
-scipy
-pyarrow
-rich
+dacite==1.9.2
+pyyaml==6.0.2
+numpy==2.3.2
+pandas==2.3.3
+pillow==12.1.0
+tqdm==4.67.1
+matplotlib==3.10.5
+scipy==1.16.1
+pyarrow==21.0.0
+rich==14.2.0
 
 # Optimization
-pymoo
+pymoo==0.6.1.6
 
 # Text manipulator
-spacy
+spacy==3.8.11
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
-gensim
+gensim==4.4.0
 
 # Image objectives (smoo dependency)
-sewar
-lpips
-redis
+sewar==0.4.6
 
-# SMOO framework (local submodule or from git)
+# StyleGAN manipulator pickles (smoo dependency).
+# timm>=1.0 requires the legacy-pickle shim carried by the SMOO fork below.
+timm==1.0.24
+
+# Optional inference cache. The SUT degrades gracefully to no caching when no
+# Redis server is reachable, so this is not required to reproduce any result.
+redis==3.5.3
+
+# SMOO framework — patched fork, see docs/ENVIRONMENT.md for why upstream
+# main does not work (no packaging metadata, no timm>=1.0 support).
 -e tools/smoo
 
 # HS-01 human-study analysis (analysis/hs01)
-krippendorff
-tabulate
+krippendorff==0.8.2
+tabulate==0.10.0
+
+# Analysis and figures
+scikit-learn==1.8.0
+statsmodels==0.14.5
+seaborn==0.13.2
+
+# Test suite
+pytest==9.0.2

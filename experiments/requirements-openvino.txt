@@ -1,0 +1,29 @@
+# OpenVINO backend — required only for the quantized SUT variants.
+#
+# Configs with `sut.backend: openvino` load pre-quantized OpenVINO IR models
+# through optimum-intel rather than through transformers:
+#
+#   OpenVINO/llava-v1.6-mistral-7b-hf-int8-ov     (LLaVA-INT8)
+#   OpenVINO/Qwen2.5-VL-7B-Instruct-int4-ov       (Qwen-INT4)
+#
+# The import in src/sut/scorer.py is deferred, so torch-only users can ignore
+# this file entirely — but any config with `backend: openvino` fails at
+# model-load time without it.
+#
+# IMPORTANT — this is a SEPARATE environment, not an overlay on
+# requirements.txt. These runs were executed on an Intel Arc workstation whose
+# environment differs from the Apple Silicon one in the pinned versions of
+# torch and, critically, transformers (4.55.4 there vs 5.3.0 for the Qwen/MPS
+# runs). Installing both sets into one environment will not resolve. Create a
+# dedicated environment for the OpenVINO experiments. See docs/ENVIRONMENT.md.
+#
+# Versions below are the ones present on the Arc workstation that produced the
+# Exp-23, Exp-26 and Exp-104 Phase B LLaVA results.
+
+openvino==2025.4.1
+optimum==2.1.0
+optimum-intel==1.27.0
+nncf==3.1.0
+
+torch==2.10.0
+transformers==4.55.4

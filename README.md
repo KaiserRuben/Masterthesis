@@ -2,6 +2,16 @@
 
 Search-based boundary testing for Vision-Language Models. Given an image and two class labels, find the minimal input perturbation (image + text) that pushes the VLM to the decision boundary between those classes.
 
+This repository is the reproduction package for the master's thesis of the same
+name (Technical University of Munich).
+
+- **[docs/REPRODUCTION.md](docs/REPRODUCTION.md)** — which experiment produced which figure, and how to rebuild it
+- **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** — install, the two hardware stacks, why SMOO is a fork
+- **[docs/DATA.md](docs/DATA.md)** — where the 24 GB run archive lives and how to request access
+
+Every results figure rebuilds from aggregates tracked here; the raw archive is
+optional. Contact: **Ruben.Kaiser@tum.de**.
+
 ## Two pipelines
 
 Both pipelines share seed generation, SUT scoring, and the image/text manipulators (`src/common/`, `src/sut/`, `src/manipulator/`). They differ only in the search strategy.
@@ -35,9 +45,8 @@ Both pipelines share seed generation, SUT scoring, and the image/text manipulato
 ## Install and run
 
 ```bash
-git submodule update --init tools/smoo
-pip install -e tools/smoo
-pip install -r experiments/requirements.txt
+git submodule update --init tools/smoo   # patched SMOO fork; see docs/ENVIRONMENT.md
+pip install -r experiments/requirements.txt   # installs tools/smoo in editable mode
 
 # Evolutionary (example: Exp-10 Phase-1 sparse-init shark)
 python experiments/runners/run_boundary_test.py configs/Exp-10/phase1_shark_n16383.yaml
@@ -80,14 +89,15 @@ experiments/
 
 configs/
 ├── templates/                # evolutionary_template.yaml, pdq_template.yaml, seed_generator.yaml
-├── Exp-03/ ... Exp-11/       # per-experiment overrides (names match Obsidian diary)
+├── Exp-03/ ... Exp-105/      # per-experiment overrides (names match Obsidian diary)
+├── HS-GEN-01/ ... HS-GEN-03/ # human-study stimulus generation
 └── Archive/                  # superseded configs
 
-runs/
-├── Exp-02/ ... Exp-10/       # run outputs keyed to the Obsidian Exp-NN numbering
+runs/                         # not tracked in git — see docs/DATA.md
+├── Exp-02/ ... Exp-105/      # run outputs keyed to the Obsidian Exp-NN numbering
 │   └── Exp-03-{mac,workstation}/  # same experiment, separated by machine
-├── preprocessing/            # e.g. runs/preprocessing/taxonomy/
-└── Archive/                  # historical: Exp-01-SMOO-Pipeline-Validation/{01_5obj,02_4obj,03_cadence}
+├── HS-GEN-01/ ... HS-GEN-03/ # stimulus generation for the human study
+└── preprocessing/            # e.g. runs/preprocessing/taxonomy/
 
 analysis/
 ├── core/                     # style, resolve, load_{smoo,pdq}, generate, parquet_utils, metrics
