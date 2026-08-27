@@ -1,0 +1,56 @@
+Copyright (c) 2026 Ruben Kaiser
+
+# HS-01 participant records — academic research use only
+
+The session records under `sessions/` are human-subject data from the HS-01
+rating study. They are **not** covered by the repository's code license
+([/LICENSE](../../../LICENSE)) or its data license
+([/LICENSE-DATA](../../../LICENSE-DATA)). Both of those permit any
+noncommercial use; this material is narrower.
+
+## Terms
+
+You may use, copy and redistribute these records **only** for academic research
+and academic teaching, and only on these conditions:
+
+1. **No re-identification.** You may not attempt to identify participants, link
+   these records to any other dataset, or combine them with other data in a way
+   that could identify a participant.
+2. **Pass on these terms.** Any redistribution, in whole or in part, must carry
+   this license file.
+3. **Attribution.** Cite the thesis (see below) in any publication that uses
+   these records.
+4. **Aggregate reporting.** Report results in aggregate. Do not publish
+   individual records in a form that invites re-identification.
+
+No other use is permitted. In particular, these records may not be used for
+commercial purposes, for training or evaluating commercial systems, or for any
+purpose outside academic research and teaching.
+
+## Why these terms are narrower
+
+Participants consented to the terms in
+[`../app/config/consent.en.md`](../app/config/consent.en.md), which state
+that their answers are "used for academic research in a master's thesis" and
+that no personal data is collected. A general noncommercial license would grant
+uses that consent did not contemplate, so the consent scope governs instead.
+
+## Anonymization
+
+The study application recorded a browser environment block for quality control.
+The `user_agent` / `platform` / `screen` / `device_pixel_ratio` combination is a
+device fingerprint that identified most participants uniquely, so every record
+here has been scrubbed to a derived `device` field, which is what the analysis
+reads. Verify with:
+
+    python experiments/HS-01/tools/anonymize_sessions.py --check
+
+If you add or refresh records, scrub them before committing. Keep unscrubbed
+originals outside the repository.
+
+## Citation
+
+  Ruben Kaiser. "Search-Based Boundary Testing for Vision-Language Models."
+  Master's thesis, Technical University of Munich, 2026.
+
+Questions: Ruben.Kaiser@tum.de
