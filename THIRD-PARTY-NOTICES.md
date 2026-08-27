@@ -21,10 +21,6 @@ application and its figures can be reproduced, and are not licensed by the
 copyright holder of this repository. Do not redistribute them outside that
 purpose. See <https://www.image-net.org/download.php> for the current terms.
 
-The same applies to the VQGAN-manipulated imagery under `samples/output/` and
-`samples/output_aesthetic/`, which is derived from ImageNet photographs. (Those
-directories are pruned from the `repro/thesis-v1` branch.)
-
 ### SMOO — `tools/smoo` (git submodule)
 
 Tracks `KaiserRuben/SMOO` branch `masterarbeit`, a fork of
@@ -38,23 +34,6 @@ manipulator entry points.
 > three fork commits above are the only part licensed under
 > [LICENSE](LICENSE). Anyone reproducing this work should treat the submodule
 > as all-rights-reserved upstream code until a license is added there.
-
-### VLTest — `tools/Archive/VLTest/`
-
-MIT License, Copyright (c) 2026 Alin. Full text at
-[`tools/Archive/VLTest/LICENSE`](tools/Archive/VLTest/LICENSE). Retained for
-reference only; not used by either pipeline. Pruned from the
-`repro/thesis-v1` branch.
-
-### Alpamayo side research — `archive_alpamayo_jan2026/`, `infrastructure/`
-
-An unrelated January 2026 research thread on VLM referring-expression
-grounding. Its notebooks reference the RefCOCO/COCO datasets and NVIDIA
-Alpamayo-R1, each under its own terms; consult those sources directly. Pruned
-from the `repro/thesis-v1` branch.
-
-Note that `tools/alpamayo/` is a separate git repository present on disk but
-gitignored — it is not part of this distribution.
 
 ## Fetched at runtime, not redistributed
 
