@@ -153,6 +153,26 @@ from smoo.sut import SUT
 
 `tools/smoo/` is installed editable by `experiments/requirements.txt`; its `pyproject.toml` maps the `smoo` import onto the checkout's `src/`. The submodule tracks a [branch](https://github.com/KaiserRuben/SMOO/tree/masterarbeit) carrying three packaging and dependency-compatibility commits on top of [SMOO](https://github.com/oliverweissl/SMOO). See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
+## Licensing
+
+Everything authored for this thesis may be used, modified and redistributed for
+any **noncommercial** purpose — academic research, teaching, personal study,
+hobby projects. Commercial use needs separate permission (Ruben.Kaiser@tum.de).
+These are not OSI-approved open-source licenses. Parts of the dependency stack
+(StyleGAN-XL, ImageNet imagery) are noncommercial-only in any case.
+
+| Material | License |
+|---|---|
+| Source code, configs | [PolyForm Noncommercial 1.0.0](LICENSE) |
+| Docs, notebooks, aggregates, figures | [CC BY-NC 4.0](LICENSE-DATA) |
+| HS-01 participant records | [Academic research only](experiments/HS-01/results/LICENSE) — narrower, set by the study consent |
+| Reference photos, SMOO, model weights | [Third-party terms](THIRD-PARTY-NOTICES.md) |
+
+Two caveats worth reading before you reproduce this work: the `tools/smoo`
+submodule has no license upstream, and the ImageNet-derived imagery is
+redistributed for research reproduction only. Both are detailed in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 ## Supervision
 
 | Role | Name | Affiliation |
