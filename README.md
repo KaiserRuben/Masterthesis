@@ -1,148 +1,189 @@
 # VLM Boundary Testing
 
-Search-based boundary testing for Vision-Language Models. Given an image and two class labels, find the minimal input perturbation (image + text) that pushes the VLM to the decision boundary between those classes.
+Given an image and two class labels, find the minimal input perturbation —
+image, text, or both — that drives a Vision-Language Model onto the decision
+boundary between them.
 
-This repository is the reproduction package for the master's thesis "Multi-Modal Boundary Testing of Vision–Language Models: A Two-Stage Search Framework for Decision-Space Geometry".
+Reproduction package for the master's thesis *Multi-Modal Boundary Testing of
+Vision–Language Models: A Two-Stage Search Framework for Decision-Space
+Geometry* (Technical University of Munich). Contact: **Ruben.Kaiser@tum.de**
 
-- **[docs/REPRODUCTION.md](docs/REPRODUCTION.md)** — which experiment produced which figure, and how to rebuild it
-- **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** — install, the two hardware stacks, why SMOO is a fork
-- **[docs/DATA.md](docs/DATA.md)** — where the 24 GB run archive lives and how to request access
+| I want to… | Start here |
+|---|---|
+| Install and verify a clone | [Quickstart](#quickstart) |
+| Run a search of my own | [Quickstart](#quickstart), then [Pipelines](#pipelines) |
+| Rebuild a thesis figure | [docs/REPRODUCTION.md — figure index](docs/REPRODUCTION.md#figure-index) |
+| Find the config behind a claim | [docs/REPRODUCTION.md — experiment index](docs/REPRODUCTION.md#experiment-index) |
+| Know what *cannot* be reproduced | [docs/REPRODUCTION.md — known gaps](docs/REPRODUCTION.md#known-gaps) |
+| Get the 24 GB raw run archive | [docs/DATA.md — tier 2](docs/DATA.md#tier-2-the-raw-run-archive) |
+| Set up the second (OpenVINO) stack | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md#openvino-install-quantized-suts) |
+| Change the code | [Where things live](#where-things-live) |
 
-Most results figures rebuild from aggregates tracked here; five of thirteen
-also need the raw run archive, and all of them need LaTeX and the thesis tree.
-[docs/REPRODUCTION.md](docs/REPRODUCTION.md) says which is which.
-Contact: **Ruben.Kaiser@tum.de**.
+## Quickstart
 
-## Two pipelines
+```bash
+git clone --recurse-submodules https://github.com/KaiserRuben/Masterthesis.git
+cd Masterthesis
+conda create -n uni python=3.13 && conda activate uni
 
-Both pipelines share seed generation, SUT scoring, and the image/text manipulators (`src/common/`, `src/sut/`, `src/manipulator/`). They differ only in the search strategy.
+# Install the torch build for your accelerator FIRST. requirements.txt pins
+# torch without a platform tag, so pip will otherwise resolve the wrong wheel.
+pip install torch==2.8.0 torchvision==0.23.0      # Apple Silicon / CPU
+pip install -r experiments/requirements.txt       # also installs tools/smoo editable
 
-**Evolutionary** — `src/evolutionary/`, AGE-MOEA-II multi-objective search over discrete genotypes.
-- Entry: `experiments/runners/run_boundary_test.py`
-- Template: `configs/templates/evolutionary_template.yaml`
+pytest tests/                                     # 725 tests
+```
 
-**PDQ** — `src/pdq/`, AutoBVA-style two-stage directed search (Stage 1 discovers flips, Stage 2 minimises each flip).
-- Entry: `experiments/runners/run_pdq_test.py`
-- Template: `configs/templates/pdq_template.yaml`
+Two tests flake on unseeded pymoo fixtures — `test_trace_row_count` and
+`test_initial_population_shape`. Both pass in isolation; rerun before assuming
+your environment is broken.
+
+**Smoke test that needs nothing else** — no model weights, no ImageNet, no
+LaTeX. It reads the human-study records tracked in this repository:
+
+```bash
+python -m analysis.hs01.run_all     # 12 tables -> analysis/outputs/hs01/, 12 figures
+```
+
+**Run an actual search.** ImageNet is gated on the HuggingFace Hub, so accept
+the `ILSVRC/imagenet-1k` licence on your account and export a token; model
+weights download on first use.
+
+```bash
+export HF_TOKEN=hf_...
+python experiments/runners/run_boundary_test.py \
+    configs/Exp-10/phase1_shark_n16383.yaml --preflight
+```
+
+`--preflight` times 20 representative SUT calls and prints a total-runtime
+projection before the search starts — it does not abort, so Ctrl-C if the
+number is unacceptable. Campaigns in this repository ran hours to days.
+Output lands in `runs/exp10/exp10_phase1_shark_n16383_seed_<i>_<ts>/` as
+`trace.parquet`, `convergence.parquet`, `stats.json`, `context.json`, Pareto
+snapshots and the origin image.
+
+> `configs/Exp-10/` and `configs/templates/` resolve their caches under `~`, so
+> they run unedited. Most other configs do not: **210 of 299 point
+> `image.knn_cache_path` and the primary ImageNet cache at
+> `/mnt/storage/huggingface/`**, the original workstation. Rewrite those two
+> keys before reusing one. See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md#configuring-paths).
+
+## Pipelines
+
+Three entry points. All three share seed generation (`src/common/`), SUT
+scoring (`src/sut/`) and the manipulators (`src/manipulator/`); they differ in
+how they search. `src/evolutionary/` and `src/pdq/` must never import each
+other.
+
+| | Evolutionary | PDQ | Boundary-pair |
+|---|---|---|---|
+| Strategy | AGE-MOEA-II, 3 objectives | AutoBVA-style two-stage directed | evolutionary → PDQ, per seed |
+| Code | `src/evolutionary/` | `src/pdq/` | `src/boundary_pair/` |
+| Runner | `run_boundary_test.py` | `run_pdq_test.py` | `run_boundary_pair_test.py` |
+| Template | `evolutionary_template.yaml` | `pdq_template.yaml` | `boundary_pair_template.yaml` |
+| Yields | Pareto front of near-boundary genotypes | flips (stage 1), minimised flips (stage 2) | `(anchor, partner)` pairs at minimum genome distance |
+
+Runners live in `experiments/runners/`, templates in `configs/templates/`.
+
+Boundary-pair is the one to reach for if you are reproducing **Exp-100** — the
+most-cited campaign, behind 7 of the 13 results figures. It takes each Pareto
+member from the evolutionary stage as a PDQ anchor, which is what yields the
+canonical Boundary Value Analysis characterisation.
 
 ## Core concepts
 
-**Genotype** — `int64[n]` = `[image_genes | text_genes]`. `0` = keep original, `k` = use the `k`-th nearest candidate (sorted by embedding distance, so gene `1` is the minimal perturbation).
+**Genotype** — `int64[n]` = `[image_genes | text_genes]`. Gene `0` keeps the
+original; gene `k` selects the `k`-th nearest candidate. Candidates are sorted
+by embedding distance, so `1` is the *minimal* perturbation and the search is
+biased toward small integers whenever a sparsity prior is in place.
 
-**Manipulators** (`src/manipulator/`) apply the genotype:
-- Image: VQGAN codebook swaps
-- Text: composite stack of MLM-Synonym (ModernBERT-large) + Fragmentation + Character Noise + Saliency, in canonical order
-- VLMManipulator bridges the two halves of the genotype
+**Manipulators** (`src/manipulator/`) turn a genotype into a model input:
 
-**SUT** (`src/sut/`) — teacher-forced log-prob scoring. For each category label, the VLM is forced to decode the label given the perturbed input and the per-token log-probs are length-normalised.
+| Half | Backends |
+|---|---|
+| Image | `vqgan_codebook` (default) — codebook swaps; `stylegan_xl` — latent edits, needs a loaded SUT |
+| Text | composite stack: MLM-Synonym (ModernBERT-large) → Fragmentation → Character Noise → Saliency, in canonical order |
+
+`VLMManipulator` bridges the two halves. The lifecycle is two-phase:
+`prepare(input) → context` once, then `apply(context, genotype)` many times.
+Context is immutable and shared across genotypes.
+
+**SUT** (`src/sut/`) — teacher-forced log-prob scoring. Each candidate label is
+force-decoded given the perturbed input; per-token log-probs are
+length-normalised. Backends: `torch` (MPS/CUDA/CPU) and `openvino` (Intel Arc,
+for the INT8/INT4 variants — separate environment, see [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md#openvino-install-quantized-suts)).
 
 **Objectives** (evolutionary only, `src/objectives/`):
-- `MatrixDistance` — Frobenius norm of (origin − perturbed) image
-- `TextEmbeddingDistance` — cosine distance of the manipulated prompt vs. anchor in the SUT's sentence-embedding space
-- `TargetedBalance` — `|P(A) − P(B)|`, → 0 at the decision boundary
 
-**Init distribution** (`src/optimizer/sparse_sampling.py`) — `uniform` (PyMoo default) or `sparse` (Bernoulli-gated zero-anchor + geometric depth). Sparse init is required for full-codebook runs (n=16383); without a sparsity prior, uniform init prevents the optimizer from reaching the `(L0, TgtBal)` sparse-near-boundary corner.
+| Criterion | Measures |
+|---|---|
+| `MatrixDistance` | Frobenius norm of (origin − perturbed) image |
+| `TextEmbeddingDistance` | cosine distance of prompt vs. anchor in the SUT's own sentence-embedding space |
+| `TargetedBalance` | `\|P(A) − P(B)\|` — zero at the decision boundary |
 
-## Install and run
+PDQ does not use this module; its metrics are in `src/pdq/metric.py`.
 
-```bash
-git submodule update --init tools/smoo   # patched SMOO fork; see docs/ENVIRONMENT.md
-pip install -r experiments/requirements.txt   # installs tools/smoo in editable mode
+**Init distribution** (`src/optimizer/sparse_sampling.py`) — `uniform` (PyMoo
+default) or `sparse` (Bernoulli-gated zero-anchor plus geometric depth). Sparse
+init is *required* at full codebook size (n=16383): under uniform sampling zero
+is not a privileged gene value, so the optimizer never reaches the
+`(L0, TgtBal)` sparse-near-boundary corner.
 
-# Evolutionary (example: Exp-10 Phase-1 sparse-init shark)
-python experiments/runners/run_boundary_test.py configs/Exp-10/phase1_shark_n16383.yaml
+## Where things live
 
-# PDQ
-python experiments/runners/run_pdq_test.py configs/templates/pdq_template.yaml
+| To change… | Edit |
+|---|---|
+| how a genotype becomes an image | `src/manipulator/image/` (VQGAN), `src/manipulator/image_stylegan/` |
+| how a genotype becomes a prompt | `src/manipulator/text/composite.py`, `text/operators/` |
+| how the VLM is scored | `src/sut/vlm_sut.py`, `src/sut/scorer.py` |
+| what the evolutionary search optimises | `src/objectives/` |
+| how the initial population is drawn | `src/optimizer/sparse_sampling.py` |
+| which (image, class-pair) seeds get tested | `src/common/seed_generator.py` + the `seeds:` config block |
+| PDQ's flip rule or distance metrics | `src/pdq/flip_policy.py`, `src/pdq/distances/` |
+| any config field | `src/config.py` — the dacite schema every YAML is loaded into |
+
+```
+src/          config.py, common/, sut/, manipulator/, objectives/, optimizer/,
+              data/, evolutionary/, pdq/, boundary_pair/, utils/
+experiments/  runners/ (entry points), preprocessing/, validation/,
+              HS-01/ (human oracle study: app, item pool, sessions),
+              analysis/ (per-campaign aggregates the figures read)
+configs/      templates/, Exp-03…Exp-105/, HS-GEN-01…03/, Archive/
+analysis/     core/, viz/ (+ viz/thesis/pgf/ — the 13 results-figure emitters),
+              cartography/, hs01/, outputs/ (generated, untracked)
+docs/         REPRODUCTION.md, ENVIRONMENT.md, DATA.md
+tools/smoo/   SMOO framework (git submodule, patched fork)
+runs/         search output — untracked except runs/preprocessing/
 ```
 
-Outputs land under `runs/<config.name>_seed_<i>_<ts>/` with `trace.parquet`, `convergence.parquet`, `stats.json`, `context.json`, Pareto snapshots, and the origin image.
+Experiment identifiers (`Exp-NN`, `HS-GEN-NN`) are shared across `configs/`,
+`runs/` and `notebooks/`. Superseded material moves into the `Archive/` subdir
+of its own domain rather than being deleted.
 
-## Repository layout
+Two branches. `main` carries everything, including slides, parked tooling and
+two unrelated research threads (`archive_alpamayo_jan2026/`,
+`infrastructure/`). `repro/thesis-v1` is pruned to what the thesis cites.
+
+## Reproducing the thesis
+
+A clone rebuilds the HS-01 tables and 8 of the 13 results figures. The other 5
+(`boundary_map`, `budget`, `config_effects`, `init_coverage`, `watershed`) read
+raw run directories from the [tier-2 archive](docs/DATA.md#tier-2-the-raw-run-archive).
+
+Every results figure additionally needs **`pdflatex` on `PATH`** and **the
+thesis tree at `$THESIS_DIR`** — the emitters typeset each figure to measure
+its box, and `\input` a style file that lives thesis-side. Without it you get:
 
 ```
-src/
-├── config.py                 # ExperimentConfig (dacite-loaded from YAML)
-├── common/                   # shared between evolutionary and pdq
-│   ├── artifacts.py          # ParquetBuffer + SCHEMA_VERSION constants
-│   ├── seed_context.py       # apply_seed_filter, build_context_meta
-│   ├── seed_generator.py     # generate_seeds (1-vs-all pair scoring)
-│   └── seed_matrix.py        # fuzzy/precise sampling-matrix builders
-├── data/                     # ImageNet labels + streaming cache
-├── evolutionary/
-│   └── vlm_boundary_tester.py
-├── manipulator/
-│   ├── image/                # VQGAN codebook swaps
-│   ├── text/                 # PoS-aware synonym replacement
-│   └── vlm_manipulator.py    # multi-modal bridge
-├── objectives/               # evolutionary-only criteria (+ MatrixDistance re-export from smoo)
-├── optimizer/                # DiscretePymooOptimizer, early_stop, sparse_sampling
-├── pdq/                      # PDQ directed-search pipeline
-├── sut/                      # VLMSUT, VLMScorer, preflight
-└── utils/
-    └── pair_resolver.py      # CLI helper: "class_a->class_b" → seed-pool index
-
-experiments/
-├── runners/                  # run_boundary_test.py, run_pdq_test.py
-├── preprocessing/            # generate_*, precompute_taxonomy, sample_pairs_exp11, preview_seed_pool
-├── validation/               # validate_saliency_{embedding,rarity}
-└── Archive/                  # historical: question_rewrite, imagenet_vlm_probing, run_screening, Phase-0..4
-
-configs/
-├── templates/                # evolutionary_template.yaml, pdq_template.yaml, seed_generator.yaml
-├── Exp-03/ ... Exp-105/      # per-experiment overrides (names match Obsidian diary)
-├── HS-GEN-01/ ... HS-GEN-03/ # human-study stimulus generation
-└── Archive/                  # superseded configs
-
-runs/                         # not tracked in git — see docs/DATA.md
-├── Exp-02/ ... Exp-105/      # run outputs keyed to the Obsidian Exp-NN numbering
-│   └── Exp-03-{mac,workstation}/  # same experiment, separated by machine
-├── HS-GEN-01/ ... HS-GEN-03/ # stimulus generation for the human study
-└── preprocessing/            # e.g. runs/preprocessing/taxonomy/
-
-analysis/
-├── core/                     # style, resolve, load_{smoo,pdq}, generate, parquet_utils, metrics
-├── viz/                      # boundary, pdq, smoo, topology, g_field, g_surface, comparison,
-│   │                         #   convergence_study, geometry_study, two_weeks
-│   └── thesis/pgf/           # emitters for the results-chapter figures
-├── cartography/              # Exp-100 boundary point-cloud store
-├── hs01/                     # human-study analysis (load, stats, tables, figures)
-└── outputs/                  # generated analysis artifacts (not tracked)
-
-notebooks/
-├── Exp-01-sparsity-analysis.ipynb
-├── Exp-01-4obj-analysis.ipynb
-└── Exp-01-cadence-analysis.ipynb
-
-tools/
-├── smoo/                     # SMOO framework (git submodule)
-├── alpamayo/                 # gitignored — separate research thread
-├── render_manipulation_*.py  # method-chapter figures
-└── Archive/                  # parked: VLTest, vlm, scene, parquet_footer_repair
-
-docs/                         # REPRODUCTION, ENVIRONMENT, DATA
-tests/                        # pytest suite
-
-archive_alpamayo_jan2026/     # side research (January '26 VLM grounding / Alpamayo-R1)
-infrastructure/               # Alpamayo inference setup — unrelated to these pipelines
+! LaTeX Error: File `figures/results/results-style.tex' not found.
 ```
 
-`experiments/HS-01/` holds the human oracle study: the Next.js study
-application, the frozen item pool, the anonymized session records, and the
-staging tools. `experiments/analysis/` holds the per-campaign aggregation
-scripts and the aggregates the thesis figures read.
+[docs/REPRODUCTION.md](docs/REPRODUCTION.md) maps every experiment to its
+config, run directory and figure producer, and records the gaps honestly —
+including one campaign whose run data is lost and two headline numbers with no
+in-repo producer.
 
-The last two entries above are pruned from the `repro/thesis-v1` branch, along
-with `slides/`, `tools/Archive/` and the generated `samples/` imagery.
-
-## Design decisions
-
-- **Two-phase manipulator lifecycle** — `prepare(input) → context` (once), then `apply(context, genotype) → output` (many). Context is immutable; multiple genotypes reuse the same prepared context.
-- **Candidates sorted by embedding distance** — gene `1` is the minimal perturbation; gene `0` keeps the original. The optimizer is therefore biased toward small integer values when a sparsity prior is in place.
-- **Streaming Parquet writers** (`src.common.artifacts.ParquetBuffer`) — row groups flush on interval so a crash loses at most one group rather than the whole seed.
-- **Schema versions** (`src.common.artifacts.EVOLUTIONARY_SCHEMA_VERSION`, `PDQ_SCHEMA_VERSION`) — per-pipeline; bumped when on-disk layout changes.
-
-## SMOO integration
+## SMOO
 
 ```python
 from smoo.objectives import Criterion, CriterionCollection
@@ -150,15 +191,21 @@ from smoo.optimizer import Optimizer
 from smoo.sut import SUT
 ```
 
-`tools/smoo/` is installed editable by `experiments/requirements.txt`; its `pyproject.toml` maps the `smoo` import onto the checkout's `src/`. The submodule tracks a [branch](https://github.com/KaiserRuben/SMOO/tree/masterarbeit) carrying three packaging and dependency-compatibility commits on top of [SMOO](https://github.com/oliverweissl/SMOO). See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+`tools/smoo/` is a submodule tracking
+[`KaiserRuben/SMOO@masterarbeit`](https://github.com/KaiserRuben/SMOO/tree/masterarbeit),
+three commits over [upstream](https://github.com/oliverweissl/SMOO) adding
+packaging metadata, timm 1.0 compatibility for the StyleGAN-XL pickles, and
+`inference_mode` on the manipulator entry points. The pinned dependency set
+needs all three. Details in [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md#why-the-smoo-submodule-points-at-a-fork).
 
 ## Licensing
 
 Everything authored for this thesis may be used, modified and redistributed for
 any **noncommercial** purpose — academic research, teaching, personal study,
-hobby projects. Commercial use needs separate permission (Ruben.Kaiser@tum.de).
-These are not OSI-approved open-source licenses. Parts of the dependency stack
-(StyleGAN-XL, ImageNet imagery) are noncommercial-only in any case.
+hobby projects. Commercial use needs separate permission
+(Ruben.Kaiser@tum.de). These are not OSI-approved open-source licenses; parts
+of the dependency stack (StyleGAN-XL, ImageNet imagery) are noncommercial-only
+in any case.
 
 | Material | License |
 |---|---|
@@ -167,9 +214,9 @@ These are not OSI-approved open-source licenses. Parts of the dependency stack
 | HS-01 participant records | [Academic research only](experiments/HS-01/results/LICENSE) — narrower, set by the study consent |
 | Reference photos, SMOO, model weights | [Third-party terms](THIRD-PARTY-NOTICES.md) |
 
-Two caveats worth reading before you reproduce this work: the `tools/smoo`
-submodule has no license upstream, and the ImageNet-derived imagery is
-redistributed for research reproduction only. Both are detailed in
+Two caveats worth reading before you redistribute anything: the `tools/smoo`
+submodule has no license upstream, and the ImageNet-derived imagery is included
+for research reproduction only. Both in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Supervision
