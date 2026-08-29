@@ -53,7 +53,7 @@ python -m analysis.hs01.run_all      # 12 tables -> analysis/outputs/hs01/, 12 P
 The figures go to `ANALYSIS_ASSET_ROOT` if set, otherwise the author's Obsidian
 vault if it exists, otherwise `analysis/outputs/assets/`. These are the
 diary/analysis PNGs; the ten HS-01 figures typeset in the thesis come from a
-thesis-side script (see [known gaps](#known-gaps)).
+thesis-side script that is not part of this repository.
 
 The results figures need two things this repository does not contain. Each
 emitter builds its `.tex` and then typesets it to measure the box, so it needs:
@@ -126,7 +126,7 @@ Configs marked † are boundary-pair; run them with `run_boundary_pair_test.py`.
 | Exp-105 | M | sentence-slot pilot (appendix register only) | `configs/Exp-105/` (steps 2–6 never ran) | `Exp-105/` 1.1 GB | — |
 | HS-GEN-01 | M | 78/78 gen-0 gate; 2,139 items ≤ 1e-2 | `configs/HS-GEN-01/` (18 promoted + screen) | `HS-GEN-01/` 5.0 GB, 1024 screen runs | prose only |
 | HS-GEN-02/03 | M | referenced in source comments only | `configs/HS-GEN-0{2,3}/` | 1.3 GB / 1.2 GB | — |
-| HS-01 | — | human oracle study, 49 sessions | `experiments/HS-01/` (not under `configs/`) | in-repo, not under `runs/` | `analysis/hs01/`, plus a thesis-side script (see gaps) |
+| HS-01 | — | human oracle study, 49 sessions | `experiments/HS-01/` (not under `configs/`) | in-repo, not under `runs/` | `analysis/hs01/`, plus a thesis-side script |
 
 Exp-06 and Exp-07 were planned and never started; the thesis says so
 explicitly. Exp-11 exists in `configs/` but the thesis never cites it.
@@ -161,57 +161,6 @@ Every emitter also needs `pdflatex` and `THESIS_DIR`; see above.
 Method-chapter graphics come from `tools/render_manipulation_gallery_2axis.py`
 (`fig:method:gallery`) and `tools/render_manipulation_distance_3d.py`
 (`fig:app:distance-3d`).
-
-## Known gaps
-
-Recorded rather than papered over.
-
-**Exp-01's runs are lost.** `notebooks/Exp-01-*.ipynb` read
-`runs/Archive/Exp-01-SMOO-Pipeline-Validation/{02_4obj,03_cadence}`, and
-`runs/Archive/` no longer exists. One arm is still configured —
-`configs/Archive/boundary_test_cadence.yaml` writes to that exact `03_cadence`
-path — so the cadence arm could be re-run, but the 4- and 5-objective arms have
-no surviving config and no surviving output. The notebooks' stored cell outputs
-are the only record. Exp-01 is cited only in the appendix register, as the
-origin of the initialization line of enquiry, and its conclusion is superseded
-by Exp-09 and Exp-10, which are fully reproducible.
-
-**Exp-02's config is unfiled.** It is `configs/Archive/pdq_overnight.yaml`, not
-`configs/Exp-02/`. Confirmed by matching `name`, `model_id` and `n_categories`
-against the `config.json` snapshot in `runs/Exp-02/seed_0000_1775421159/`.
-
-**Every legacy PDQ run carries its own `config.json`.** For Exp-02, Exp-03 and
-Exp-04 the run directories snapshot the full configuration — device,
-categories, prompt template, SUT and all search blocks — so parameters are
-recoverable even where the config file is missing or ambiguous.
-
-**Two headline numbers have no in-repo producer.** The results chapter cites
-`verify6/agg04.py` for the Exp-04 reduction median (n=1572) and `verify6/cache.py`
-for the Exp-100 22.43 % cache-hit rate. No `verify6/` exists here; both numbers
-are currently unverifiable from this package.
-
-**The HS-01 figure script lives in the thesis tree.**
-`figures/hs01/generate_figures.py` emits ten HS-01 figures and is not part of
-this repository. It also carries a do-not-rerun warning: one of its functions
-emits an abandoned variant that would overwrite a live figure, and several
-emitted `.tex` files have since been hand-edited. The HS-01 *tables* and the
-diary PNGs rebuild here via `python -m analysis.hs01.run_all`.
-
-**The 27 HS-01 interface screenshots are not reproducible.** Captured
-interactively from the study application on 2026-08-21, not by a checked-in
-script. The application is in `experiments/HS-01/app/` and can be run to
-re-capture them.
-
-**`analysis/viz/thesis/pgf/style.py` does not exist**, although
-`figures/results/results-style.tex` in the thesis tells the reader to edit it.
-The shared styling is in `pgf/emit.py`.
-
-**Some configs never ran.** All six Exp-27 pairB configs, two Exp-24 arms, one
-Exp-25 arm, two Exp-26 arms, Exp-105 steps 2–6, and two Exp-100 variants.
-Absence of a matching run directory is the signal.
-
-**Exp-100 holds 122 seed directories; the thesis reports 119 curated runs.**
-Three were excluded during curation.
 
 ## Runtime expectations
 

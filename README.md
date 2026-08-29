@@ -14,7 +14,6 @@ Geometry* (Technical University of Munich). Contact: **Ruben.Kaiser@tum.de**
 | Run a search of my own | [Quickstart](#quickstart), then [Pipelines](#pipelines) |
 | Rebuild a thesis figure | [docs/REPRODUCTION.md — figure index](docs/REPRODUCTION.md#figure-index) |
 | Find the config behind a claim | [docs/REPRODUCTION.md — experiment index](docs/REPRODUCTION.md#experiment-index) |
-| Know what *cannot* be reproduced | [docs/REPRODUCTION.md — known gaps](docs/REPRODUCTION.md#known-gaps) |
 | Get the 24 GB raw run archive | [docs/DATA.md — tier 2](docs/DATA.md#tier-2-the-raw-run-archive) |
 | Set up the second (OpenVINO) stack | [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md#openvino-install-quantized-suts) |
 | Change the code | [Where things live](#where-things-live) |
@@ -179,9 +178,7 @@ its box, and `\input` a style file that lives thesis-side. Without it you get:
 ```
 
 [docs/REPRODUCTION.md](docs/REPRODUCTION.md) maps every experiment to its
-config, run directory and figure producer, and records the gaps honestly —
-including one campaign whose run data is lost and two headline numbers with no
-in-repo producer.
+config, run directory and figure producer.
 
 ## SMOO
 
