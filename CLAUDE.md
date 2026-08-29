@@ -74,9 +74,17 @@ python experiments/HS-01/tools/anonymize_sessions.py --in-place  # scrub
 The analysis reads the derived `device` field, never the raw fields, so this
 costs nothing. Keep unscrubbed originals outside the repository.
 
-Do not regenerate `consent.en.md` or `study-config.json`. Its stale hash is
-deliberate and documented in
-[docs/DATA.md](docs/DATA.md#consent-hash-drift--do-not-fix-it).
+**Never regenerate `consent.en.md` or `study-config.json`.** The config's
+`consent.text_sha256` is stale by design: the served consent text was
+hand-edited after generation, so regenerating would overwrite the record of
+what 49 participants actually saw and break `config_sha256` against every
+session record. Background in
+[docs/DATA.md](docs/DATA.md#consent-text-the-recorded-hash-is-stale).
+
+`experiments/HS-01/tests/test_make_study_config.py` used to run the generator
+against the real repository paths, silently overwriting that served text on
+every suite run. It now writes to a temporary directory, and
+`test_shipped_files_untouched` fails if that regresses.
 
 ## Keeping docs true
 

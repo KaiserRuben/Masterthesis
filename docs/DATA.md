@@ -81,27 +81,20 @@ Participants consented to use of their responses for academic research in a
 master's thesis (`experiments/HS-01/app/config/consent.en.md`). Use beyond that
 scope should be discussed with **Ruben.Kaiser@tum.de** first.
 
-### Consent hash drift — do not "fix" it
+### Consent text: the recorded hash is stale
 
-`consent.en.md` and `study-config.json` are both emitted by
-`make_study_config.py`, and the config records `consent.text_sha256` so the
-exact wording can be tied to each session. They no longer agree:
-`sha256(consent.en.md)` is `879205bd…` while the config attests `a97cc9c0…`.
+`study-config.json` records `consent.text_sha256` so the exact wording can be
+tied to each session. It no longer matches the file: `sha256(consent.en.md)` is
+`879205bd…`, the config attests `a97cc9c0…`.
 
-`consent.en.md` was hand-edited after generation — a reworded opening line and
-the researcher email filled in over a placeholder — without regenerating the
-config. **The edited file is nonetheless the authoritative record of what
-participants saw:** it landed 2026-06-25 09:58 UTC and the first session
-started 14:00 UTC the same day, so all 49 sessions were served the edited text.
-The recorded `text_sha256` attests an earlier wording no participant ever saw.
+**The file is authoritative, not the hash.** `consent.en.md` was hand-edited
+after generation — a reworded opening line, the researcher email filled in over
+a placeholder — without the config being regenerated. It landed 2026-06-25
+09:58 UTC and the first session started 14:00 UTC the same day, so all 49
+sessions were served the edited text; the recorded hash attests a wording no
+participant ever saw. Regenerating the config would overwrite the served text
+with the pre-edit version and change `config_sha256`, breaking its match with
+all 49 records.
 
-So the file is correct and the hash is stale, not the other way round.
-Regenerating would overwrite the served text with the pre-edit version and
-destroy the record, and would change `config_sha256`, breaking its match with
-all 49 records. `pool_ref.pool_file_sha256` still matches `itempool.json`, so
-the stimulus side is intact.
-
-`experiments/HS-01/tests/test_make_study_config.py` used to run the generator
-against the real repository paths, silently overwriting the served consent text
-whenever the suite ran. It now writes to a temporary directory, and
-`test_shipped_files_untouched` fails if that regresses.
+`pool_ref.pool_file_sha256` still matches `itempool.json`, so the stimulus side
+is intact.
