@@ -162,6 +162,24 @@ Method-chapter graphics come from `tools/render_manipulation_gallery_2axis.py`
 (`fig:method:gallery`) and `tools/render_manipulation_distance_3d.py`
 (`fig:app:distance-3d`).
 
+## Known gaps
+
+| Gap | Detail |
+|---|---|
+| Exp-01's runs are lost | `runs/Archive/` no longer exists. The cadence arm is still configured (`configs/Archive/boundary_test_cadence.yaml`); the 4- and 5-objective arms have neither config nor output. Cited only in the appendix register, and superseded by the fully reproducible Exp-09 and Exp-10. |
+| Exp-02's config is unfiled | It is `configs/Archive/pdq_overnight.yaml`, matched on `name`, `model_id` and `n_categories` against the `config.json` in `runs/Exp-02/seed_0000_1775421159/`. |
+| Two headline numbers have no in-repo producer | The Exp-04 reduction median (n=1572) and the Exp-100 22.43 % cache-hit rate cite `verify6/agg04.py` and `verify6/cache.py`. No `verify6/` exists here. |
+| The HS-01 thesis figures are emitted outside this repo | `figures/hs01/generate_figures.py` is thesis-side and carries a do-not-rerun warning: one function emits an abandoned variant over a live figure, and several `.tex` outputs were hand-edited afterwards. Tables and diary PNGs rebuild here. |
+| The 27 HS-01 interface screenshots are not reproducible | Captured interactively from the study app on 2026-08-21, not by a checked-in script. `experiments/HS-01/app/` can be run to re-capture them. |
+| `analysis/viz/thesis/pgf/style.py` does not exist | `figures/results/results-style.tex` tells the reader to edit it; the shared styling is in `pgf/emit.py`. |
+| Some configs never ran | All six Exp-27 pairB arms, two Exp-24 arms, one Exp-25, two Exp-26, Exp-105 steps 2–6, and two Exp-100 variants. Absence of a run directory is the signal. |
+| Exp-100 holds 122 seed directories | The thesis reports 119 curated runs; three were excluded during curation. |
+
+Partly offsetting the first two: every legacy PDQ run directory (Exp-02,
+Exp-03, Exp-04) snapshots its full configuration in `config.json` — device,
+categories, prompt template, SUT and all search blocks — so parameters are
+recoverable even where the config file is missing or ambiguous.
+
 ## Runtime expectations
 
 Cost is dominated by SUT calls, and `--preflight` underestimates them badly: it
