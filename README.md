@@ -2,8 +2,7 @@
 
 Search-based boundary testing for Vision-Language Models. Given an image and two class labels, find the minimal input perturbation (image + text) that pushes the VLM to the decision boundary between those classes.
 
-This repository is the reproduction package for the master's thesis of the same
-name (Technical University of Munich).
+This repository is the reproduction package for the master's thesis "Multi-Modal Boundary Testing of Vision–Language Models: A Two-Stage Search Framework for Decision-Space Geometry".
 
 - **[docs/REPRODUCTION.md](docs/REPRODUCTION.md)** — which experiment produced which figure, and how to rebuild it
 - **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** — install, the two hardware stacks, why SMOO is a fork
